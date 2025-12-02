@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [settings, setSettings] = useState<AppSettings>(storageService.getSettings());
+  const [adminPassword, setAdminPassword] = useState<string>(storageService.getAdminPassword());
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // --- Auth State ---
@@ -29,6 +30,7 @@ const App: React.FC = () => {
     setTransactions(storageService.getTransactions());
     setReviews(storageService.getReviews());
     setSettings(storageService.getSettings());
+    setAdminPassword(storageService.getAdminPassword());
   }, []);
 
   // --- Persistance Effects ---
@@ -37,6 +39,7 @@ const App: React.FC = () => {
   useEffect(() => { if(transactions.length) storageService.setTransactions(transactions); }, [transactions]);
   useEffect(() => { if(reviews.length) storageService.setReviews(reviews); }, [reviews]);
   useEffect(() => { storageService.setSettings(settings); }, [settings]);
+  useEffect(() => { storageService.setAdminPassword(adminPassword); }, [adminPassword]);
 
   // --- Actions ---
 
@@ -45,8 +48,8 @@ const App: React.FC = () => {
     setAuthError('');
 
     if (isAdminMode) {
-      // Hardcoded admin for demo: admin / admin123
-      if (loginInput === 'admin' && passwordInput === 'admin123') {
+      // Admin Login
+      if (loginInput === 'admin' && passwordInput === adminPassword) {
         const admin = users.find(u => u.role === UserRole.ADMIN);
         if (admin) setCurrentUser(admin);
         else setAuthError('Configuración de admin corrupta.');
@@ -93,6 +96,10 @@ const App: React.FC = () => {
 
   const updateSettings = (newSettings: AppSettings) => {
     setSettings(newSettings);
+  };
+
+  const updateAdminPassword = (newPwd: string) => {
+    setAdminPassword(newPwd);
   };
 
   const handleBorrow = (book: Book) => {
@@ -268,6 +275,7 @@ const App: React.FC = () => {
           onDeleteBook={deleteBook}
           onDeleteReview={handleDeleteReview}
           onUpdateSettings={updateSettings}
+          onChangePassword={updateAdminPassword}
         />
       ) : (
         <StudentView 

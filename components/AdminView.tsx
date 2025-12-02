@@ -4,7 +4,7 @@ import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings
 import { normalizeString } from '../services/storageService';
 import { searchBookCover } from '../services/bookService';
 import { Button } from './Button';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key } from 'lucide-react';
 
 interface AdminViewProps {
   users: User[];
@@ -18,6 +18,7 @@ interface AdminViewProps {
   onUpdateUser?: (updatedUser: User) => void;
   onDeleteReview?: (id: string) => void;
   onUpdateSettings: (settings: AppSettings) => void;
+  onChangePassword: (newPassword: string) => void;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -31,7 +32,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onDeleteBook,
   onUpdateUser,
   onDeleteReview,
-  onUpdateSettings
+  onUpdateSettings,
+  onChangePassword
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'books' | 'reviews' | 'stats' | 'settings'>('users');
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +52,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // Settings State
   const [tempSettings, setTempSettings] = useState<AppSettings>(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
+  const [passwordSaved, setPasswordSaved] = useState(false);
   
   // Loading States
   const [isAddingBook, setIsAddingBook] = useState(false);
@@ -278,6 +283,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
     onUpdateSettings(tempSettings);
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2000);
+  };
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newAdminPassword.length < 4) {
+      alert("La contraseña debe tener al menos 4 caracteres.");
+      return;
+    }
+    if (newAdminPassword !== confirmAdminPassword) {
+      alert("Las contraseñas no coinciden.");
+      return;
+    }
+    onChangePassword(newAdminPassword);
+    setNewAdminPassword('');
+    setConfirmAdminPassword('');
+    setPasswordSaved(true);
+    setTimeout(() => setPasswordSaved(false), 2000);
   };
 
   // --- Render ---
@@ -620,73 +642,127 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Settings Tab */}
       {activeTab === 'settings' && (
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 max-w-2xl mx-auto">
-           <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">Configuración General</h2>
-           
-           <form onSubmit={handleSaveSettings} className="space-y-6">
-              <div>
-                 <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
-                 <input 
-                    type="text" 
-                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
-                    value={tempSettings.schoolName}
-                    onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
-                 />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+              <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">Configuración General</h2>
+              
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
+                    <input 
+                        type="text" 
+                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                        value={tempSettings.schoolName}
+                        onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
+                    />
+                  </div>
 
-              <div>
-                 <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
-                 <div className="flex flex-col md:flex-row gap-4 items-start">
-                    <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
-                        <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
+                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                        <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
+                            <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                            {/* File Upload Option */}
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
+                              <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
+                                  <ImageIcon size={16} />
+                                  <span>Elegir archivo...</span>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={handleLogoUpload}
+                                    className="hidden"
+                                  />
+                              </label>
+                            </div>
+                            
+                            {/* URL Option Separator */}
+                            <div className="relative flex py-1 items-center">
+                                <div className="flex-grow border-t border-slate-100"></div>
+                                <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
+                                <div className="flex-grow border-t border-slate-100"></div>
+                            </div>
+
+                            {/* URL Input */}
+                            <div>
+                                <input 
+                                    type="text" 
+                                    className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm text-slate-600"
+                                    value={tempSettings.logoUrl}
+                                    onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
+                                    placeholder="https://..."
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex-1 space-y-3">
-                        {/* File Upload Option */}
-                        <div>
-                           <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
-                           <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
-                              <ImageIcon size={16} />
-                              <span>Elegir archivo...</span>
-                              <input 
-                                type="file" 
-                                accept="image/*"
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                              />
-                           </label>
-                        </div>
-                        
-                        {/* URL Option Separator */}
-                        <div className="relative flex py-1 items-center">
-                            <div className="flex-grow border-t border-slate-100"></div>
-                            <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
-                            <div className="flex-grow border-t border-slate-100"></div>
-                        </div>
+                  </div>
 
-                        {/* URL Input */}
-                        <div>
-                            <input 
-                                type="text" 
-                                className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm text-slate-600"
-                                value={tempSettings.logoUrl}
-                                onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
-                                placeholder="https://..."
-                            />
-                        </div>
-                    </div>
-                 </div>
-              </div>
+                  <div className="pt-4 border-t border-slate-100 flex justify-end">
+                    <Button type="submit" variant="primary" disabled={settingsSaved}>
+                        {settingsSaved ? (
+                          <span className="flex items-center gap-2"><Check size={18} /> Guardado</span>
+                        ) : (
+                          <span className="flex items-center gap-2"><Save size={18} /> Guardar Configuración</span>
+                        )}
+                    </Button>
+                  </div>
+              </form>
+           </div>
 
-              <div className="pt-4 border-t border-slate-100 flex justify-end">
-                 <Button type="submit" variant="primary" disabled={settingsSaved}>
-                    {settingsSaved ? (
-                       <span className="flex items-center gap-2"><Check size={18} /> Guardado</span>
-                    ) : (
-                       <span className="flex items-center gap-2"><Save size={18} /> Guardar Configuración</span>
-                    )}
-                 </Button>
+           {/* Security Settings */}
+           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 h-fit">
+              <div className="flex items-center gap-2 mb-6 text-slate-800">
+                <Lock className="text-brand-600" size={24}/>
+                <h2 className="text-2xl font-bold font-display">Seguridad</h2>
               </div>
-           </form>
+              
+              <form onSubmit={handlePasswordChange} className="space-y-6">
+                <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600 mb-4 border border-slate-100">
+                  Cambia aquí la contraseña de administrador. Asegúrate de recordarla.
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nueva Contraseña</label>
+                   <div className="relative">
+                      <input 
+                         type="password" 
+                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                         value={newAdminPassword}
+                         onChange={e => setNewAdminPassword(e.target.value)}
+                         placeholder="••••••••"
+                      />
+                      <Key size={18} className="absolute left-3 top-3.5 text-slate-400"/>
+                   </div>
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Confirmar Contraseña</label>
+                   <div className="relative">
+                      <input 
+                         type="password" 
+                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                         value={confirmAdminPassword}
+                         onChange={e => setConfirmAdminPassword(e.target.value)}
+                         placeholder="••••••••"
+                      />
+                      <Key size={18} className="absolute left-3 top-3.5 text-slate-400"/>
+                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                    <Button type="submit" variant="secondary" disabled={passwordSaved || !newAdminPassword}>
+                        {passwordSaved ? (
+                          <span className="flex items-center gap-2"><Check size={18} /> Actualizada</span>
+                        ) : (
+                          <span className="flex items-center gap-2">Actualizar Contraseña</span>
+                        )}
+                    </Button>
+                </div>
+              </form>
+           </div>
         </div>
       )}
 
