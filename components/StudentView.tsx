@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 
 interface StudentViewProps {
@@ -174,7 +174,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
               onClick={() => setActiveTab('ranking')}
               className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'ranking' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
             >
-              Ranking
+              Rankings
             </button>
           </div>
         </div>
@@ -270,61 +270,139 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
         {/* --- Ranking Tab --- */}
         {activeTab === 'ranking' && (
-           <div className="max-w-2xl mx-auto space-y-8">
-              <div className="text-center space-y-2">
+           <div className="space-y-8 animate-fade-in">
+              <div className="text-center space-y-2 mb-8">
                  <h2 className="text-3xl font-display font-bold text-slate-800 flex items-center justify-center gap-3">
                    <Trophy className="text-fun-yellow w-10 h-10 drop-shadow-sm" fill="currentColor"/> 
                    Salón de la Fama
                  </h2>
-                 <p className="text-slate-500">¡Sigue leyendo para escalar posiciones!</p>
+                 <p className="text-slate-500">¡Descubre quién lee más y cuáles son los mejores libros!</p>
               </div>
 
-              <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
-                 {users
-                    .filter(u => u.role === 'STUDENT')
-                    .sort((a, b) => b.points - a.points)
-                    .slice(0, 10)
-                    .map((user, index) => {
-                       let rankStyle = "text-slate-500";
-                       let bgStyle = "hover:bg-slate-50";
-                       let icon = null;
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                  
+                  {/* COL 1: TOP STUDENTS */}
+                  <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden flex flex-col">
+                      <div className="bg-brand-50 p-4 border-b border-brand-100 flex items-center gap-2">
+                          <Trophy size={20} className="text-brand-600" />
+                          <h3 className="font-bold text-brand-800">Superlectores</h3>
+                      </div>
+                     {users
+                        .filter(u => u.role === 'STUDENT')
+                        .sort((a, b) => b.points - a.points)
+                        .slice(0, 5)
+                        .map((user, index) => {
+                           let rankStyle = "text-slate-500";
+                           let bgStyle = "hover:bg-slate-50";
+                           let icon = null;
 
-                       if (index === 0) {
-                          rankStyle = "text-yellow-500 text-xl";
-                          bgStyle = "bg-yellow-50/50 hover:bg-yellow-50";
-                          icon = <Trophy size={20} fill="currentColor" className="text-yellow-400"/>;
-                       } else if (index === 1) {
-                          rankStyle = "text-slate-400 text-lg";
-                          icon = <Trophy size={18} fill="currentColor" className="text-slate-300"/>;
-                       } else if (index === 2) {
-                          rankStyle = "text-orange-400 text-lg";
-                          icon = <Trophy size={18} fill="currentColor" className="text-orange-300"/>;
-                       }
+                           if (index === 0) {
+                              rankStyle = "text-yellow-500 text-xl";
+                              bgStyle = "bg-yellow-50/50 hover:bg-yellow-50";
+                              icon = <Trophy size={16} fill="currentColor" className="text-yellow-400"/>;
+                           } else if (index === 1) {
+                              rankStyle = "text-slate-400 text-lg";
+                              icon = <Trophy size={14} fill="currentColor" className="text-slate-300"/>;
+                           } else if (index === 2) {
+                              rankStyle = "text-orange-400 text-lg";
+                              icon = <Trophy size={14} fill="currentColor" className="text-orange-300"/>;
+                           }
 
-                       return (
-                          <div key={user.id} className={`flex items-center p-4 border-b border-slate-100 last:border-0 transition-colors ${bgStyle}`}>
-                             <div className={`w-12 font-bold font-display text-center ${rankStyle}`}>
-                                {index + 1}
-                             </div>
-                             <div className="flex-1 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
-                                   {user.firstName[0]}
+                           return (
+                              <div key={user.id} className={`flex items-center p-4 border-b border-slate-100 last:border-0 transition-colors ${bgStyle}`}>
+                                 <div className={`w-8 font-bold font-display text-center ${rankStyle}`}>
+                                    {index + 1}
+                                 </div>
+                                 <div className="flex-1 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs">
+                                       {user.firstName[0]}
+                                    </div>
+                                    <div className="min-w-0">
+                                       <div className="font-bold text-slate-800 text-sm flex items-center gap-1 truncate">
+                                          {user.firstName} {user.lastName}
+                                          {icon}
+                                       </div>
+                                       <div className="text-[10px] text-slate-500 font-medium">{user.className}</div>
+                                    </div>
+                                 </div>
+                                 <div className="text-right">
+                                    <div className="font-bold text-brand-600 text-sm">{user.points} XP</div>
+                                 </div>
+                              </div>
+                           );
+                        })}
+                        {users.filter(u => u.role === 'STUDENT').length === 0 && (
+                            <div className="p-8 text-center text-slate-400 text-sm">Aún no hay alumnos.</div>
+                        )}
+                  </div>
+
+                  {/* COL 2: TOP BORROWED BOOKS */}
+                  <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden flex flex-col">
+                      <div className="bg-fun-green/10 p-4 border-b border-fun-green/20 flex items-center gap-2">
+                          <TrendingUp size={20} className="text-fun-green" />
+                          <h3 className="font-bold text-green-800">Más Leídos</h3>
+                      </div>
+                      {[...books]
+                         .sort((a, b) => b.readCount - a.readCount)
+                         .slice(0, 5)
+                         .map((book, index) => (
+                            <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                                <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
+                                <img src={book.coverUrl} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                                <div className="flex-1 ml-3 min-w-0">
+                                    <h4 className="font-bold text-slate-800 text-sm truncate">{book.title}</h4>
+                                    <p className="text-xs text-slate-500 truncate">{book.author}</p>
                                 </div>
-                                <div>
-                                   <div className="font-bold text-slate-800 flex items-center gap-2">
-                                      {user.firstName} {user.lastName}
-                                      {icon}
-                                   </div>
-                                   <div className="text-xs text-slate-500 font-medium">{user.className}</div>
+                                <div className="ml-2 flex flex-col items-center">
+                                    <span className="font-bold text-fun-green text-sm">{book.readCount}</span>
+                                    <span className="text-[10px] text-slate-400">veces</span>
                                 </div>
-                             </div>
-                             <div className="text-right">
-                                <div className="font-bold text-brand-600">{user.points} XP</div>
-                                <div className="text-xs text-slate-400">{user.booksRead} Libros</div>
-                             </div>
-                          </div>
-                       );
-                    })}
+                            </div>
+                         ))
+                      }
+                      {books.length === 0 && (
+                          <div className="p-8 text-center text-slate-400 text-sm">Aún no hay libros.</div>
+                      )}
+                  </div>
+
+                  {/* COL 3: TOP RATED BOOKS */}
+                  <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden flex flex-col">
+                      <div className="bg-fun-purple/10 p-4 border-b border-fun-purple/20 flex items-center gap-2">
+                          <Heart size={20} className="text-fun-purple" />
+                          <h3 className="font-bold text-purple-900">Mejor Valorados</h3>
+                      </div>
+                      {[...books]
+                         .filter(b => getBookRating(b.id) > 0) // Only show rated books
+                         .sort((a, b) => getBookRating(b.id) - getBookRating(a.id))
+                         .slice(0, 5)
+                         .map((book, index) => {
+                             const rating = getBookRating(book.id);
+                             return (
+                                <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                                    <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
+                                    <img src={book.coverUrl} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                                    <div className="flex-1 ml-3 min-w-0">
+                                        <h4 className="font-bold text-slate-800 text-sm truncate">{book.title}</h4>
+                                        <div className="flex items-center gap-1">
+                                           <div className="flex">
+                                               {[...Array(5)].map((_, i) => (
+                                                  <Star key={i} size={10} className={i < Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"} />
+                                               ))}
+                                           </div>
+                                        </div>
+                                    </div>
+                                    <div className="ml-2 font-bold text-slate-700 text-sm bg-slate-100 px-2 py-1 rounded-lg">
+                                        {rating.toFixed(1)}
+                                    </div>
+                                </div>
+                             );
+                         })
+                      }
+                       {[...books].filter(b => getBookRating(b.id) > 0).length === 0 && (
+                          <div className="p-8 text-center text-slate-400 text-sm">Aún no hay valoraciones.</div>
+                      )}
+                  </div>
+
               </div>
            </div>
         )}
