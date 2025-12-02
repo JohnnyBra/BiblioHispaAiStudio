@@ -6,7 +6,8 @@ const KEYS = {
   BOOKS: 'bibliohispa_books',
   TRANSACTIONS: 'bibliohispa_transactions',
   REVIEWS: 'bibliohispa_reviews',
-  SETTINGS: 'bibliohispa_settings'
+  SETTINGS: 'bibliohispa_settings',
+  ADMIN_PWD: 'bibliohispa_admin_pwd'
 };
 
 // Initial Mock Data
@@ -112,6 +113,9 @@ export const storageService = {
 
   getSettings: () => getStorage<AppSettings>(KEYS.SETTINGS, INITIAL_SETTINGS),
   setSettings: (settings: AppSettings) => setStorage(KEYS.SETTINGS, settings),
+
+  getAdminPassword: () => getStorage<string>(KEYS.ADMIN_PWD, 'admin123'),
+  setAdminPassword: (pwd: string) => setStorage(KEYS.ADMIN_PWD, pwd),
 };
 
 export const normalizeString = (str: string): string => {
