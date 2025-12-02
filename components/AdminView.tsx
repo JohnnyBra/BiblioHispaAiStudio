@@ -4,7 +4,7 @@ import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings
 import { normalizeString } from '../services/storageService';
 import { searchBookCover } from '../services/bookService';
 import { Button } from './Button';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon } from 'lucide-react';
 
 interface AdminViewProps {
   users: User[];
@@ -260,6 +260,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
     }
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setTempSettings({...tempSettings, logoUrl: e.target.result as string});
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateSettings(tempSettings);
@@ -273,7 +286,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
       <header className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
         <div className="flex items-center gap-4">
-          <img src={settings.logoUrl} alt="Logo" className="w-12 h-12 object-contain" />
+          <div className="w-16 h-16 p-2 border border-slate-100 rounded-xl flex items-center justify-center bg-slate-50">
+             <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+          </div>
           <div>
             <h1 className="text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
             <p className="text-slate-500">Gestionando {settings.schoolName}</p>
@@ -620,18 +635,44 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </div>
 
               <div>
-                 <label className="block text-sm font-bold text-slate-500 uppercase mb-2">URL del Logo del Colegio</label>
-                 <div className="flex gap-4 items-start">
-                    <img src={tempSettings.logoUrl} alt="Preview" className="w-16 h-16 object-contain bg-slate-50 rounded-lg border border-slate-200 p-1" />
-                    <div className="flex-1">
-                       <input 
-                          type="text" 
-                          className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none mb-2"
-                          value={tempSettings.logoUrl}
-                          onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
-                          placeholder="https://..."
-                       />
-                       <p className="text-xs text-slate-400">Pega aquí el enlace directo a la imagen de tu logo.</p>
+                 <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
+                 <div className="flex flex-col md:flex-row gap-4 items-start">
+                    <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
+                        <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                        {/* File Upload Option */}
+                        <div>
+                           <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
+                           <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
+                              <ImageIcon size={16} />
+                              <span>Elegir archivo...</span>
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                onChange={handleLogoUpload}
+                                className="hidden"
+                              />
+                           </label>
+                        </div>
+                        
+                        {/* URL Option Separator */}
+                        <div className="relative flex py-1 items-center">
+                            <div className="flex-grow border-t border-slate-100"></div>
+                            <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
+                            <div className="flex-grow border-t border-slate-100"></div>
+                        </div>
+
+                        {/* URL Input */}
+                        <div>
+                            <input 
+                                type="text" 
+                                className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm text-slate-600"
+                                value={tempSettings.logoUrl}
+                                onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
+                                placeholder="https://..."
+                            />
+                        </div>
                     </div>
                  </div>
               </div>
