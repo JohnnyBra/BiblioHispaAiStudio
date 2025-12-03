@@ -5,7 +5,8 @@ import { User, Book, Transaction, UserRole, Review, AppSettings } from './types'
 import { AdminView } from './components/AdminView';
 import { StudentView } from './components/StudentView';
 import { Button } from './components/Button';
-import { BookOpen } from 'lucide-react';
+import { QRScanner } from './components/QRScanner';
+import { BookOpen, QrCode } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global State ---
@@ -22,6 +23,7 @@ const App: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   // --- Initialization ---
   useEffect(() => {
@@ -64,6 +66,16 @@ const App: React.FC = () => {
       } else {
         setAuthError('Usuario no encontrado. Usa nombre.apellido');
       }
+    }
+  };
+
+  const handleQRLogin = (scannedText: string) => {
+    const student = users.find(u => u.username === scannedText.toLowerCase() && u.role === UserRole.STUDENT);
+    if (student) {
+      setCurrentUser(student);
+      setShowQRScanner(false);
+    } else {
+      alert("❌ Código QR no válido o usuario no encontrado.");
     }
   };
 
@@ -218,6 +230,23 @@ const App: React.FC = () => {
             </button>
           </div>
 
+          {!isAdminMode && (
+            <div className="mb-6">
+               <Button 
+                  onClick={() => setShowQRScanner(true)}
+                  className="w-full bg-slate-800 hover:bg-slate-900 text-white flex items-center justify-center gap-2 py-3 shadow-lg shadow-slate-300"
+               >
+                  <QrCode size={20} />
+                  Escanear Carnet
+               </Button>
+               <div className="relative flex py-4 items-center">
+                  <div className="flex-grow border-t border-slate-100"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-300 text-xs font-bold uppercase">O entra con tu nombre</span>
+                  <div className="flex-grow border-t border-slate-100"></div>
+               </div>
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
@@ -228,7 +257,7 @@ const App: React.FC = () => {
                 className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-700 bg-slate-50 focus:bg-white"
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
-                autoFocus
+                autoFocus={isAdminMode}
               />
             </div>
             
@@ -248,7 +277,7 @@ const App: React.FC = () => {
             {authError && <div className="text-red-500 text-sm font-medium text-center bg-red-50 p-2 rounded-lg">{authError}</div>}
 
             <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-brand-500/20" size="lg">
-              {isAdminMode ? 'Entrar al Panel' : '¡Empezar a Leer!'}
+              {isAdminMode ? 'Entrar al Panel' : 'Entrar'}
             </Button>
           </form>
 
@@ -256,6 +285,14 @@ const App: React.FC = () => {
              <p className="text-xs text-slate-400">Creado por <span className="font-bold text-brand-600">Javi Barrero</span></p>
           </div>
         </div>
+        
+        {/* QR SCANNER MODAL */}
+        {showQRScanner && (
+           <QRScanner 
+              onScanSuccess={handleQRLogin} 
+              onClose={() => setShowQRScanner(false)} 
+           />
+        )}
       </div>
     );
   }
@@ -294,7 +331,7 @@ const App: React.FC = () => {
       
       {/* Logout button for Admin specifically usually in header, but global logout helper */}
       {currentUser.role === UserRole.ADMIN && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-6 right-6 z-50 no-print">
            <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-lg">Cerrar Sesión</Button>
         </div>
       )}
