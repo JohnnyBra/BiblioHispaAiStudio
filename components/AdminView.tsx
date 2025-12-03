@@ -4,7 +4,8 @@ import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings
 import { normalizeString } from '../services/storageService';
 import { searchBookCover } from '../services/bookService';
 import { Button } from './Button';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key } from 'lucide-react';
+import { IDCard } from './IDCard';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer } from 'lucide-react';
 
 interface AdminViewProps {
   users: User[];
@@ -35,7 +36,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onUpdateSettings,
   onChangePassword
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'books' | 'reviews' | 'stats' | 'settings'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards'>('users');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Single Entry States
@@ -55,6 +56,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
   const [passwordSaved, setPasswordSaved] = useState(false);
+  
+  // ID Cards State
+  const [cardClassFilter, setCardClassFilter] = useState<string>('all');
   
   // Loading States
   const [isAddingBook, setIsAddingBook] = useState(false);
@@ -89,29 +93,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
       let importedCount = 0;
       
       // Strategy 1: Check for "Surname, Name" format (common in Spain)
-      // Checks if lines generally look like "Text, Text"
       const looksLikeSurnameCommaName = lines.slice(0, 5).every(l => l.includes(',') && !l.includes(';'));
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        // Skip obvious headers if they contain "Nombre" or "Apellido"
         if (line.toLowerCase().includes('nombre') && line.toLowerCase().includes('apellido')) continue;
 
         let firstName = '';
         let lastName = '';
 
         if (looksLikeSurnameCommaName) {
-           // FORMAT: "Apellidos, Nombre"
            const parts = line.split(',');
            if (parts.length >= 2) {
              lastName = parts[0].trim();
              firstName = parts[1].trim();
            }
         } else {
-           // FORMAT: CSV Columns (Default: Surname; Name OR Surname,Name)
-           // Support both comma and semicolon
            const parts = line.split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
-           // Assuming Col 0: Surnames, Col 1: Name (Standard list format in Spain)
            if (parts.length >= 2) {
              lastName = parts[0];
              firstName = parts[1];
@@ -119,7 +117,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
         }
 
         if (firstName && lastName) {
-           // Generate username ensuring order: name.lastname
            const generatedUsername = `${normalizeString(firstName)}.${normalizeString(lastName)}`;
 
            parsedUsers.push({
@@ -127,7 +124,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             firstName,
             lastName,
             username: generatedUsername,
-            className: targetClass, // Use the globally set class
+            className: targetClass, 
             role: UserRole.STUDENT,
             points: 0,
             booksRead: 0
@@ -139,13 +136,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
       if (parsedUsers.length > 0) {
         onAddUsers(parsedUsers);
         alert(`✅ Se han importado ${importedCount} alumnos a la clase "${targetClass}".`);
-        setImportClassName(''); // Reset class input
+        setImportClassName(''); 
       } else {
         alert("⚠️ No se pudieron leer usuarios. Asegúrate del formato: 'Apellidos, Nombre'");
       }
     };
     
-    // Use selected encoding (defaults to windows-1252 for ANSI/Excel)
     reader.readAsText(file, csvEncoding);
     
     if (userFileInputRef.current) userFileInputRef.current.value = '';
@@ -169,7 +165,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       for (let i = startIndex; i < lines.length; i++) {
         const parts = lines[i].split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
         
-        if (parts.length >= 2) { // Allow importing with just Title, Author
+        if (parts.length >= 2) { 
           const title = parts[0];
           const author = parts[1];
           const genre = parts[2] || 'General';
@@ -177,7 +173,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
           const shelf = parts[4] || 'Recepción';
 
           if (title) {
-            // Create promise to fetch cover
             const p = searchBookCover(title, author).then(coverUrl => {
                parsedBooks.push({
                 id: `book-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
@@ -203,7 +198,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
       alert(`✅ Se han importado ${parsedBooks.length} libros con sus portadas.`);
     };
     
-    // Use selected encoding (defaults to windows-1252 for ANSI/Excel)
     reader.readAsText(file, csvEncoding);
 
     if (bookFileInputRef.current) bookFileInputRef.current.value = '';
@@ -255,7 +249,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handleUpdateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser && onUpdateUser) {
-      // Regenerate username in case names changed
       const updatedUser = {
         ...editingUser,
         username: `${normalizeString(editingUser.firstName)}.${normalizeString(editingUser.lastName)}`
@@ -302,11 +295,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setTimeout(() => setPasswordSaved(false), 2000);
   };
 
+  const handlePrintCards = () => {
+    window.print();
+  };
+
+  const availableClasses = Array.from(new Set(users.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort();
+
   // --- Render ---
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-      <header className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+      <header className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 p-2 border border-slate-100 rounded-xl flex items-center justify-center bg-slate-50">
              <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
@@ -317,34 +316,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap justify-center">
-          <Button 
-            variant={activeTab === 'users' ? 'primary' : 'outline'} 
-            onClick={() => setActiveTab('users')}
-          >
+          <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')}>
             <Users size={18} /> Usuarios
           </Button>
-          <Button 
-            variant={activeTab === 'books' ? 'primary' : 'outline'} 
-            onClick={() => setActiveTab('books')}
-          >
+          <Button variant={activeTab === 'books' ? 'primary' : 'outline'} onClick={() => setActiveTab('books')}>
             <BookOpen size={18} /> Libros
           </Button>
-          <Button 
-            variant={activeTab === 'reviews' ? 'primary' : 'outline'} 
-            onClick={() => setActiveTab('reviews')}
-          >
+          <Button variant={activeTab === 'reviews' ? 'primary' : 'outline'} onClick={() => setActiveTab('reviews')}>
             <MessageSquare size={18} /> Opiniones
           </Button>
-           <Button 
-            variant={activeTab === 'stats' ? 'primary' : 'outline'} 
-            onClick={() => setActiveTab('stats')}
-          >
+           <Button variant={activeTab === 'stats' ? 'primary' : 'outline'} onClick={() => setActiveTab('stats')}>
             <BarChart3 size={18} /> Estadísticas
           </Button>
-          <Button 
-            variant={activeTab === 'settings' ? 'primary' : 'outline'} 
-            onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}
-          >
+          <Button variant={activeTab === 'cards' ? 'primary' : 'outline'} onClick={() => setActiveTab('cards')}>
+            <CreditCard size={18} /> Carnets
+          </Button>
+          <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
             <Settings size={18} />
           </Button>
         </div>
@@ -422,11 +409,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
              {/* CSV Import */}
              <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
                <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV</h3>
-               <p className="text-sm text-brand-600 mb-4 leading-relaxed">
-                 1. Escribe la clase abajo.<br/>
-                 2. Sube la lista (formato: <strong>Apellidos, Nombre</strong>).
-               </p>
-               
                <div className="mb-4">
                   <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
                   <input 
@@ -532,11 +514,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
              {/* CSV Import */}
              <div className="bg-fun-purple/10 p-6 rounded-3xl border border-fun-purple/20">
                <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
-               <p className="text-sm text-purple-600 mb-4">
-                 Sube tu catálogo en CSV. <br/>
-                 <strong>Orden:</strong> Título, Autor, Género, Unidades, Estante
-               </p>
-
                <div className="mb-4">
                   <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación del Archivo</label>
                   <select 
@@ -640,6 +617,55 @@ export const AdminView: React.FC<AdminViewProps> = ({
          </div>
       )}
 
+      {/* CARDS TAB */}
+      {activeTab === 'cards' && (
+        <div className="space-y-6">
+           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
+               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold font-display text-slate-800">Carnets Escolares</h2>
+                    <p className="text-slate-500">Genera e imprime los carnets con código QR</p>
+                  </div>
+                  <div className="flex gap-4">
+                      <select 
+                         className="p-2 border border-slate-200 rounded-xl bg-slate-50 text-slate-700 font-medium outline-none focus:ring-2 focus:ring-brand-500"
+                         value={cardClassFilter}
+                         onChange={(e) => setCardClassFilter(e.target.value)}
+                      >
+                         <option value="all">Todas las Clases</option>
+                         {availableClasses.map(cls => (
+                           <option key={cls} value={cls}>Clase {cls}</option>
+                         ))}
+                      </select>
+                      <Button onClick={handlePrintCards} className="flex items-center gap-2">
+                         <Printer size={18} /> Imprimir Carnets
+                      </Button>
+                  </div>
+               </div>
+           </div>
+
+           <div className="print-area bg-white p-4 rounded-3xl min-h-[500px]" id="printable-carnets">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 print:grid-cols-2 print:gap-2">
+                 {users
+                    .filter(u => u.role === UserRole.STUDENT)
+                    .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
+                    .map(user => (
+                       <IDCard 
+                          key={user.id} 
+                          user={user} 
+                          schoolName={settings.schoolName}
+                          logoUrl={settings.logoUrl}
+                       />
+                    ))
+                 }
+                 {users.filter(u => u.role === UserRole.STUDENT).length === 0 && (
+                   <p className="col-span-full text-center py-20 text-slate-400 no-print">No hay alumnos para generar carnets.</p>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* Settings Tab */}
       {activeTab === 'settings' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -664,7 +690,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
                         </div>
                         <div className="flex-1 space-y-3">
-                            {/* File Upload Option */}
                             <div>
                               <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
                               <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
@@ -678,15 +703,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   />
                               </label>
                             </div>
-                            
-                            {/* URL Option Separator */}
                             <div className="relative flex py-1 items-center">
                                 <div className="flex-grow border-t border-slate-100"></div>
                                 <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
                                 <div className="flex-grow border-t border-slate-100"></div>
                             </div>
-
-                            {/* URL Input */}
                             <div>
                                 <input 
                                     type="text" 
@@ -712,7 +733,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </form>
            </div>
 
-           {/* Security Settings */}
            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 h-fit">
               <div className="flex items-center gap-2 mb-6 text-slate-800">
                 <Lock className="text-brand-600" size={24}/>
@@ -768,7 +788,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* EDIT USER MODAL */}
       {editingUser && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm no-print">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl transform transition-all scale-100">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold font-display text-slate-800">Editar Alumno</h3>
