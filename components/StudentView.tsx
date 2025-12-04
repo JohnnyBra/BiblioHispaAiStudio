@@ -1,8 +1,9 @@
+
 import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 import { getBookDetails, BookDetails } from '../services/bookService';
 
@@ -37,7 +38,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
   onLogout,
   onAddReview
 }) => {
-  const [activeTab, setActiveTab] = React.useState<'catalog' | 'mybooks' | 'ranking'>('catalog');
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'mybooks' | 'ranking' | 'history'>('catalog');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedGenre, setSelectedGenre] = React.useState<string>('Todos');
   const [selectedAge, setSelectedAge] = React.useState<string>('Todos');
@@ -126,6 +127,11 @@ export const StudentView: React.FC<StudentViewProps> = ({
     
   const myBooks = books.filter(b => myActiveTransactionIds.includes(b.id));
 
+  // Get my history
+  const myHistoryTransactions = transactions
+    .filter(t => t.userId === currentUser.id)
+    .sort((a, b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime());
+
   // Handle Review Submission
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,24 +215,30 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
         
         {/* Navigation Tabs */}
-        <div className="flex justify-center mb-6">
-          <div className="bg-white p-1 rounded-2xl shadow-sm border border-slate-100 inline-flex">
+        <div className="flex justify-center mb-6 overflow-x-auto no-scrollbar">
+          <div className="bg-white p-1 rounded-2xl shadow-sm border border-slate-100 inline-flex whitespace-nowrap">
             <button 
               onClick={() => setActiveTab('catalog')}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
             >
               Catálogo
             </button>
             <button 
               onClick={() => setActiveTab('mybooks')}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'mybooks' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'mybooks' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
             >
               Mis Libros 
               {myBooks.length > 0 && <span className="bg-white text-brand-600 text-xs px-1.5 rounded-full">{myBooks.length}</span>}
             </button>
             <button 
+              onClick={() => setActiveTab('history')}
+              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+            >
+              Historial
+            </button>
+            <button 
               onClick={() => setActiveTab('ranking')}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'ranking' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'ranking' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
             >
               Rankings
             </button>
@@ -482,6 +494,62 @@ export const StudentView: React.FC<StudentViewProps> = ({
            </div>
         )}
 
+        {/* --- History Tab --- */}
+        {activeTab === 'history' && (
+           <div className="space-y-6 animate-fade-in">
+              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                 <History size={24} className="text-slate-400"/>
+                 Historial de Lecturas
+              </h2>
+              {myHistoryTransactions.length > 0 ? (
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {myHistoryTransactions.map(tx => {
+                       const book = books.find(b => b.id === tx.bookId);
+                       if (!book) return null; // Should not happen
+
+                       return (
+                          <div key={tx.id} className={`bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-center transition-all hover:shadow-md ${tx.active ? 'ring-2 ring-brand-100' : 'opacity-80 hover:opacity-100'}`}>
+                             <div className="w-14 h-20 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden">
+                                {book.coverUrl ? (
+                                   <img src={book.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                                ) : (
+                                   <div className="w-full h-full bg-slate-200 flex items-center justify-center text-[10px] p-1 text-center font-bold text-slate-400">{book.title}</div>
+                                )}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-slate-800 text-sm truncate">{book.title}</h4>
+                                <p className="text-xs text-slate-500 truncate mb-2">{book.author}</p>
+                                
+                                <div className="space-y-1">
+                                   <div className="flex items-center gap-2 text-[10px]">
+                                      <span className="bg-green-50 text-green-700 font-bold px-1.5 py-0.5 rounded">Sacado:</span>
+                                      <span className="text-slate-600 font-mono">{new Date(tx.dateBorrowed).toLocaleDateString()}</span>
+                                   </div>
+                                   {tx.active ? (
+                                      <div className="flex items-center gap-2 text-[10px]">
+                                         <span className="bg-brand-50 text-brand-700 font-bold px-1.5 py-0.5 rounded animate-pulse">Leyendo...</span>
+                                      </div>
+                                   ) : (
+                                      <div className="flex items-center gap-2 text-[10px]">
+                                         <span className="bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">Devuelto:</span>
+                                         <span className="text-slate-600 font-mono">{tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}</span>
+                                      </div>
+                                   )}
+                                </div>
+                             </div>
+                          </div>
+                       );
+                    })}
+                 </div>
+              ) : (
+                 <div className="p-10 text-center text-slate-400 bg-white rounded-3xl border border-slate-100">
+                    <History size={48} className="mx-auto mb-4 opacity-50"/>
+                    <p>Aún no has sacado ningún libro. ¡Tu historia empieza hoy!</p>
+                 </div>
+              )}
+           </div>
+        )}
+
         {/* --- Ranking Tab --- */}
         {activeTab === 'ranking' && (
            <div className="space-y-8 animate-fade-in">
@@ -720,4 +788,94 @@ export const StudentView: React.FC<StudentViewProps> = ({
                      <div className="flex flex-col">
                         <span className="text-[10px] uppercase font-bold text-slate-400">Publicado</span>
                         <span className="text-sm font-bold text-slate-700 flex items-center gap-1">
-                           <Calendar size={14}/> {isLoadingDetails ? '...' : bookDetails?.publishedDate?.split('-')[0
+                           <Calendar size={14}/> {isLoadingDetails ? '...' : bookDetails?.publishedDate?.split('-')[0] || '?'}
+                        </span>
+                     </div>
+                  </div>
+
+                  <div>
+                     <h3 className="text-sm font-bold text-slate-700 uppercase mb-2">Sinopsis</h3>
+                     {isLoadingDetails ? (
+                        <div className="space-y-2 animate-pulse">
+                           <div className="h-2 bg-slate-100 rounded w-full"></div>
+                           <div className="h-2 bg-slate-100 rounded w-5/6"></div>
+                           <div className="h-2 bg-slate-100 rounded w-4/6"></div>
+                        </div>
+                     ) : (
+                        <p className="text-sm text-slate-600 leading-relaxed max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                           {bookDetails?.description || "No hay descripción disponible."}
+                        </p>
+                     )}
+                  </div>
+
+                  <div className="pt-4 mt-auto">
+                     {/* If it's available, show borrow button, otherwise show stock */}
+                     {viewingBook.unitsAvailable > 0 && !myActiveTransactionIds.includes(viewingBook.id) ? (
+                        <Button className="w-full" onClick={() => { onBorrow(viewingBook); setViewingBook(null); }}>
+                           <Bookmark size={18} /> ¡Quiero leerlo!
+                        </Button>
+                     ) : (
+                         <div className="text-center text-sm font-bold text-slate-400 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            {myActiveTransactionIds.includes(viewingBook.id) ? 'Ya tienes este libro' : 'No disponible para préstamo'}
+                         </div>
+                     )}
+                  </div>
+               </div>
+            </div>
+         </div>
+      )}
+
+      {/* --- REVIEW MODAL --- */}
+      {reviewingBook && (
+         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+               <button 
+                  onClick={() => setReviewingBook(null)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+               >
+                  <X size={24} />
+               </button>
+               
+               <div className="text-center mb-6">
+                  <div className="w-16 h-24 mx-auto mb-3 rounded-lg overflow-hidden shadow-sm bg-slate-100">
+                     <img src={reviewingBook.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                  </div>
+                  <h3 className="font-bold text-lg text-slate-800 leading-tight">{reviewingBook.title}</h3>
+                  <p className="text-sm text-slate-500">¿Qué te ha parecido?</p>
+               </div>
+
+               <form onSubmit={handleSubmitReview} className="space-y-4">
+                  <div className="flex justify-center gap-2">
+                     {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                           key={star}
+                           type="button"
+                           onClick={() => setReviewRating(star)}
+                           className="transform transition-transform hover:scale-110 focus:outline-none"
+                        >
+                           <Star 
+                              size={32} 
+                              className={star <= reviewRating ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"}
+                           />
+                        </button>
+                     ))}
+                  </div>
+                  
+                  <textarea 
+                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-slate-900"
+                     rows={4}
+                     placeholder="Escribe tu opinión aquí... (Opcional)"
+                     value={reviewComment}
+                     onChange={(e) => setReviewComment(e.target.value)}
+                  />
+
+                  <Button type="submit" className="w-full">
+                     Enviar Opinión
+                  </Button>
+               </form>
+            </div>
+         </div>
+      )}
+    </div>
+  );
+};

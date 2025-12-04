@@ -1,5 +1,6 @@
 export enum UserRole {
-  ADMIN = 'ADMIN',
+  SUPERADMIN = 'SUPERADMIN', // Director / IT
+  ADMIN = 'ADMIN',           // Teachers
   STUDENT = 'STUDENT'
 }
 
@@ -8,7 +9,8 @@ export interface User {
   firstName: string;
   lastName: string;
   username: string; // generated: firstname.lastname
-  className: string; // e.g., "1A", "2B"
+  password?: string; // Only for ADMIN/SUPERADMIN
+  className: string; // e.g., "1A", "2B", "STAFF"
   role: UserRole;
   points: number;
   booksRead: number;
@@ -79,12 +81,4 @@ export interface RawBookImport {
   genero: string;
   unidades: number;
   estanteria: string;
-}
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
-    }
-  }
 }

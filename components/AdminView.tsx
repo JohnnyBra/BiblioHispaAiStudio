@@ -1,14 +1,15 @@
 
 import * as React from 'react';
-import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory } from '../types';
+import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction } from '../types';
 import { normalizeString } from '../services/storageService';
 import { searchBookCover, determineBookAge } from '../services/bookService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock } from 'lucide-react';
 
 interface AdminViewProps {
+  currentUser: User; // The currently logged in admin/superadmin
   users: User[];
   books: Book[];
   reviews?: Review[];
@@ -21,13 +22,19 @@ interface AdminViewProps {
   onUpdateUser?: (updatedUser: User) => void;
   onDeleteReview?: (id: string) => void;
   onUpdateSettings: (settings: AppSettings) => void;
-  onChangePassword: (newPassword: string) => void;
   onShowToast: (message: string, type: ToastType) => void;
   onAddPoints: (userId: string, amount: number, reason: string) => void;
   onDeletePointEntry: (entryId: string) => void;
+  // We need transactions prop to show history
+  transactions?: Transaction[]; 
 }
 
+// Need to update the props usage. Since Transaction wasn't in original props of AdminView in previous file, 
+// we assume it is passed. If not, we should default to empty array or ask for it.
+// Assuming parent passes transactions now.
+
 export const AdminView: React.FC<AdminViewProps> = ({
+  currentUser,
   users,
   books,
   reviews = [],
@@ -40,17 +47,18 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onUpdateUser,
   onDeleteReview,
   onUpdateSettings,
-  onChangePassword,
   onShowToast,
   onAddPoints,
-  onDeletePointEntry
+  onDeletePointEntry,
+  transactions = []
 }) => {
-  const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards'>('users');
+  const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards' | 'teachers' | 'history'>('users');
   const [searchTerm, setSearchTerm] = React.useState('');
   
   // Single Entry States
   const [newUser, setNewUser] = React.useState({ name: '', lastname: '', className: '' });
   const [newBook, setNewBook] = React.useState({ title: '', author: '', genre: '', units: 1, shelf: '', age: '' });
+  const [newTeacher, setNewTeacher] = React.useState({ name: '', username: '', password: '' });
   
   // Import Config State
   const [importClassName, setImportClassName] = React.useState('');
@@ -80,6 +88,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [loadingProgress, setLoadingProgress] = React.useState(0);
   const [loadingMessage, setLoadingMessage] = React.useState('');
 
+  const isSuperAdmin = currentUser.role === UserRole.SUPERADMIN;
+
   // References for file inputs
   const userFileInputRef = React.useRef<HTMLInputElement>(null);
   const bookFileInputRef = React.useRef<HTMLInputElement>(null);
@@ -90,10 +100,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate Class Name Input
     if (!importClassName.trim()) {
       onShowToast("⚠️ Por favor, escribe el nombre de la CLASE antes de subir el archivo.", "error");
-      if (userFileInputRef.current) userFileInputRef.current.value = ''; // Reset input
+      if (userFileInputRef.current) userFileInputRef.current.value = ''; 
       return;
     }
 
@@ -108,7 +117,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
       const targetClass = importClassName.trim();
       let importedCount = 0;
       
-      // Strategy 1: Check for "Surname, Name" format (common in Spain)
       const looksLikeSurnameCommaName = lines.slice(0, 5).every(l => l.includes(',') && !l.includes(';'));
 
       for (let i = 0; i < lines.length; i++) {
@@ -134,7 +142,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
         if (firstName && lastName) {
            const generatedUsername = `${normalizeString(firstName)}.${normalizeString(lastName)}`;
-
            parsedUsers.push({
             id: `user-${Date.now()}-${i}-${Math.random().toString(36).substr(2,4)}`,
             firstName,
@@ -157,9 +164,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
         onShowToast("⚠️ No se pudieron leer usuarios. Verifica el formato.", "error");
       }
     };
-    
     reader.readAsText(file, csvEncoding);
-    
     if (userFileInputRef.current) userFileInputRef.current.value = '';
   };
 
@@ -177,10 +182,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
       const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
       const startIndex = lines[0].toLowerCase().includes('titulo') ? 1 : 0;
       const totalToProcess = lines.length - startIndex;
-      
       const parsedBooks: Book[] = [];
       
-      // We process sequentially to provide accurate progress bar
       for (let i = startIndex; i < lines.length; i++) {
         const parts = lines[i].split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
         
@@ -193,12 +196,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
           const ageFromCsv = parts[5] || '';
 
           if (title) {
-            // Update Progress UI
             setLoadingProgress(Math.round(((i - startIndex) / totalToProcess) * 100));
             setLoadingMessage(`Procesando (${i - startIndex + 1}/${totalToProcess}): "${title}"`);
             
             try {
-                // Fetch Metadata with detailed visual feedback
                 const coverUrl = await searchBookCover(title, author);
                 const recommendedAge = ageFromCsv || await determineBookAge(title, author);
                 
@@ -210,7 +211,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   unitsTotal: units,
                   unitsAvailable: units,
                   shelf,
-                  coverUrl: coverUrl || undefined, // undefined triggers CSS fallback
+                  coverUrl: coverUrl || undefined,
                   readCount: 0,
                   recommendedAge
                 });
@@ -220,16 +221,13 @@ export const AdminView: React.FC<AdminViewProps> = ({
           }
         }
       }
-
       setIsImportingBooks(false);
       setLoadingProgress(100);
       setLoadingMessage("¡Completado!");
       onAddBooks(parsedBooks);
       onShowToast(`✅ Se han importado ${parsedBooks.length} libros correctamente.`, "success");
     };
-    
     reader.readAsText(file, csvEncoding);
-
     if (bookFileInputRef.current) bookFileInputRef.current.value = '';
   };
 
@@ -252,10 +250,40 @@ export const AdminView: React.FC<AdminViewProps> = ({
     onShowToast(`Usuario ${user.firstName} creado`, "success");
   };
 
+  const handleAddTeacher = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSuperAdmin) return;
+    if (!newTeacher.name || !newTeacher.username || !newTeacher.password) {
+        onShowToast("Todos los campos son obligatorios", "error");
+        return;
+    }
+
+    // Check username uniqueness
+    if (users.some(u => u.username === newTeacher.username)) {
+        onShowToast("Ese nombre de usuario ya existe.", "error");
+        return;
+    }
+
+    const teacher: User = {
+        id: `admin-${Date.now()}`,
+        firstName: newTeacher.name,
+        lastName: '(Profesor)',
+        username: newTeacher.username,
+        password: newTeacher.password,
+        className: 'PROFESORADO',
+        role: UserRole.ADMIN, // Create as regular admin (teacher)
+        points: 0,
+        booksRead: 0
+    };
+    
+    onAddUsers([teacher]);
+    setNewTeacher({ name: '', username: '', password: '' });
+    onShowToast(`Profesor ${teacher.firstName} creado correctamente.`, "success");
+  };
+
   const handleAddSingleBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBook.title || !newBook.author) return;
-
     setIsAddingBook(true);
     setLoadingMessage("Buscando portada y datos...");
     
@@ -274,7 +302,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
       readCount: 0,
       recommendedAge: finalAge
     };
-    
     onAddBooks([book]);
     setIsAddingBook(false);
     setNewBook({ title: '', author: '', genre: '', units: 1, shelf: '', age: '' });
@@ -284,9 +311,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handleUpdateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser && onUpdateUser) {
+      // Allow updating class, name, etc.
       const updatedUser = {
         ...editingUser,
-        username: `${normalizeString(editingUser.firstName)}.${normalizeString(editingUser.lastName)}`
+        username: editingUser.role === UserRole.STUDENT 
+           ? `${normalizeString(editingUser.firstName)}.${normalizeString(editingUser.lastName)}`
+           : editingUser.username // Don't regen teacher username automatically to avoid login issues
       };
       onUpdateUser(updatedUser);
       setEditingUser(null);
@@ -307,9 +337,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (e.target?.result) {
-          setTempSettings({...tempSettings, logoUrl: e.target.result as string});
-        }
+        if (e.target?.result) setTempSettings({...tempSettings, logoUrl: e.target.result as string});
       };
       reader.readAsDataURL(file);
     }
@@ -332,16 +360,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
       onShowToast("Las contraseñas no coinciden.", "error");
       return;
     }
-    onChangePassword(newAdminPassword);
-    setNewAdminPassword('');
-    setConfirmAdminPassword('');
-    setPasswordSaved(true);
-    setTimeout(() => setPasswordSaved(false), 2000);
+    
+    // Update the current logged in user's password
+    if (onUpdateUser) {
+        const updatedMe = { ...currentUser, password: newAdminPassword };
+        onUpdateUser(updatedMe);
+        
+        // Clear local inputs
+        setNewAdminPassword('');
+        setConfirmAdminPassword('');
+        setPasswordSaved(true);
+        setTimeout(() => setPasswordSaved(false), 2000);
+    }
   };
 
-  const handlePrintCards = () => {
-    window.print();
-  };
+  const handlePrintCards = () => window.print();
 
   const availableClasses = Array.from(new Set(users.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort();
 
@@ -356,12 +389,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </div>
           <div>
             <h1 className="text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
-            <p className="text-slate-500">Gestionando {settings.schoolName}</p>
+            <p className="text-slate-500">
+               {settings.schoolName} • <span className="text-brand-600 font-bold">{isSuperAdmin ? 'SuperAdmin' : 'Profesor'}</span>
+            </p>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap justify-center">
+          {isSuperAdmin && (
+             <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')}>
+               <Shield size={18} /> Profesores
+             </Button>
+          )}
           <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')}>
-            <Users size={18} /> Usuarios
+            <Users size={18} /> Alumnos
           </Button>
           <Button variant={activeTab === 'books' ? 'primary' : 'outline'} onClick={() => setActiveTab('books')}>
             <BookOpen size={18} /> Libros
@@ -369,17 +409,75 @@ export const AdminView: React.FC<AdminViewProps> = ({
           <Button variant={activeTab === 'reviews' ? 'primary' : 'outline'} onClick={() => setActiveTab('reviews')}>
             <MessageSquare size={18} /> Opiniones
           </Button>
+          <Button variant={activeTab === 'history' ? 'primary' : 'outline'} onClick={() => setActiveTab('history')}>
+            <Clock size={18} /> Historial
+          </Button>
            <Button variant={activeTab === 'stats' ? 'primary' : 'outline'} onClick={() => setActiveTab('stats')}>
             <BarChart3 size={18} /> Estadísticas
           </Button>
           <Button variant={activeTab === 'cards' ? 'primary' : 'outline'} onClick={() => setActiveTab('cards')}>
             <CreditCard size={18} /> Carnets
           </Button>
+          
           <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
             <Settings size={18} />
           </Button>
         </div>
       </header>
+
+      {/* Teachers Tab (SuperAdmin Only) */}
+      {activeTab === 'teachers' && isSuperAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+           <div className="lg:col-span-2 space-y-6">
+             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Profesores Administradores</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                                <th className="p-3">Nombre</th>
+                                <th className="p-3">Usuario</th>
+                                <th className="p-3">Contraseña</th>
+                                <th className="p-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                            {users.filter(u => u.role === UserRole.ADMIN).map(teacher => (
+                                <tr key={teacher.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                    <td className="p-3 font-medium">{teacher.firstName}</td>
+                                    <td className="p-3 font-mono text-brand-600">{teacher.username}</td>
+                                    <td className="p-3 font-mono text-slate-400">••••••</td>
+                                    <td className="p-3 flex justify-end">
+                                        <button onClick={() => onDeleteUser(teacher.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {users.filter(u => u.role === UserRole.ADMIN).length === 0 && (
+                        <p className="p-4 text-center text-slate-400 text-sm">No hay profesores añadidos.</p>
+                    )}
+                </div>
+             </div>
+           </div>
+           
+           <div className="space-y-6">
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                 <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
+                 <form onSubmit={handleAddTeacher} className="space-y-3">
+                    <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
+                    <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Usuario (ej: profe.juan)" value={newTeacher.username} onChange={e => setNewTeacher({...newTeacher, username: e.target.value})} />
+                    <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" type="password" placeholder="Contraseña" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} />
+                    <Button type="submit" className="w-full">
+                        <UserPlus size={18}/> Crear Profesor
+                    </Button>
+                 </form>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Users Tab */}
       {activeTab === 'users' && (
@@ -424,7 +522,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           <button onClick={() => setManagingPointsUser(user)} className="text-fun-orange hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors" title="Gestionar Puntos">
                             <Trophy size={16} />
                           </button>
-                           <button onClick={() => setEditingUser(user)} className="text-brand-400 hover:text-brand-600 p-2 hover:bg-brand-50 rounded-lg transition-colors" title="Editar">
+                           <button onClick={() => setEditingUser(user)} className="text-brand-400 hover:text-brand-600 p-2 hover:bg-brand-50 rounded-lg transition-colors" title="Editar Clase/Datos">
                             <Edit2 size={16} />
                           </button>
                           <button onClick={() => onDeleteUser(user.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
@@ -633,13 +731,87 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       )}
 
+      {/* History Tab (NEW) */}
+      {activeTab === 'history' && (
+         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+            <div className="flex justify-between items-center mb-6">
+               <h2 className="text-xl font-bold font-display text-slate-700">Historial Completo de Préstamos</h2>
+               <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Buscar por alumno o libro..." 
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                </div>
+            </div>
+            
+            <div className="overflow-x-auto">
+               <table className="w-full text-left border-collapse">
+                  <thead>
+                     <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                        <th className="p-3">Alumno</th>
+                        <th className="p-3">Libro</th>
+                        <th className="p-3">Fecha Préstamo</th>
+                        <th className="p-3">Fecha Devolución</th>
+                        <th className="p-3">Estado</th>
+                     </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                     {[...transactions]
+                        .sort((a, b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime())
+                        .filter(tx => {
+                           const u = users.find(u => u.id === tx.userId);
+                           const b = books.find(b => b.id === tx.bookId);
+                           const search = searchTerm.toLowerCase();
+                           if (!u || !b) return false;
+                           return u.firstName.toLowerCase().includes(search) || 
+                                  u.lastName.toLowerCase().includes(search) || 
+                                  b.title.toLowerCase().includes(search);
+                        })
+                        .map(tx => {
+                           const user = users.find(u => u.id === tx.userId);
+                           const book = books.find(b => b.id === tx.bookId);
+                           
+                           return (
+                              <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                 <td className="p-3">
+                                    <div className="font-bold text-slate-700">{user ? `${user.firstName} ${user.lastName}` : 'Usuario Borrado'}</div>
+                                    <div className="text-xs text-slate-400">{user?.className || '-'}</div>
+                                 </td>
+                                 <td className="p-3 font-medium text-slate-700">{book ? book.title : 'Libro Borrado'}</td>
+                                 <td className="p-3 text-slate-600">{new Date(tx.dateBorrowed).toLocaleDateString()}</td>
+                                 <td className="p-3 text-slate-600">
+                                    {tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}
+                                 </td>
+                                 <td className="p-3">
+                                    {tx.active ? (
+                                       <span className="bg-brand-50 text-brand-700 text-xs font-bold px-2 py-1 rounded">Activo</span>
+                                    ) : (
+                                       <span className="bg-green-50 text-green-700 text-xs font-bold px-2 py-1 rounded">Devuelto</span>
+                                    )}
+                                 </td>
+                              </tr>
+                           );
+                        })
+                     }
+                  </tbody>
+               </table>
+               {transactions.length === 0 && (
+                  <p className="p-10 text-center text-slate-400">No hay historial de transacciones.</p>
+               )}
+            </div>
+         </div>
+      )}
+
       {/* Reviews Tab */}
       {activeTab === 'reviews' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
            <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold font-display text-slate-700">Opiniones y Reseñas</h2>
            </div>
-           
            {reviews.length === 0 ? (
              <div className="text-center py-10 text-slate-400">
                <MessageSquare size={48} className="mx-auto mb-2 opacity-50"/>
@@ -728,7 +900,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                </div>
            </div>
 
-           {/* Printable Container: Must correspond to ID in CSS */}
            <div id="printable-area" className="bg-white p-4 rounded-3xl min-h-[500px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {users
                  .filter(u => u.role === UserRole.STUDENT)
@@ -752,79 +923,86 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* Settings Tab */}
       {activeTab === 'settings' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-              <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">Configuración General</h2>
-              
-              <form onSubmit={handleSaveSettings} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
-                    <input 
-                        type="text" 
-                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                        value={tempSettings.schoolName}
-                        onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
-                    />
-                  </div>
+           {isSuperAdmin ? (
+               <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">Configuración General</h2>
+                  <form onSubmit={handleSaveSettings} className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
+                        <input 
+                            type="text" 
+                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                            value={tempSettings.schoolName}
+                            onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
-                    <div className="flex flex-col md:flex-row gap-4 items-start">
-                        <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
-                            <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                      <div>
+                        <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
+                        <div className="flex flex-col md:flex-row gap-4 items-start">
+                            <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
+                                <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                            </div>
+                            <div className="flex-1 space-y-3">
+                                <div>
+                                  <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
+                                  <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
+                                      <ImageIcon size={16} />
+                                      <span>Elegir archivo...</span>
+                                      <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={handleLogoUpload}
+                                        className="hidden"
+                                      />
+                                  </label>
+                                </div>
+                                <div className="relative flex py-1 items-center">
+                                    <div className="flex-grow border-t border-slate-100"></div>
+                                    <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
+                                    <div className="flex-grow border-t border-slate-100"></div>
+                                </div>
+                                <div>
+                                    <input 
+                                        type="text" 
+                                        className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm bg-white text-slate-900"
+                                        value={tempSettings.logoUrl}
+                                        onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex-1 space-y-3">
-                            <div>
-                              <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
-                              <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
-                                  <ImageIcon size={16} />
-                                  <span>Elegir archivo...</span>
-                                  <input 
-                                    type="file" 
-                                    accept="image/*"
-                                    onChange={handleLogoUpload}
-                                    className="hidden"
-                                  />
-                              </label>
-                            </div>
-                            <div className="relative flex py-1 items-center">
-                                <div className="flex-grow border-t border-slate-100"></div>
-                                <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
-                                <div className="flex-grow border-t border-slate-100"></div>
-                            </div>
-                            <div>
-                                <input 
-                                    type="text" 
-                                    className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm bg-white text-slate-900"
-                                    value={tempSettings.logoUrl}
-                                    onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
-                                    placeholder="https://..."
-                                />
-                            </div>
-                        </div>
-                    </div>
-                  </div>
+                      </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex justify-end">
-                    <Button type="submit" variant="primary" disabled={settingsSaved}>
-                        {settingsSaved ? (
-                          <span className="flex items-center gap-2"><Check size={18} /> Guardado</span>
-                        ) : (
-                          <span className="flex items-center gap-2"><Save size={18} /> Guardar Configuración</span>
-                        )}
-                    </Button>
-                  </div>
-              </form>
-           </div>
+                      <div className="pt-4 border-t border-slate-100 flex justify-end">
+                        <Button type="submit" variant="primary" disabled={settingsSaved}>
+                            {settingsSaved ? (
+                              <span className="flex items-center gap-2"><Check size={18} /> Guardado</span>
+                            ) : (
+                              <span className="flex items-center gap-2"><Save size={18} /> Guardar Configuración</span>
+                            )}
+                        </Button>
+                      </div>
+                  </form>
+               </div>
+           ) : (
+               <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 text-center">
+                   <Shield className="w-12 h-12 text-slate-300 mx-auto mb-4"/>
+                   <h3 className="text-lg font-bold text-slate-600">Acceso Restringido</h3>
+                   <p className="text-slate-400 text-sm">Solo el SuperAdmin puede modificar la configuración global del colegio.</p>
+               </div>
+           )}
 
            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 h-fit">
               <div className="flex items-center gap-2 mb-6 text-slate-800">
                 <Lock className="text-brand-600" size={24}/>
-                <h2 className="text-2xl font-bold font-display">Seguridad</h2>
+                <h2 className="text-2xl font-bold font-display">Mi Seguridad</h2>
               </div>
               
               <form onSubmit={handlePasswordChange} className="space-y-6">
                 <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600 mb-4 border border-slate-100">
-                  Cambia aquí la contraseña de administrador. Asegúrate de recordarla.
+                  Cambia aquí tu contraseña de acceso.
                 </div>
 
                 <div>
