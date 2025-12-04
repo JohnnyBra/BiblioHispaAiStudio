@@ -1,47 +1,63 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { storageService } from './services/storageService';
-import { User, Book, Transaction, UserRole, Review, AppSettings } from './types';
+import { User, Book, Transaction, UserRole, Review, AppSettings, PointHistory } from './types';
 import { AdminView } from './components/AdminView';
 import { StudentView } from './components/StudentView';
 import { Button } from './components/Button';
 import { QRScanner } from './components/QRScanner';
-import { BookOpen, QrCode } from 'lucide-react';
+import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
+import { QrCode } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global State ---
-  const [users, setUsers] = useState<User[]>([]);
-  const [books, setBooks] = useState<Book[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(storageService.getSettings());
-  const [adminPassword, setAdminPassword] = useState<string>(storageService.getAdminPassword());
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = React.useState<User[]>([]);
+  const [books, setBooks] = React.useState<Book[]>([]);
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [reviews, setReviews] = React.useState<Review[]>([]);
+  const [pointHistory, setPointHistory] = React.useState<PointHistory[]>([]);
+  const [settings, setSettings] = React.useState<AppSettings>(storageService.getSettings());
+  const [adminPassword, setAdminPassword] = React.useState<string>(storageService.getAdminPassword());
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
 
   // --- Auth State ---
-  const [loginInput, setLoginInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [loginInput, setLoginInput] = React.useState('');
+  const [passwordInput, setPasswordInput] = React.useState('');
+  const [isAdminMode, setIsAdminMode] = React.useState(false);
+  const [authError, setAuthError] = React.useState('');
+  const [showQRScanner, setShowQRScanner] = React.useState(false);
+
+  // --- Toast State ---
+  const [toasts, setToasts] = React.useState<ToastMessage[]>([]);
 
   // --- Initialization ---
-  useEffect(() => {
+  React.useEffect(() => {
     setUsers(storageService.getUsers());
     setBooks(storageService.getBooks());
     setTransactions(storageService.getTransactions());
     setReviews(storageService.getReviews());
+    setPointHistory(storageService.getPointHistory());
     setSettings(storageService.getSettings());
     setAdminPassword(storageService.getAdminPassword());
   }, []);
 
   // --- Persistance Effects ---
-  useEffect(() => { if(users.length) storageService.setUsers(users); }, [users]);
-  useEffect(() => { if(books.length) storageService.setBooks(books); }, [books]);
-  useEffect(() => { if(transactions.length) storageService.setTransactions(transactions); }, [transactions]);
-  useEffect(() => { if(reviews.length) storageService.setReviews(reviews); }, [reviews]);
-  useEffect(() => { storageService.setSettings(settings); }, [settings]);
-  useEffect(() => { storageService.setAdminPassword(adminPassword); }, [adminPassword]);
+  React.useEffect(() => { if(users.length) storageService.setUsers(users); }, [users]);
+  React.useEffect(() => { if(books.length) storageService.setBooks(books); }, [books]);
+  React.useEffect(() => { if(transactions.length) storageService.setTransactions(transactions); }, [transactions]);
+  React.useEffect(() => { if(reviews.length) storageService.setReviews(reviews); }, [reviews]);
+  React.useEffect(() => { if(pointHistory.length) storageService.setPointHistory(pointHistory); }, [pointHistory]);
+  React.useEffect(() => { storageService.setSettings(settings); }, [settings]);
+  React.useEffect(() => { storageService.setAdminPassword(adminPassword); }, [adminPassword]);
+
+  // --- Toast Handler ---
+  const addToast = (message: string, type: ToastType) => {
+    const id = Date.now().toString() + Math.random().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   // --- Actions ---
 
@@ -53,18 +69,24 @@ const App: React.FC = () => {
       // Admin Login
       if (loginInput === 'admin' && passwordInput === adminPassword) {
         const admin = users.find(u => u.role === UserRole.ADMIN);
-        if (admin) setCurrentUser(admin);
+        if (admin) {
+           setCurrentUser(admin);
+           addToast(`Bienvenido al panel, ${admin.firstName}`, 'info');
+        }
         else setAuthError('Configuración de admin corrupta.');
       } else {
         setAuthError('Contraseña incorrecta');
+        addToast('Contraseña incorrecta', 'error');
       }
     } else {
       // Student login: firstname.lastname
       const student = users.find(u => u.username === loginInput.toLowerCase() && u.role === UserRole.STUDENT);
       if (student) {
         setCurrentUser(student);
+        addToast(`¡Hola de nuevo, ${student.firstName}! 👋`, 'success');
       } else {
         setAuthError('Usuario no encontrado. Usa nombre.apellido');
+        addToast('Usuario no encontrado', 'error');
       }
     }
   };
@@ -74,8 +96,9 @@ const App: React.FC = () => {
     if (student) {
       setCurrentUser(student);
       setShowQRScanner(false);
+      addToast(`¡Acceso con QR exitoso! Hola ${student.firstName}`, 'success');
     } else {
-      alert("❌ Código QR no válido o usuario no encontrado.");
+      addToast("❌ Código QR no válido o usuario no encontrado.", "error");
     }
   };
 
@@ -84,6 +107,7 @@ const App: React.FC = () => {
     setLoginInput('');
     setPasswordInput('');
     setAuthError('');
+    addToast('Sesión cerrada correctamente', 'info');
   };
 
   const addUsers = (newUsers: User[]) => {
@@ -92,10 +116,14 @@ const App: React.FC = () => {
 
   const updateUser = (updatedUser: User) => {
     setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    addToast('Usuario actualizado correctamente', 'success');
   };
 
   const deleteUser = (id: string) => {
     setUsers(prev => prev.filter(u => u.id !== id));
+    // Also cleanup point history for this user
+    setPointHistory(prev => prev.filter(h => h.userId !== id));
+    addToast('Usuario eliminado', 'info');
   };
 
   const addBooks = (newBooks: Book[]) => {
@@ -104,14 +132,57 @@ const App: React.FC = () => {
 
   const deleteBook = (id: string) => {
     setBooks(prev => prev.filter(b => b.id !== id));
+    addToast('Libro eliminado del catálogo', 'info');
   };
 
   const updateSettings = (newSettings: AppSettings) => {
     setSettings(newSettings);
+    addToast('Configuración guardada', 'success');
   };
 
   const updateAdminPassword = (newPwd: string) => {
     setAdminPassword(newPwd);
+    addToast('Contraseña de administrador actualizada', 'success');
+  };
+
+  const handleManualPointAdjustment = (userId: string, amount: number, reason: string) => {
+    // 1. Update User
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        return { ...u, points: Math.max(0, u.points + amount) };
+      }
+      return u;
+    }));
+
+    // 2. Add History Entry
+    const newEntry: PointHistory = {
+      id: `ph-${Date.now()}`,
+      userId,
+      amount,
+      reason,
+      date: new Date().toISOString()
+    };
+    setPointHistory(prev => [newEntry, ...prev]);
+    
+    addToast('Puntos actualizados correctamente', 'success');
+  };
+
+  const handleDeletePointEntry = (entryId: string) => {
+    const entry = pointHistory.find(ph => ph.id === entryId);
+    if (!entry) return;
+
+    // 1. Revert user points (inverse operation)
+    setUsers(prev => prev.map(u => {
+      if (u.id === entry.userId) {
+        // If entry was +10, we subtract 10. If entry was -5, we add 5 (subtract -5).
+        return { ...u, points: Math.max(0, u.points - entry.amount) }; 
+      }
+      return u;
+    }));
+
+    // 2. Remove history entry
+    setPointHistory(prev => prev.filter(ph => ph.id !== entryId));
+    addToast('Registro de puntos eliminado y saldo revertido', 'info');
   };
 
   const handleBorrow = (book: Book) => {
@@ -119,7 +190,7 @@ const App: React.FC = () => {
     
     // Check limits
     if (book.unitsAvailable <= 0) {
-      alert("No hay unidades disponibles");
+      addToast('Lo sentimos, este libro está agotado temporalmente.', 'error');
       return;
     }
 
@@ -144,6 +215,8 @@ const App: React.FC = () => {
       }
       return b;
     }));
+
+    addToast(`Has sacado "${book.title}". ¡Disfruta la lectura! 📖`, 'success');
   };
 
   const handleReturn = (book: Book) => {
@@ -171,6 +244,18 @@ const App: React.FC = () => {
 
     // Award Points & Books Read
     const POINTS_PER_BOOK = 10;
+    
+    // Create History Entry
+    const pointEntry: PointHistory = {
+      id: `ph-${Date.now()}`,
+      userId: currentUser.id,
+      amount: POINTS_PER_BOOK,
+      reason: `Devolución: ${book.title}`,
+      date: new Date().toISOString()
+    };
+    setPointHistory(prev => [pointEntry, ...prev]);
+
+    // Update User
     setUsers(prev => prev.map(u => {
       if (u.id === currentUser.id) {
         const updatedUser = { 
@@ -185,15 +270,17 @@ const App: React.FC = () => {
       return u;
     }));
 
-    alert(`¡Libro devuelto! Has ganado ${POINTS_PER_BOOK} puntos.`);
+    addToast(`¡Libro devuelto! Has ganado +${POINTS_PER_BOOK} XP 🌟`, 'success');
   };
 
   const handleAddReview = (review: Review) => {
     setReviews(prev => [review, ...prev]);
+    addToast('¡Gracias por tu opinión! ⭐', 'success');
   };
 
   const handleDeleteReview = (id: string) => {
     setReviews(prev => prev.filter(r => r.id !== id));
+    addToast('Reseña eliminada', 'info');
   };
 
   // --- Views ---
@@ -201,6 +288,8 @@ const App: React.FC = () => {
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-brand-50 flex items-center justify-center p-4 relative overflow-hidden">
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        
         {/* Background blobs */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-fun-yellow/20 rounded-full blur-3xl animate-pulse-slow"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-3xl"></div>
@@ -254,7 +343,7 @@ const App: React.FC = () => {
               </label>
               <input 
                 type="text" 
-                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-700 bg-slate-50 focus:bg-white"
+                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 autoFocus={isAdminMode}
@@ -266,7 +355,7 @@ const App: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Contraseña</label>
                 <input 
                   type="password" 
-                  className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-700 bg-slate-50 focus:bg-white"
+                  className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   placeholder="admin123"
@@ -299,11 +388,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      
       {currentUser.role === UserRole.ADMIN ? (
         <AdminView 
           users={users}
           books={books}
           reviews={reviews}
+          pointHistory={pointHistory}
           settings={settings}
           onAddUsers={addUsers}
           onAddBooks={addBooks}
@@ -313,6 +405,9 @@ const App: React.FC = () => {
           onDeleteReview={handleDeleteReview}
           onUpdateSettings={updateSettings}
           onChangePassword={updateAdminPassword}
+          onShowToast={addToast}
+          onAddPoints={handleManualPointAdjustment}
+          onDeletePointEntry={handleDeletePointEntry}
         />
       ) : (
         <StudentView 
@@ -329,7 +424,6 @@ const App: React.FC = () => {
         />
       )}
       
-      {/* Logout button for Admin specifically usually in header, but global logout helper */}
       {currentUser.role === UserRole.ADMIN && (
         <div className="fixed bottom-6 right-6 z-50 no-print">
            <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-lg">Cerrar Sesión</Button>

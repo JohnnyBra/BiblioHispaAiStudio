@@ -1,18 +1,13 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Book } from "../types";
 
-// Safety check for API Key presence to prevent crashes
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const chatWithLibrarian = async (
   userQuery: string,
   userAgeGroup: string,
   availableBooks: Book[]
 ): Promise<string> => {
-  if (!apiKey) return "La BiblioIA está durmiendo (Falta API Key).";
-
   // Create a simplified catalog for the AI to process efficiently
   const bookList = availableBooks
     .map(b => `- "${b.title}" de ${b.author} (${b.genre}, Estante: ${b.shelf})`)
@@ -43,7 +38,38 @@ export const chatWithLibrarian = async (
     return response.text || "¡Ups! Se me ha caído un libro y no te he escuchado. ¿Repites?";
   } catch (error) {
     console.error("Error calling Gemini:", error);
-    return "Mi cerebro de robot está echando humo. Inténtalo en un ratito.";
+    return "Mi cerebro de robot está echando humo. Verifica tu API Key en el archivo .env.";
+  }
+};
+
+// New function to determine age range automatically
+export const getAIRecommendedAge = async (title: string, author: string): Promise<string> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `
+        Clasifica el libro "${title}" de "${author}" en UNO de los siguientes rangos de edad exactos.
+        
+        Rangos permitidos:
+        '0-5' (Infantil/Preescolar)
+        '6-8' (Primeros lectores)
+        '9-11' (Infantil consolidado)
+        '12-14' (Juvenil/Adolescente)
+        '+15' (Young Adult/Adulto)
+
+        Responde ÚNICAMENTE con el rango (ejemplo: "9-11"). Si no conoces el libro, adivina por el título o devuelve "TP" (Todos los públicos).
+      `,
+    });
+    
+    const text = response.text?.trim() || 'TP';
+    // Clean up response if AI adds extra text
+    const validRanges = ['0-5', '6-8', '9-11', '12-14', '+15'];
+    const found = validRanges.find(r => text.includes(r));
+    return found || 'TP';
+
+  } catch (error) {
+    console.error("Error getting AI age:", error);
+    return 'TP';
   }
 };
 

@@ -1,10 +1,10 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
+import { getBookDetails, BookDetails } from '../services/bookService';
 
 interface StudentViewProps {
   currentUser: User;
@@ -37,26 +37,36 @@ export const StudentView: React.FC<StudentViewProps> = ({
   onLogout,
   onAddReview
 }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'mybooks' | 'ranking'>('catalog');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState<string>('Todos');
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'mybooks' | 'ranking'>('catalog');
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [selectedGenre, setSelectedGenre] = React.useState<string>('Todos');
+  const [selectedAge, setSelectedAge] = React.useState<string>('Todos');
   
+  // View & Sort State
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = React.useState<'title' | 'author' | 'popularity' | 'rating'>('title');
+
   // Review Modal State
-  const [reviewingBook, setReviewingBook] = useState<Book | null>(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState('');
+  const [reviewingBook, setReviewingBook] = React.useState<Book | null>(null);
+  const [reviewRating, setReviewRating] = React.useState(5);
+  const [reviewComment, setReviewComment] = React.useState('');
+
+  // Details Modal State
+  const [viewingBook, setViewingBook] = React.useState<Book | null>(null);
+  const [bookDetails, setBookDetails] = React.useState<BookDetails | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = React.useState(false);
 
   // AI Chat State
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
+  const [chatInput, setChatInput] = React.useState('');
+  const [isTyping, setIsTyping] = React.useState(false);
+  const [messages, setMessages] = React.useState<ChatMessage[]>([
     { id: 'welcome', sender: 'ai', text: `¡Hola ${currentUser.firstName}! Soy BiblioBot 🤖. ¿Buscas algún libro en especial hoy?` }
   ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   // Scroll to bottom of chat
-  useEffect(() => {
+  React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isChatOpen]);
 
@@ -68,13 +78,46 @@ export const StudentView: React.FC<StudentViewProps> = ({
     return sum / bookReviews.length;
   };
 
-  // Filter books
+  // Helper to calculate earliest return date for out of stock books
+  const getEarliestReturnDate = (bookId: string): string | undefined => {
+      const LOAN_DURATION_DAYS = 15;
+      const activeTxs = transactions.filter(t => t.bookId === bookId && t.active);
+      
+      if (activeTxs.length === 0) return undefined;
+
+      const dates = activeTxs.map(t => {
+          const borrowed = new Date(t.dateBorrowed);
+          const due = new Date(borrowed);
+          due.setDate(due.getDate() + LOAN_DURATION_DAYS);
+          return due;
+      });
+
+      // Sort ascending to find the soonest
+      dates.sort((a, b) => a.getTime() - b.getTime());
+      
+      return dates[0].toISOString();
+  };
+
+  // Filter & Sort books
   const genres = ['Todos', ...Array.from(new Set(books.map(b => b.genre)))];
-  const filteredBooks = books.filter(b => {
-    const matchesSearch = b.title.toLowerCase().includes(searchTerm.toLowerCase()) || b.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGenre = selectedGenre === 'Todos' || b.genre === selectedGenre;
-    return matchesSearch && matchesGenre;
-  });
+  const ages = ['Todos', '0-5', '6-8', '9-11', '12-14', '+15']; // Standard age ranges
+  
+  const filteredBooks = books
+    .filter(b => {
+      const matchesSearch = b.title.toLowerCase().includes(searchTerm.toLowerCase()) || b.author.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesGenre = selectedGenre === 'Todos' || b.genre === selectedGenre;
+      const matchesAge = selectedAge === 'Todos' || (b.recommendedAge && b.recommendedAge.includes(selectedAge)) || !b.recommendedAge; // If no age set, show it to be safe
+      return matchesSearch && matchesGenre && matchesAge;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'title': return a.title.localeCompare(b.title);
+        case 'author': return a.author.localeCompare(b.author);
+        case 'popularity': return b.readCount - a.readCount;
+        case 'rating': return getBookRating(b.id) - getBookRating(a.id);
+        default: return 0;
+      }
+    });
 
   // Get my active books
   const myActiveTransactionIds = transactions
@@ -100,6 +143,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
       setReviewRating(5);
       setReviewComment('');
     }
+  };
+
+  // Handle View Details
+  const handleViewDetails = async (book: Book) => {
+    setViewingBook(book);
+    setBookDetails(null);
+    setIsLoadingDetails(true);
+    
+    const details = await getBookDetails(book.title, book.author);
+    setBookDetails(details);
+    setIsLoadingDetails(false);
   };
 
   // Handle AI Chat
@@ -182,78 +236,238 @@ export const StudentView: React.FC<StudentViewProps> = ({
         {/* --- Catalog Tab --- */}
         {activeTab === 'catalog' && (
           <div className="space-y-6 animate-fade-in">
-            {/* Filters */}
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="relative w-full md:w-96">
-                <input 
-                  type="text" 
-                  placeholder="Busca por título o autor..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm"
-                />
-                <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
+            {/* Filters & View Control */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                {/* Search */}
+                <div className="relative w-full md:w-96">
+                  <input 
+                    type="text" 
+                    placeholder="Busca por título o autor..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm bg-white text-slate-900"
+                  />
+                  <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
+                </div>
+                
+                {/* Controls */}
+                <div className="flex gap-4 w-full md:w-auto">
+                   <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex-1 md:flex-none">
+                      <ArrowUpDown size={16} className="text-slate-400"/>
+                      <select 
+                        className="bg-transparent text-sm font-medium text-slate-600 outline-none w-full"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                      >
+                         <option value="title">Título (A-Z)</option>
+                         <option value="author">Autor (A-Z)</option>
+                         <option value="popularity">Más Populares</option>
+                         <option value="rating">Mejor Valorados</option>
+                      </select>
+                   </div>
+                   
+                   <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-200">
+                      <button 
+                         onClick={() => setViewMode('grid')} 
+                         className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                         title="Vista Cuadrícula"
+                      >
+                         <LayoutGrid size={20}/>
+                      </button>
+                      <button 
+                         onClick={() => setViewMode('list')} 
+                         className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                         title="Vista Lista"
+                      >
+                         <List size={20}/>
+                      </button>
+                   </div>
+                </div>
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar">
-                {genres.map(g => (
-                  <button
-                    key={g}
-                    onClick={() => setSelectedGenre(g)}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${selectedGenre === g ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    {g}
-                  </button>
-                ))}
+
+              {/* Filters Row */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Genres */}
+                  <div className="flex gap-2 overflow-x-auto pb-2 flex-1 no-scrollbar">
+                    {genres.map(g => (
+                      <button
+                        key={g}
+                        onClick={() => setSelectedGenre(g)}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${selectedGenre === g ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Age Filter */}
+                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex-shrink-0">
+                      <UserIcon size={16} className="text-fun-purple"/>
+                      <span className="text-xs font-bold text-slate-400 uppercase mr-1">Edad:</span>
+                      <select 
+                        className="bg-transparent text-sm font-bold text-slate-600 outline-none"
+                        value={selectedAge}
+                        onChange={(e) => setSelectedAge(e.target.value)}
+                      >
+                         {ages.map(age => (
+                            <option key={age} value={age}>{age}</option>
+                         ))}
+                      </select>
+                   </div>
               </div>
             </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredBooks.map(book => (
-                <BookCard 
-                  key={book.id} 
-                  book={book} 
-                  role={currentUser.role}
-                  canBorrow={!myActiveTransactionIds.includes(book.id)}
-                  onBorrow={onBorrow}
-                  showShelf={true}
-                  rating={getBookRating(book.id)}
-                />
-              ))}
-              {filteredBooks.length === 0 && (
-                <div className="col-span-full text-center py-20 text-slate-400">
-                  <BookOpen size={48} className="mx-auto mb-4 opacity-50"/>
-                  <p>No se encontraron libros con esos filtros.</p>
-                </div>
-              )}
-            </div>
+            {/* Content Display */}
+            {viewMode === 'grid' ? (
+              // GRID VIEW
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {filteredBooks.map(book => (
+                  <BookCard 
+                    key={book.id} 
+                    book={book} 
+                    role={currentUser.role}
+                    canBorrow={!myActiveTransactionIds.includes(book.id)}
+                    onBorrow={onBorrow}
+                    onViewDetails={handleViewDetails}
+                    showShelf={true}
+                    rating={getBookRating(book.id)}
+                    earliestReturnDate={book.unitsAvailable <= 0 ? getEarliestReturnDate(book.id) : undefined}
+                  />
+                ))}
+              </div>
+            ) : (
+              // LIST VIEW
+              <div className="space-y-4">
+                 {filteredBooks.map(book => {
+                    const isAvailable = book.unitsAvailable > 0;
+                    const rating = getBookRating(book.id);
+                    const canBorrow = !myActiveTransactionIds.includes(book.id);
+                    const earliestReturn = !isAvailable ? getEarliestReturnDate(book.id) : undefined;
+                    const formattedReturn = earliestReturn ? new Date(earliestReturn).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}) : null;
+
+                    return (
+                       <div key={book.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 hover:shadow-md transition-shadow">
+                          {/* Image */}
+                          <div className="w-20 h-28 flex-shrink-0 bg-slate-200 rounded-lg overflow-hidden relative">
+                             <img src={book.coverUrl} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} alt={book.title}/>
+                             {!isAvailable && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
+                                   <span className="text-[10px] font-black text-white bg-red-500 px-1 py-0.5 rounded uppercase rotate-12 mb-1">Agotado</span>
+                                   {formattedReturn && (
+                                      <span className="text-[8px] text-white font-medium bg-black/50 px-1 rounded backdrop-blur">
+                                         {formattedReturn}
+                                      </span>
+                                   )}
+                                </div>
+                             )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                             <div>
+                                <div className="flex justify-between items-start">
+                                   <h3 className="font-display font-bold text-lg text-slate-800 truncate">{book.title}</h3>
+                                   <div className="flex gap-1">
+                                      <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded whitespace-nowrap ml-2">{book.genre}</span>
+                                      {book.recommendedAge && (
+                                         <span className="text-[10px] font-bold text-fun-purple bg-purple-50 px-2 py-0.5 rounded whitespace-nowrap border border-purple-100">{book.recommendedAge}</span>
+                                      )}
+                                   </div>
+                                </div>
+                                <p className="text-sm text-slate-500 font-medium mb-1">{book.author}</p>
+                                
+                                <div className="flex items-center gap-4 text-xs text-slate-400 mt-2">
+                                   <span className="flex items-center gap-1"><Archive size={14}/> {book.shelf}</span>
+                                   <span className="flex items-center gap-1"><TrendingUp size={14}/> {book.readCount} lecturas</span>
+                                   {rating > 0 && (
+                                      <span className="flex items-center gap-1 text-yellow-500 font-bold"><Star size={14} fill="currentColor"/> {rating.toFixed(1)}</span>
+                                   )}
+                                </div>
+                             </div>
+
+                             <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-50">
+                                <span className={`text-xs font-bold ${isAvailable ? 'text-green-600' : 'text-red-500'}`}>
+                                   {isAvailable ? 'Disponible' : 'Sin stock'} ({book.unitsAvailable}/{book.unitsTotal})
+                                </span>
+                                
+                                <div className="flex gap-2">
+                                   <Button size="sm" variant="secondary" onClick={() => handleViewDetails(book)} className="text-xs px-3 py-1.5 h-auto">
+                                      Ver Detalles
+                                   </Button>
+                                   {canBorrow && isAvailable && (
+                                      <Button size="sm" onClick={() => onBorrow(book)} className="text-xs px-3 py-1.5 h-auto">
+                                         Sacar
+                                      </Button>
+                                   )}
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                    );
+                 })}
+              </div>
+            )}
+
+            {filteredBooks.length === 0 && (
+              <div className="col-span-full text-center py-20 text-slate-400">
+                <BookOpen size={48} className="mx-auto mb-4 opacity-50"/>
+                <p>No se encontraron libros con esos filtros.</p>
+              </div>
+            )}
           </div>
         )}
 
         {/* --- My Books Tab --- */}
         {activeTab === 'mybooks' && (
-           <div className="space-y-6">
+           <div className="space-y-6 animate-fade-in">
               <h2 className="text-2xl font-bold text-slate-800">Libros que estás leyendo</h2>
               {myBooks.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {myBooks.map(book => (
-                    <div key={book.id} className="flex flex-col h-full">
-                       <BookCard 
-                          book={book} 
-                          role={currentUser.role}
-                          canReturn={true}
-                          onReturn={onReturn}
-                          rating={getBookRating(book.id)}
-                       />
-                       <button 
-                          onClick={() => setReviewingBook(book)}
-                          className="mt-2 text-sm font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 py-2 rounded-xl w-full flex items-center justify-center gap-2 transition-colors"
-                       >
-                          <Star size={14} className="fill-brand-600" />
-                          Opinar
-                       </button>
-                    </div>
-                  ))}
+                  {myBooks.map(book => {
+                     // Calculate loan duration for visual cues
+                     const tx = transactions.find(t => t.bookId === book.id && t.userId === currentUser.id && t.active);
+                     const dateBorrowed = tx ? new Date(tx.dateBorrowed) : new Date();
+                     const daysHeld = Math.floor((Date.now() - dateBorrowed.getTime()) / (1000 * 60 * 60 * 24));
+                     const isNew = daysHeld < 2; // Less than 2 days
+                     const isLongLoan = daysHeld > 14; // More than 2 weeks
+
+                     return (
+                        <div key={book.id} className={`flex flex-col h-full rounded-3xl p-2 transition-all duration-500 ${isNew ? 'bg-green-50/50 ring-2 ring-fun-green ring-offset-2' : ''} ${isLongLoan ? 'bg-red-50/50 ring-2 ring-fun-orange ring-offset-2' : ''}`}>
+                           
+                           {/* Visual Cues */}
+                           <div className="relative">
+                              {isNew && (
+                                 <div className="absolute -top-3 -right-2 z-10 bg-fun-green text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1 animate-bounce-slow">
+                                    <Sparkle size={10} fill="currentColor"/> ¡NUEVO!
+                                 </div>
+                              )}
+                              {isLongLoan && (
+                                 <div className="absolute -top-3 -right-2 z-10 bg-fun-orange text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                                    <Clock size={10} /> +2 semanas
+                                 </div>
+                              )}
+                              
+                              <BookCard 
+                                 book={book} 
+                                 role={currentUser.role}
+                                 canReturn={true}
+                                 onReturn={onReturn}
+                                 onViewDetails={handleViewDetails}
+                                 rating={getBookRating(book.id)}
+                              />
+                           </div>
+
+                           <button 
+                              onClick={() => setReviewingBook(book)}
+                              className="mt-2 text-sm font-bold text-brand-600 bg-white border border-brand-100 hover:bg-brand-50 py-2 rounded-xl w-full flex items-center justify-center gap-2 transition-colors shadow-sm"
+                           >
+                              <Star size={14} className="fill-brand-600" />
+                              Opinar
+                           </button>
+                        </div>
+                     );
+                  })}
                 </div>
               ) : (
                 <div className="bg-white rounded-3xl p-10 text-center shadow-sm border border-slate-100">
@@ -350,187 +564,160 @@ export const StudentView: React.FC<StudentViewProps> = ({
                                 <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
                                 <img src={book.coverUrl} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
                                 <div className="flex-1 ml-3 min-w-0">
-                                    <h4 className="font-bold text-slate-800 text-sm truncate">{book.title}</h4>
-                                    <p className="text-xs text-slate-500 truncate">{book.author}</p>
-                                </div>
-                                <div className="ml-2 flex flex-col items-center">
-                                    <span className="font-bold text-fun-green text-sm">{book.readCount}</span>
-                                    <span className="text-[10px] text-slate-400">veces</span>
+                                    <h4 className="font-bold text-slate-800 text-sm truncate" title={book.title}>{book.title}</h4>
+                                    <p className="text-xs text-slate-500">{book.readCount} lecturas</p>
                                 </div>
                             </div>
-                         ))
-                      }
-                      {books.length === 0 && (
-                          <div className="p-8 text-center text-slate-400 text-sm">Aún no hay libros.</div>
-                      )}
+                         ))}
+                         {books.length === 0 && <div className="p-8 text-center text-slate-400 text-sm">No hay datos.</div>}
                   </div>
 
                   {/* COL 3: TOP RATED BOOKS */}
                   <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden flex flex-col">
                       <div className="bg-fun-purple/10 p-4 border-b border-fun-purple/20 flex items-center gap-2">
                           <Heart size={20} className="text-fun-purple" />
-                          <h3 className="font-bold text-purple-900">Mejor Valorados</h3>
+                          <h3 className="font-bold text-purple-800">Mejores Valorados</h3>
                       </div>
                       {[...books]
-                         .filter(b => getBookRating(b.id) > 0) // Only show rated books
+                         .filter(b => getBookRating(b.id) > 0)
                          .sort((a, b) => getBookRating(b.id) - getBookRating(a.id))
                          .slice(0, 5)
-                         .map((book, index) => {
-                             const rating = getBookRating(book.id);
-                             return (
-                                <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                                    <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
-                                    <img src={book.coverUrl} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
-                                    <div className="flex-1 ml-3 min-w-0">
-                                        <h4 className="font-bold text-slate-800 text-sm truncate">{book.title}</h4>
-                                        <div className="flex items-center gap-1">
-                                           <div className="flex">
-                                               {[...Array(5)].map((_, i) => (
-                                                  <Star key={i} size={10} className={i < Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"} />
-                                               ))}
-                                           </div>
-                                        </div>
-                                    </div>
-                                    <div className="ml-2 font-bold text-slate-700 text-sm bg-slate-100 px-2 py-1 rounded-lg">
-                                        {rating.toFixed(1)}
+                         .map((book, index) => (
+                            <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                                <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
+                                <img src={book.coverUrl} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                                <div className="flex-1 ml-3 min-w-0">
+                                    <h4 className="font-bold text-slate-800 text-sm truncate" title={book.title}>{book.title}</h4>
+                                    <div className="flex items-center gap-1">
+                                        <Star size={10} className="text-yellow-400 fill-yellow-400"/>
+                                        <span className="text-xs font-bold text-slate-600">{getBookRating(book.id).toFixed(1)}</span>
                                     </div>
                                 </div>
-                             );
-                         })
-                      }
-                       {[...books].filter(b => getBookRating(b.id) > 0).length === 0 && (
-                          <div className="p-8 text-center text-slate-400 text-sm">Aún no hay valoraciones.</div>
-                      )}
+                            </div>
+                         ))}
+                         {books.filter(b => getBookRating(b.id) > 0).length === 0 && <div className="p-8 text-center text-slate-400 text-sm">Aún no hay valoraciones.</div>}
+                  </div>
+              </div>
+           </div>
+        )}
+
+      </div>
+
+      {/* --- FLOATING CHAT WIDGET --- */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
+         {/* Chat Window */}
+         {isChatOpen && (
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-80 sm:w-96 mb-4 overflow-hidden flex flex-col animate-scale-in origin-bottom-right h-[500px]">
+               {/* Header */}
+               <div className="bg-brand-600 p-4 flex justify-between items-center text-white">
+                  <div className="flex items-center gap-2">
+                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <Sparkles size={16} />
+                     </div>
+                     <div>
+                        <h3 className="font-bold text-sm">BiblioChat</h3>
+                        <p className="text-[10px] opacity-80">Tu bibliotecario virtual</p>
+                     </div>
+                  </div>
+                  <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/20 p-1 rounded-lg">
+                     <X size={18} />
+                  </button>
+               </div>
+               
+               {/* Messages Area */}
+               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                  {messages.map((msg) => (
+                     <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${
+                           msg.sender === 'user' 
+                              ? 'bg-brand-500 text-white rounded-tr-none' 
+                              : 'bg-white text-slate-700 shadow-sm rounded-tl-none border border-slate-100'
+                        }`}>
+                           {msg.text}
+                        </div>
+                     </div>
+                  ))}
+                  {isTyping && (
+                     <div className="flex justify-start">
+                        <div className="bg-white text-slate-400 shadow-sm rounded-2xl rounded-tl-none p-3 text-xs border border-slate-100 flex gap-1">
+                           <span className="animate-bounce">●</span>
+                           <span className="animate-bounce delay-100">●</span>
+                           <span className="animate-bounce delay-200">●</span>
+                        </div>
+                     </div>
+                  )}
+                  <div ref={messagesEndRef} />
+               </div>
+
+               {/* Input Area */}
+               <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100 flex gap-2">
+                  <input 
+                     type="text" 
+                     className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white text-slate-900"
+                     placeholder="Escribe aquí..."
+                     value={chatInput}
+                     onChange={(e) => setChatInput(e.target.value)}
+                  />
+                  <button 
+                     type="submit" 
+                     disabled={!chatInput.trim() || isTyping}
+                     className="bg-brand-600 text-white p-2 rounded-xl hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                     <Send size={18} />
+                  </button>
+               </form>
+            </div>
+         )}
+
+         {/* Trigger Button */}
+         <button 
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={`${isChatOpen ? 'bg-slate-700' : 'bg-brand-600 animate-bounce-slow'} text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center gap-2`}
+         >
+            {isChatOpen ? <X size={24} /> : <MessageCircle size={28} />}
+            {!isChatOpen && <span className="font-bold pr-2">¡Pregúntame!</span>}
+         </button>
+      </div>
+
+      {/* --- BOOK DETAILS MODAL --- */}
+      {viewingBook && (
+         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row overflow-hidden relative">
+               <button 
+                  onClick={() => setViewingBook(null)}
+                  className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white p-2 rounded-full shadow-sm backdrop-blur transition-all"
+               >
+                  <X size={20} className="text-slate-500"/>
+               </button>
+
+               <div className="w-full md:w-1/3 h-64 md:h-auto relative bg-slate-100">
+                  <img src={viewingBook.coverUrl} className="w-full h-full object-cover" alt={viewingBook.title} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col justify-end p-4">
+                     <span className="text-white font-bold bg-brand-500 px-2 py-0.5 rounded text-xs self-start mb-2 shadow-sm">{viewingBook.genre}</span>
+                     {viewingBook.recommendedAge && (
+                        <span className="text-white font-bold bg-fun-purple px-2 py-0.5 rounded text-xs self-start shadow-sm border border-white/20">Edad: {viewingBook.recommendedAge}</span>
+                     )}
+                  </div>
+               </div>
+
+               <div className="p-8 md:w-2/3 space-y-4">
+                  <div>
+                     <h2 className="text-2xl font-display font-bold text-slate-800 leading-tight mb-1">{viewingBook.title}</h2>
+                     <p className="text-slate-500 font-medium">{viewingBook.author}</p>
                   </div>
 
-              </div>
-           </div>
-        )}
-
-      </div>
-
-      {/* --- REVIEW MODAL --- */}
-      {reviewingBook && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-              <div className="text-center mb-6">
-                 <h3 className="text-xl font-bold font-display text-slate-800">Opina sobre el libro</h3>
-                 <p className="text-sm text-slate-500 mt-1">{reviewingBook.title}</p>
-              </div>
-              <form onSubmit={handleSubmitReview}>
-                 <div className="flex justify-center gap-2 mb-6">
-                    {[1, 2, 3, 4, 5].map(star => (
-                       <button 
-                          key={star} 
-                          type="button"
-                          onClick={() => setReviewRating(star)}
-                          className="focus:outline-none transform hover:scale-110 transition-transform"
-                       >
-                          <Star 
-                             size={32} 
-                             className={star <= reviewRating ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"}
-                          />
-                       </button>
-                    ))}
-                 </div>
-                 <div className="mb-4">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Tu comentario</label>
-                    <textarea 
-                       className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-                       rows={3}
-                       placeholder="¿Qué te ha parecido?"
-                       value={reviewComment}
-                       onChange={e => setReviewComment(e.target.value)}
-                       required
-                    ></textarea>
-                 </div>
-                 <div className="flex gap-2">
-                    <Button type="button" variant="outline" className="flex-1" onClick={() => setReviewingBook(null)}>Cancelar</Button>
-                    <Button type="submit" className="flex-1">Enviar</Button>
-                 </div>
-              </form>
-           </div>
-        </div>
-      )}
-
-      {/* --- AI Chat Floating Button & Modal --- */}
-      <div className="fixed bottom-6 right-6 z-40">
-        {!isChatOpen && (
-          <button 
-            onClick={() => setIsChatOpen(true)}
-            className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white p-4 rounded-full shadow-lg shadow-violet-500/30 transition-all hover:scale-110 active:scale-95 flex items-center gap-2 font-display font-bold animate-bounce-slow"
-          >
-            <Sparkles size={24} className="text-yellow-300" />
-            <span className="hidden md:inline">BiblioBot</span>
-          </button>
-        )}
-      </div>
-
-      {isChatOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm flex flex-col items-end">
-           <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full overflow-hidden flex flex-col h-[500px]">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 p-4 flex justify-between items-center text-white">
-                 <div className="flex items-center gap-2">
-                    <div className="bg-white/20 p-2 rounded-full">
-                       <Sparkles size={18} className="text-yellow-300"/>
-                    </div>
-                    <div>
-                       <h3 className="font-bold font-display leading-none">BiblioBot</h3>
-                       <p className="text-xs text-violet-100 opacity-90">Tu asistente lector</p>
-                    </div>
-                 </div>
-                 <button onClick={() => setIsChatOpen(false)} className="text-white/80 hover:text-white hover:bg-white/10 p-1 rounded-full transition-colors">
-                    <X size={20} />
-                 </button>
-              </div>
-
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
-                 {messages.map(msg => (
-                    <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                       <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                          msg.sender === 'user' 
-                             ? 'bg-brand-600 text-white rounded-tr-none' 
-                             : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
-                       }`}>
-                          {msg.text}
-                       </div>
-                    </div>
-                 ))}
-                 {isTyping && (
-                    <div className="flex justify-start">
-                       <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
-                          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
-                          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-75"></span>
-                          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-150"></span>
-                       </div>
-                    </div>
-                 )}
-                 <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input Area */}
-              <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100 flex gap-2">
-                 <input 
-                    type="text" 
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Pregúntame algo sobre libros..."
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                 />
-                 <button 
-                    type="submit"
-                    disabled={!chatInput.trim() || isTyping}
-                    className="bg-violet-600 text-white p-2 rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                 >
-                    <Send size={18} />
-                 </button>
-              </form>
-           </div>
-        </div>
-      )}
-
-    </div>
-  );
-};
+                  <div className="flex gap-4 border-y border-slate-100 py-3">
+                     <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Estante</span>
+                        <span className="text-sm font-bold text-slate-700 flex items-center gap-1"><Archive size={14}/> {viewingBook.shelf}</span>
+                     </div>
+                     <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Páginas</span>
+                        <span className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                           <FileText size={14}/> {isLoadingDetails ? '...' : bookDetails?.pages || '?'}
+                        </span>
+                     </div>
+                     <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Publicado</span>
+                        <span className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                           <Calendar size={14}/> {isLoadingDetails ? '...' : bookDetails?.publishedDate?.split('-')[0

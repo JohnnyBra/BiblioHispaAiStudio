@@ -1,4 +1,3 @@
-
 export enum UserRole {
   ADMIN = 'ADMIN',
   STUDENT = 'STUDENT'
@@ -25,6 +24,7 @@ export interface Book {
   shelf: string;
   coverUrl?: string;
   readCount: number;
+  recommendedAge?: string; // e.g. "6-8", "+10", "TP"
 }
 
 export interface Transaction {
@@ -46,6 +46,14 @@ export interface Review {
   date: string;
 }
 
+export interface PointHistory {
+  id: string;
+  userId: string;
+  amount: number;
+  reason: string;
+  date: string;
+}
+
 export interface AppSettings {
   schoolName: string;
   logoUrl: string;
@@ -56,7 +64,6 @@ export interface LeaderboardEntry {
   name: string;
   points: number;
   booksRead: number;
-  className: string;
 }
 
 // For CSV Import
@@ -72,4 +79,12 @@ export interface RawBookImport {
   genero: string;
   unidades: number;
   estanteria: string;
+}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+  }
 }

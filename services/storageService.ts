@@ -1,11 +1,13 @@
 
-import { Book, User, Transaction, UserRole, Review, AppSettings } from '../types';
+
+import { Book, User, Transaction, UserRole, Review, AppSettings, PointHistory } from '../types';
 
 const KEYS = {
   USERS: 'bibliohispa_users',
   BOOKS: 'bibliohispa_books',
   TRANSACTIONS: 'bibliohispa_transactions',
   REVIEWS: 'bibliohispa_reviews',
+  POINT_HISTORY: 'bibliohispa_points_history',
   SETTINGS: 'bibliohispa_settings',
   ADMIN_PWD: 'bibliohispa_admin_pwd'
 };
@@ -54,7 +56,8 @@ const INITIAL_BOOKS: Book[] = [
     unitsAvailable: 4,
     shelf: 'A1',
     coverUrl: 'https://books.google.com/books/content?id=N7R8DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-    readCount: 120
+    readCount: 120,
+    recommendedAge: '6-8'
   },
   {
     id: 'b2',
@@ -65,7 +68,8 @@ const INITIAL_BOOKS: Book[] = [
     unitsAvailable: 3,
     shelf: 'C2',
     coverUrl: 'https://books.google.com/books/content?id=Z-xbAAAAMAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-    readCount: 45
+    readCount: 45,
+    recommendedAge: '+12'
   },
   {
     id: 'b3',
@@ -76,7 +80,8 @@ const INITIAL_BOOKS: Book[] = [
     unitsAvailable: 2,
     shelf: 'F5',
     coverUrl: 'https://books.google.com/books/content?id=5iTebBW-w7QC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-    readCount: 200
+    readCount: 200,
+    recommendedAge: '9-11'
   }
 ];
 
@@ -110,6 +115,9 @@ export const storageService = {
 
   getReviews: () => getStorage<Review[]>(KEYS.REVIEWS, []),
   setReviews: (reviews: Review[]) => setStorage(KEYS.REVIEWS, reviews),
+
+  getPointHistory: () => getStorage<PointHistory[]>(KEYS.POINT_HISTORY, []),
+  setPointHistory: (history: PointHistory[]) => setStorage(KEYS.POINT_HISTORY, history),
 
   getSettings: () => getStorage<AppSettings>(KEYS.SETTINGS, INITIAL_SETTINGS),
   setSettings: (settings: AppSettings) => setStorage(KEYS.SETTINGS, settings),

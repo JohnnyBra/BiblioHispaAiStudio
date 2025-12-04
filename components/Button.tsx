@@ -1,4 +1,5 @@
-import React from 'react';
+import * as React from 'react';
+import '../types';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline';
@@ -12,6 +13,7 @@ export const Button: React.FC<ButtonProps> = ({
   size = 'md', 
   isLoading,
   className = '',
+  disabled,
   ...props 
 }) => {
   const baseStyle = "font-display font-semibold rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2";
@@ -33,7 +35,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button 
       className={`${baseStyle} ${variants[variant]} ${sizes[size]} ${className}`}
-      disabled={isLoading || props.disabled}
+      disabled={isLoading || disabled}
       {...props}
     >
       {isLoading ? (
