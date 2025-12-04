@@ -69,11 +69,12 @@ cd /var/www
 
 # Clonar tu repositorio (¡CAMBIA LA URL POR LA TUYA!)
 # Si es privado, te pedirá usuario y token (o contraseña)
-sudo git clone https://github.com/TU_USUARIO/bibliohispa.git
+# IMPORTANTE: Asegúrate de que la carpeta de destino sea BiblioHispaAiStudio para coincidir con la config
+sudo git clone https://github.com/TU_USUARIO/bibliohispa.git BiblioHispaAiStudio
 
 # Entrar en la carpeta y dar permisos a tu usuario actual (para no usar sudo todo el rato)
-sudo chown -R $USER:$USER /var/www/bibliohispa
-cd bibliohispa
+sudo chown -R $USER:$USER /var/www/BiblioHispaAiStudio
+cd /var/www/BiblioHispaAiStudio
 ```
 
 ### 3. Instalar Dependencias
@@ -81,6 +82,7 @@ Instalamos las librerías necesarias para que la web funcione (React, Vite, QR, 
 
 ```bash
 npm install
+npm install lucide-react react-qr-code html5-qrcode
 ```
 
 ### 4. Configurar la API Key
@@ -118,10 +120,10 @@ Para que la web sea visible en internet o en la red local.
         server_name _; # O tu dominio si tienes (ej: biblio.micolegio.com)
 
         # Ruta a la carpeta 'dist' que acabamos de crear
-        root /var/www/bibliohispa/dist;
+        root /var/www/BiblioHispaAiStudio/dist;
         index index.html;
 
-        # Importante para que React funcione al recargar página
+        # Importante para React funcione al recargar página
         location / {
             try_files $uri $uri/ /index.html;
         }
@@ -134,43 +136,55 @@ Para que la web sea visible en internet o en la red local.
     sudo systemctl restart nginx
     ```
 
-### ✅ ¡Listo!
-Abre el navegador y pon la **IP de tu servidor**. ¡Tu BiblioHispa debería estar funcionando!
+---
+
+## 🔐 PASO EXTRA: Activar HTTPS (Para que funcione la cámara)
+
+Los móviles bloquean la cámara si la web no es segura (HTTPS). Sigue estos pasos para crear un "certificado casero" (autofirmado) que te permitirá usar la cámara.
+
+**1. Crear carpeta para certificados:**
+```bash
+sudo mkdir -p /etc/nginx/ssl
+```
+
+**2. Generar las claves (Copia y pega este comando entero):**
+Te pedirá datos (país, etc), puedes pulsar ENTER a todo.
+```bash
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/selfsigned.key -out /etc/nginx/ssl/selfsigned.crt
+```
+
+**3. Aplicar la configuración segura:**
+Vamos a copiar el archivo `nginx-ssl.conf` que hay en el proyecto a la configuración de Nginx.
+```bash
+sudo cp /var/www/BiblioHispaAiStudio/nginx-ssl.conf /etc/nginx/sites-available/bibliohispa
+```
+
+**4. Reiniciar el servidor:**
+```bash
+sudo systemctl restart nginx
+```
+
+**¡LISTO!**
+Ahora entra en `https://TU_IP_DEL_SERVIDOR` (Fíjate en la **S** de https).
+El navegador te dirá **"La conexión no es privada"**. Esto es normal.
+*   En Chrome/Móvil: Pulsa "Configuración Avanzada" -> "Acceder al sitio (no seguro)".
 
 ---
 
-## 🔄 PARTE 3: Cómo actualizar la web (Día a día)
+## 🔄 Rutina de Actualización
 
-Cuando hagas mejoras en el código y las subas a GitHub, sigue estos pasos en tu servidor para aplicarlas:
+Cuando hagas cambios en el código y los subas a GitHub, ejecuta esto en el servidor para actualizar:
 
-### 1. Método Manual (Paso a paso)
 ```bash
-cd /var/www/bibliohispa
+cd /var/www/BiblioHispaAiStudio
 
-# Descarga los cambios nuevos
-git pull origin main  
-
-# Instala librerías nuevas (si las hubiera)
-npm install         
-
-# Reconstruye la web (CRÍTICO: Si no haces esto, no verás los cambios)
-npm run build       
-```
-
-### 2. Solución de Problemas Comunes
-
-**Problema:** "error: Your local changes to the following files would be overwritten by merge..."
-**Causa:** Has editado archivos directamente en el servidor y GitHub no quiere borrarlos.
-**Solución:** Descarta los cambios del servidor y fuerza la actualización.
-```bash
+# 1. Si tienes cambios locales que estorban, bórralos (CUIDADO)
 git reset --hard HEAD
-git pull origin main
-npm run build
-```
 
-**Problema:** "Permission denied"
-**Causa:** Permisos de carpeta incorrectos.
-**Solución:**
-```bash
-sudo chown -R $USER:$USER /var/www/bibliohispa
+# 2. Descargar lo nuevo
+git pull origin main
+
+# 3. Re-instalar y Re-construir
+npm install
+npm run build
 ```
