@@ -1,215 +1,151 @@
-# 📚 BiblioHispa - Guía Completa de Instalación y Despliegue
+# 📚 BiblioHispa - Guía de Despliegue con GitHub
 
-Esta guía cubre dos partes fundamentales:
-1.  **Cómo conseguir la "llave" (API Key)** para que la Inteligencia Artificial funcione.
-2.  **Cómo instalar la web en un servidor Linux (Ubuntu)** desde cero para que sea accesible en el colegio.
+Esta guía te explica cómo llevar esta aplicación desde tu ordenador hasta un servidor Ubuntu usando GitHub. Es el método profesional y más sencillo para gestionar actualizaciones.
 
 ---
 
 ## 🔑 PASO 0: Conseguir la API Key de Google Gemini (Gratis)
 
-Para que el "Bibliotecario IA" funcione, necesitas una clave gratuita de Google.
+Necesitas esto para que la IA funcione.
 
-1.  Entra en esta web oficial de Google: **[Google AI Studio](https://aistudio.google.com/app/apikey)**.
-2.  Inicia sesión con tu cuenta de Google (gmail).
-3.  Haz clic en el botón azul grande que dice **"Create API key"**.
-4.  Si te pregunta, selecciona "Create API key in new project" (Crear en un proyecto nuevo).
-5.  Se generará un código largo y raro que empieza por `AIza...`. **Cópialo y guárdalo en un bloc de notas**, lo necesitaremos en el Paso 5.
+1.  Entra en **[Google AI Studio](https://aistudio.google.com/app/apikey)**.
+2.  Inicia sesión y pulsa **"Create API key"**.
+3.  Copia el código que empieza por `AIza...`. Lo usaremos más adelante.
 
 ---
 
-## 🚀 Guía de Despliegue en Servidor Ubuntu
+## 💻 PARTE 1: Preparar el código en tu ordenador (Local)
 
-Sigue estos pasos si tienes un servidor VPS o un ordenador con Ubuntu Server y quieres poner la web online.
+Antes de ir al servidor, necesitas tener este código en un repositorio de GitHub.
 
-### 📋 Requisitos
-*   Servidor con Ubuntu 20.04 o superior.
-*   Acceso a la terminal (consola negra).
+1.  **Crea una carpeta** en tu ordenador llamada `bibliohispa`.
+2.  **Copia todos los archivos** que te ha generado la IA dentro de esa carpeta, manteniendo la estructura (`src/`, `components/`, etc.).
+3.  Abre una terminal en esa carpeta y ejecuta:
+    ```bash
+    git init
+    git add .
+    git commit -m "Primera versión BiblioHispa"
+    ```
+4.  Ve a **[GitHub.com](https://github.com)**, crea un **Nuevo Repositorio** (ponle nombre `bibliohispa`, déjalo Público o Privado).
+5.  GitHub te dará unos comandos para "empujar" tu código. Copia y ejecuta los que se parecen a esto:
+    ```bash
+    git branch -M main
+    git remote add origin https://github.com/TU_USUARIO/bibliohispa.git
+    git push -u origin main
+    ```
+    *(Sustituye `TU_USUARIO` por tu usuario real).*
 
-### 1️⃣ Preparar el Servidor
-Actualizamos el sistema e instalamos herramientas básicas. Copia y pega estos comandos:
+---
+
+## 🚀 PARTE 2: Despliegue en Servidor Ubuntu
+
+Ahora que el código está en internet (GitHub), vamos a bajarlo al servidor escolar.
+
+### 1. Conectar y Preparar el Servidor
+Accede a tu terminal de Ubuntu y ejecuta:
 
 ```bash
-# Actualizar sistema
+# 1. Actualizar el sistema
 sudo apt update && sudo apt upgrade -y
 
-# Instalar herramientas básicas
-sudo apt install curl git unzip -y
-```
+# 2. Instalar Git, Curl y Nginx (servidor web)
+sudo apt install curl git nginx unzip -y
 
-### 2️⃣ Instalar Node.js
-Es el "motor" que hace funcionar la aplicación.
-
-```bash
-# Descargar el instalador de la versión 20
+# 3. Instalar Node.js (versión 20)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-
-# Instalarlo
 sudo apt-get install -y nodejs
 
-# Comprobar que funciona (debería salir v20.x.x)
-node -v
+# 4. Comprobar que todo está bien
+node -v  # Debería decir v20.x.x
+npm -v   # Debería decir 10.x.x
 ```
 
-### 3️⃣ Crear el Proyecto con Vite
-Vamos a crear la estructura de la carpeta de forma moderna.
+### 2. Clonar el Repositorio
+Vamos a descargar tu código desde GitHub.
 
-1.  Vamos a la carpeta web:
-    ```bash
-    cd /var/www
-    ```
-    *(Si da error de permisos, usa `cd ~` para hacerlo en tu carpeta personal).*
+```bash
+# Ir a la carpeta web
+cd /var/www
 
-2.  Creamos el proyecto "bibliohispa":
-    ```bash
-    npm create vite@latest bibliohispa -- --template react-ts
-    ```
-    *(Pulsa Enter para aceptar las opciones por defecto si te pregunta).*
+# Clonar tu repositorio (¡CAMBIA LA URL POR LA TUYA!)
+# Si es privado, te pedirá usuario y token (o contraseña)
+sudo git clone https://github.com/TU_USUARIO/bibliohispa.git
 
-3.  Entramos en la carpeta:
-    ```bash
-    cd bibliohispa
-    ```
+# Entrar en la carpeta y dar permisos a tu usuario actual (para no usar sudo todo el rato)
+sudo chown -R $USER:$USER /var/www/bibliohispa
+cd bibliohispa
+```
 
-4.  Instalamos las librerías necesarias:
-    ```bash
-    npm install
-    # IMPORTANTE: Instalamos las dependencias específicas de tu app (IA, QR, Iconos)
-    npm install @google/genai lucide-react react-qr-code html5-qrcode
-    ```
+### 3. Instalar Dependencias
+Instalamos las librerías necesarias para que la web funcione.
 
-### 4️⃣ Copiar los Archivos
-Ahora hay que meter tu código en el servidor.
-*Vite crea una carpeta `src` con archivos de ejemplo. Vamos a borrarlos y poner los tuyos.*
+```bash
+npm install
+```
 
-1.  **Limpiar:**
-    ```bash
-    rm -rf src/*
-    mkdir -p src/components
-    mkdir -p src/services
-    ```
+### 4. Configurar la API Key
+Creamos el archivo de configuración secreto.
 
-2.  **Crear los archivos:**
-    Usa el editor `nano` para crear cada archivo copiando el contenido que tienes.
-    *Para guardar en nano: `Ctrl+O`, `Enter`. Para salir: `Ctrl+X`.*
-
-    *   **Edita el `index.html` (en la raíz):**
-        ```bash
-        nano index.html
-        ```
-        *(Pega tu código de `index.html` corregido).*
-
-    *   **Crea `src/main.tsx` (Tu antiguo index.tsx):**
-        ```bash
-        nano src/main.tsx
-        ```
-        *(Pega aquí el contenido de `index.tsx`).*
-
-    *   **Crea `src/App.tsx`:**
-        ```bash
-        nano src/App.tsx
-        ```
-        *(Pega el contenido de `App.tsx`).*
-
-    *   **Crea `src/types.ts`:**
-        ```bash
-        nano src/types.ts
-        ```
-        *(Pega el contenido de `types.ts`).*
-
-    *   **Crea los Servicios:**
-        ```bash
-        nano src/services/storageService.ts
-        # (Pega el contenido...)
-        
-        nano src/services/bookService.ts
-        # (Pega el contenido...)
-
-        nano src/services/geminiService.ts
-        # (Pega el contenido...)
-        ```
-
-    *   **Crea los Componentes:**
-        ```bash
-        nano src/components/Button.tsx
-        nano src/components/BookCard.tsx
-        nano src/components/AdminView.tsx
-        nano src/components/StudentView.tsx
-        nano src/components/QRScanner.tsx
-        nano src/components/IDCard.tsx
-        nano src/components/Toast.tsx
-        # (Pega el contenido correspondiente en cada uno)
-        ```
-
-### 5️⃣ Configurar la Clave Secreta (API Key)
-Aquí es donde usamos la clave que conseguiste en el **Paso 0**.
-**IMPORTANTE:** En Vite, las variables deben empezar por `VITE_`.
-
-1.  Crea un archivo `.env` en la carpeta `bibliohispa` (en la raíz del proyecto):
+1.  Crea el archivo `.env`:
     ```bash
     nano .env
     ```
-
-2.  Escribe esto dentro (pegando tu clave real después del igual, sin espacios):
+2.  Pega esto dentro (sustituyendo por tu clave del Paso 0):
     ```env
-    VITE_API_KEY=AIzaSy...TU_CLAVE_COPIADA_AQUI...
+    VITE_API_KEY=AIzaSy...TU_CLAVE_AQUI...
     ```
+3.  Guarda con `Ctrl+O`, `Enter` y sal con `Ctrl+X`.
 
-### 6️⃣ Construir la Web (Build)
-Esto comprime tu código para que ocupe poco y funcione rápido en producción.
+### 5. Construir la Aplicación (Build)
+Esto convierte el código en una versión ligera y rápida para producción.
 
 ```bash
 npm run build
 ```
-Si todo va bien, verás una carpeta `dist` creada. Esa es tu web terminada.
+*Si todo va bien, verás que se crea una carpeta `dist`.*
 
-### 7️⃣ Ponerla Online con Nginx
-Usaremos Nginx para servir esa carpeta `dist`.
+### 6. Configurar Nginx (Servidor Web)
+Para que la web sea visible en internet o en la red local.
 
-1.  Instalar Nginx:
-    ```bash
-    sudo apt install nginx -y
-    ```
-
-2.  Configurar la web:
+1.  Crear configuración:
     ```bash
     sudo nano /etc/nginx/sites-available/bibliohispa
     ```
-
-3.  Pega esto dentro:
+2.  Pega esto dentro:
     ```nginx
     server {
         listen 80;
-        server_name _; # O tu dominio si tienes uno (ej: biblioteca.micolegio.com)
+        server_name _; # O tu dominio si tienes (ej: biblio.micolegio.com)
 
-        # Ruta a la carpeta 'dist' que se creó en el paso 6
-        # Si instalaste en /var/www:
-        root /var/www/bibliohispa/dist; 
-        
+        # Ruta a la carpeta 'dist' que acabamos de crear
+        root /var/www/bibliohispa/dist;
         index index.html;
 
+        # Importante para que React funcione al recargar página
         location / {
             try_files $uri $uri/ /index.html;
         }
     }
     ```
-
-4.  Activar el sitio:
+3.  Activar el sitio y reiniciar:
     ```bash
     sudo ln -s /etc/nginx/sites-available/bibliohispa /etc/nginx/sites-enabled/
-    sudo rm /etc/nginx/sites-enabled/default  # Borrar el default para evitar conflictos
-    ```
-
-5.  Dar permisos de lectura (Importante si sale Error 403):
-    ```bash
-    # Asegura que Nginx pueda leer los archivos
-    sudo chmod -R 755 /var/www/bibliohispa
-    ```
-
-6.  Reiniciar Nginx:
-    ```bash
+    sudo rm /etc/nginx/sites-enabled/default
     sudo systemctl restart nginx
     ```
 
-### 🎉 ¡Terminado!
-Abre el navegador y pon la **IP de tu servidor**. Deberías ver BiblioHispa funcionando con el logo, la IA y todo listo.
+### ✅ ¡Listo!
+Abre el navegador y pon la **IP de tu servidor**. ¡Tu BiblioHispa debería estar funcionando!
+
+---
+
+## 🔄 ¿Cómo actualizar la web si hago cambios?
+Si mejoras el código en tu ordenador y lo subes a GitHub, solo tienes que hacer esto en el servidor:
+
+```bash
+cd /var/www/bibliohispa
+git pull            # Descarga los cambios nuevos
+npm install         # Por si añadiste librerías nuevas
+npm run build       # Reconstruye la web
+# ¡No hace falta reiniciar Nginx!
+```
