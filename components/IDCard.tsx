@@ -1,3 +1,4 @@
+
 import React from 'react';
 import QRCode from 'react-qr-code';
 import { User } from '../types';
@@ -11,7 +12,18 @@ interface IDCardProps {
 export const IDCard: React.FC<IDCardProps> = ({ user, schoolName, logoUrl }) => {
   return (
     // Standard ID-1 Format: 85.6mm x 53.98mm
-    <div className="id-card-print w-[85.6mm] h-[54mm] bg-white border border-slate-300 rounded-lg overflow-hidden relative shadow-sm flex break-inside-avoid">
+    // We add explicit style prop to enforce dimensions during print and avoid stretching
+    <div 
+      className="id-card-print bg-white border border-slate-300 rounded-lg overflow-hidden relative shadow-sm flex break-inside-avoid"
+      style={{
+        width: '85.6mm',
+        height: '54mm',
+        minWidth: '85.6mm',
+        minHeight: '54mm',
+        maxWidth: '85.6mm',
+        maxHeight: '54mm'
+      }}
+    >
       
       {/* Left Decoration Bar */}
       <div className="w-6 bg-brand-600 h-full relative flex items-center justify-center flex-shrink-0">
