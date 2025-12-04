@@ -64,6 +64,7 @@ Vamos a crear la estructura de la carpeta de forma moderna.
     ```bash
     npm create vite@latest bibliohispa -- --template react-ts
     ```
+    *(Pulsa Enter para aceptar las opciones por defecto si te pregunta).*
 
 3.  Entramos en la carpeta:
     ```bash
@@ -73,8 +74,8 @@ Vamos a crear la estructura de la carpeta de forma moderna.
 4.  Instalamos las librerías necesarias:
     ```bash
     npm install
-    # Instalamos las dependencias específicas de tu app
-    npm install @google/genai lucide-react
+    # IMPORTANTE: Instalamos las dependencias específicas de tu app (IA, QR, Iconos)
+    npm install @google/genai lucide-react react-qr-code html5-qrcode
     ```
 
 ### 4️⃣ Copiar los Archivos
@@ -89,32 +90,32 @@ Ahora hay que meter tu código en el servidor.
     ```
 
 2.  **Crear los archivos:**
-    Usa el editor `nano` para crear cada archivo.
+    Usa el editor `nano` para crear cada archivo copiando el contenido que tienes.
     *Para guardar en nano: `Ctrl+O`, `Enter`. Para salir: `Ctrl+X`.*
 
     *   **Edita el `index.html` (en la raíz):**
         ```bash
         nano index.html
         ```
-        *Borra todo y pega tu código de `index.html`. **OJO:** Busca la línea `<script... src="/index.tsx">` y cámbiala por `<script type="module" src="/src/main.tsx"></script>`.*
+        *(Pega tu código de `index.html` corregido).*
 
     *   **Crea `src/main.tsx` (Tu antiguo index.tsx):**
         ```bash
         nano src/main.tsx
         ```
-        *Pega aquí el contenido de tu `index.tsx`.*
+        *(Pega aquí el contenido de `index.tsx`).*
 
     *   **Crea `src/App.tsx`:**
         ```bash
         nano src/App.tsx
         ```
-        *Pega el contenido de `App.tsx`.*
+        *(Pega el contenido de `App.tsx`).*
 
     *   **Crea `src/types.ts`:**
         ```bash
         nano src/types.ts
         ```
-        *Pega el contenido de `types.ts`.*
+        *(Pega el contenido de `types.ts`).*
 
     *   **Crea los Servicios:**
         ```bash
@@ -127,12 +128,6 @@ Ahora hay que meter tu código en el servidor.
         nano src/services/geminiService.ts
         # (Pega el contenido...)
         ```
-        
-        ⚠️ **CAMBIO IMPORTANTE EN `src/services/geminiService.ts`**:
-        Para que funcione en Vite, busca la línea:
-        `const apiKey = process.env.API_KEY || '';`
-        Y cámbiala por:
-        `const apiKey = import.meta.env.VITE_API_KEY || '';`
 
     *   **Crea los Componentes:**
         ```bash
@@ -140,24 +135,28 @@ Ahora hay que meter tu código en el servidor.
         nano src/components/BookCard.tsx
         nano src/components/AdminView.tsx
         nano src/components/StudentView.tsx
+        nano src/components/QRScanner.tsx
+        nano src/components/IDCard.tsx
+        nano src/components/Toast.tsx
         # (Pega el contenido correspondiente en cada uno)
         ```
 
 ### 5️⃣ Configurar la Clave Secreta (API Key)
 Aquí es donde usamos la clave que conseguiste en el **Paso 0**.
+**IMPORTANTE:** En Vite, las variables deben empezar por `VITE_`.
 
-1.  Crea un archivo `.env` en la carpeta `bibliohispa`:
+1.  Crea un archivo `.env` en la carpeta `bibliohispa` (en la raíz del proyecto):
     ```bash
     nano .env
     ```
 
-2.  Escribe esto dentro (pegando tu clave real):
+2.  Escribe esto dentro (pegando tu clave real después del igual, sin espacios):
     ```env
     VITE_API_KEY=AIzaSy...TU_CLAVE_COPIADA_AQUI...
     ```
 
 ### 6️⃣ Construir la Web (Build)
-Esto comprime tu código para que ocupe poco y funcione rápido.
+Esto comprime tu código para que ocupe poco y funcione rápido en producción.
 
 ```bash
 npm run build
@@ -183,7 +182,10 @@ Usaremos Nginx para servir esa carpeta `dist`.
         listen 80;
         server_name _; # O tu dominio si tienes uno (ej: biblioteca.micolegio.com)
 
-        root /var/www/bibliohispa/dist; # O la ruta donde esté tu carpeta 'dist'
+        # Ruta a la carpeta 'dist' que se creó en el paso 6
+        # Si instalaste en /var/www:
+        root /var/www/bibliohispa/dist; 
+        
         index index.html;
 
         location / {
@@ -191,7 +193,6 @@ Usaremos Nginx para servir esa carpeta `dist`.
         }
     }
     ```
-    *Nota: Si hiciste la instalación en tu carpeta personal (`/home/usuario/...`), cambia la ruta de `root` para que apunte ahí.*
 
 4.  Activar el sitio:
     ```bash
@@ -199,7 +200,7 @@ Usaremos Nginx para servir esa carpeta `dist`.
     sudo rm /etc/nginx/sites-enabled/default  # Borrar el default para evitar conflictos
     ```
 
-5.  Dar permisos (Importante si sale Error 403):
+5.  Dar permisos de lectura (Importante si sale Error 403):
     ```bash
     # Asegura que Nginx pueda leer los archivos
     sudo chmod -R 755 /var/www/bibliohispa

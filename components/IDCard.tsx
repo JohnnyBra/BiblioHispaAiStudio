@@ -10,46 +10,54 @@ interface IDCardProps {
 
 export const IDCard: React.FC<IDCardProps> = ({ user, schoolName, logoUrl }) => {
   return (
-    <div className="w-[85.6mm] h-[53.98mm] bg-white border-2 border-slate-200 rounded-xl overflow-hidden relative shadow-sm print:shadow-none print:border-slate-300 flex flex-row print:break-inside-avoid page-break-inside-avoid">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-24 h-full bg-brand-600 transform skew-x-[-20deg] translate-x-10"></div>
-      <div className="absolute top-0 right-0 w-2 h-full bg-fun-yellow transform skew-x-[-20deg] translate-x-[-50px]"></div>
+    // Standard ID-1 Format: 85.6mm x 53.98mm
+    <div className="id-card-print w-[85.6mm] h-[54mm] bg-white border border-slate-300 rounded-lg overflow-hidden relative shadow-sm flex break-inside-avoid">
+      
+      {/* Left Decoration Bar */}
+      <div className="w-6 bg-brand-600 h-full relative flex items-center justify-center flex-shrink-0">
+         {/* Absolute positioning ensures the rotated text is centered and not clipped by the narrow container width */}
+         <div className="absolute text-[5px] font-bold text-white uppercase -rotate-90 whitespace-nowrap tracking-wider min-w-max">
+            Cooperativa de Enseñanza La Hispanidad
+         </div>
+      </div>
 
-      {/* Left Content */}
-      <div className="flex-1 p-4 flex flex-col justify-between relative z-10">
-        <div className="flex items-center gap-2">
-            <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain" />
-            <div className="leading-none">
-                <h3 className="font-bold text-[10px] uppercase text-brand-700 tracking-wider">Biblioteca</h3>
-                <h2 className="font-bold text-xs text-slate-800 leading-tight w-32 truncate">{schoolName}</h2>
+      {/* Main Content Area */}
+      <div className="flex-1 p-3 flex flex-col justify-between overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-1">
+           <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain" />
+           <div className="overflow-hidden">
+              <h2 className="font-bold text-xs text-slate-800 leading-none truncate uppercase w-32">{schoolName}</h2>
+              <span className="text-[8px] text-slate-400 font-medium">Carnet de Lector</span>
+           </div>
+        </div>
+
+        {/* Student Info */}
+        <div className="mt-1">
+           <h1 className="font-display font-bold text-lg text-slate-900 leading-none mb-0.5 truncate">{user.firstName}</h1>
+           <h2 className="font-medium text-sm text-slate-600 leading-none truncate">{user.lastName}</h2>
+           <div className="mt-2 inline-block bg-brand-50 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded border border-brand-100">
+              Clase {user.className}
+           </div>
+        </div>
+      </div>
+
+      {/* QR Code Area */}
+      <div className="w-[32mm] bg-slate-50 border-l border-slate-100 p-2 flex flex-col items-center justify-center flex-shrink-0">
+         <div className="bg-white p-1 rounded border border-slate-200 shadow-sm w-full aspect-square flex items-center justify-center">
+            <div style={{ height: "auto", margin: "0 auto", maxWidth: "100%", width: "100%" }}>
+                <QRCode
+                    size={256}
+                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                    value={user.username}
+                    viewBox={`0 0 256 256`}
+                    level="M" // Less error correction = less dense dots = easier to scan
+                />
             </div>
-        </div>
-
-        <div className="mt-2">
-            <span className="block text-[8px] text-slate-400 uppercase font-bold">Nombre</span>
-            <h1 className="font-display font-bold text-lg text-slate-800 leading-none mb-1">{user.firstName}</h1>
-            <h2 className="font-display font-medium text-sm text-slate-600 leading-none">{user.lastName}</h2>
-        </div>
-
-        <div className="mt-auto">
-            <span className="inline-block bg-brand-100 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-md">
-                Clase {user.className}
-            </span>
-        </div>
+         </div>
+         <p className="text-[7px] font-mono text-slate-400 mt-1 text-center w-full truncate">{user.username}</p>
       </div>
 
-      {/* Right Content (QR) */}
-      <div className="w-24 p-2 flex flex-col items-center justify-center relative z-10 bg-white/90 m-2 rounded-lg">
-        <div style={{ height: "auto", margin: "0 auto", maxWidth: 64, width: "100%" }}>
-            <QRCode
-                size={256}
-                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                value={user.username}
-                viewBox={`0 0 256 256`}
-            />
-        </div>
-        <p className="text-[8px] font-mono text-slate-500 mt-1 text-center break-all leading-tight">{user.username}</p>
-      </div>
     </div>
   );
 };

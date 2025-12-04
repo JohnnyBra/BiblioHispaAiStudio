@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import '../types';
 
 interface QRScannerProps {
   onScanSuccess: (decodedText: string) => void;
@@ -8,7 +9,12 @@ interface QRScannerProps {
 }
 
 export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailure, onClose }) => {
-  useEffect(() => {
+  const scannerRef = React.useRef<Html5QrcodeScanner | null>(null);
+
+  React.useEffect(() => {
+    // Evitar doble inicialización en React StrictMode
+    if (scannerRef.current) return;
+
     // Configuración del escáner
     const config = { 
         fps: 10, 
@@ -21,13 +27,15 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
       config, 
       /* verbose= */ false
     );
+    
+    scannerRef.current = html5QrcodeScanner;
 
     html5QrcodeScanner.render(
         (decodedText) => {
             // Detener el escaneo tras el éxito para evitar lecturas múltiples
             html5QrcodeScanner.clear().then(() => {
                 onScanSuccess(decodedText);
-            });
+            }).catch(console.error);
         }, 
         (errorMessage) => {
             if (onScanFailure) onScanFailure(errorMessage);
@@ -36,9 +44,12 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
 
     // Limpieza al desmontar
     return () => {
-      html5QrcodeScanner.clear().catch(error => {
-          console.error("Failed to clear html5QrcodeScanner. ", error);
-      });
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(error => {
+            console.error("Failed to clear html5QrcodeScanner. ", error);
+        });
+        scannerRef.current = null;
+      }
     };
   }, [onScanSuccess, onScanFailure]);
 

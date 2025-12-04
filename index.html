@@ -34,6 +34,18 @@
             animation: {
               'bounce-slow': 'bounce 3s infinite',
               'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'scale-in': 'scaleIn 0.2s ease-out',
+              'fade-in': 'fadeIn 0.3s ease-out',
+            },
+            keyframes: {
+              scaleIn: {
+                '0%': { transform: 'scale(0.9)', opacity: '0' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              }
             }
           }
         }
@@ -59,44 +71,90 @@
         background: #94a3b8;
       }
 
-      /* Print Styles for ID Cards */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* PRINT STYLES - ID CARDS A4 OPTIMIZATION */
       @media print {
+        @page {
+          size: A4;
+          margin: 10mm;
+        }
+        
+        body {
+          margin: 0;
+          padding: 0;
+          background: white;
+        }
+
+        .no-print {
+          display: none !important;
+        }
+
+        /* Hide everything by default */
         body * {
           visibility: hidden;
+          height: 0;
+          overflow: hidden;
         }
-        .print-area, .print-area * {
+
+        /* Show only the printable area and its children */
+        #printable-area, #printable-area * {
           visibility: visible;
+          height: auto;
+          overflow: visible;
         }
-        .print-area {
+
+        /* Position the printable area at the top-left of the page */
+        #printable-area {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
+          display: grid !important;
+          grid-template-columns: repeat(2, 1fr); /* 2 Columns exactly */
+          grid-gap: 10mm; /* Space between cards */
+          padding: 0;
+          margin: 0;
+          background: white !important;
         }
-        .no-print {
-          display: none !important;
+
+        /* Ensure cards don't get split between pages */
+        .id-card-print {
+          break-inside: avoid;
+          page-break-inside: avoid;
+          margin: 0 auto;
         }
-        @page {
-          margin: 1cm;
+
+        /* Force background colors */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
         }
       }
     </style>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
     "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
-    "react-qr-code": "https://aistudiocdn.com/react-qr-code@^2.0.15",
-    "html5-qrcode": "https://aistudiocdn.com/html5-qrcode@^2.3.8"
+    "html5-qrcode": "https://aistudiocdn.com/html5-qrcode@^2.3.8",
+    "react-qr-code": "https://aistudiocdn.com/react-qr-code@^2.0.18"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

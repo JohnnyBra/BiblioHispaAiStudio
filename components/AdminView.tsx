@@ -1,16 +1,18 @@
 
-import React, { useState, useRef } from 'react';
-import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings } from '../types';
+import * as React from 'react';
+import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory } from '../types';
 import { normalizeString } from '../services/storageService';
-import { searchBookCover } from '../services/bookService';
+import { searchBookCover, determineBookAge } from '../services/bookService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer } from 'lucide-react';
+import { ToastType } from './Toast';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw } from 'lucide-react';
 
 interface AdminViewProps {
   users: User[];
   books: Book[];
   reviews?: Review[];
+  pointHistory: PointHistory[];
   settings: AppSettings;
   onAddUsers: (users: User[]) => void;
   onAddBooks: (books: Book[]) => void;
@@ -20,12 +22,16 @@ interface AdminViewProps {
   onDeleteReview?: (id: string) => void;
   onUpdateSettings: (settings: AppSettings) => void;
   onChangePassword: (newPassword: string) => void;
+  onShowToast: (message: string, type: ToastType) => void;
+  onAddPoints: (userId: string, amount: number, reason: string) => void;
+  onDeletePointEntry: (entryId: string) => void;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
   users,
   books,
   reviews = [],
+  pointHistory,
   settings,
   onAddUsers,
   onAddBooks,
@@ -34,39 +40,49 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onUpdateUser,
   onDeleteReview,
   onUpdateSettings,
-  onChangePassword
+  onChangePassword,
+  onShowToast,
+  onAddPoints,
+  onDeletePointEntry
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards'>('users');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards'>('users');
+  const [searchTerm, setSearchTerm] = React.useState('');
   
   // Single Entry States
-  const [newUser, setNewUser] = useState({ name: '', lastname: '', className: '' });
-  const [newBook, setNewBook] = useState({ title: '', author: '', genre: '', units: 1, shelf: '' });
+  const [newUser, setNewUser] = React.useState({ name: '', lastname: '', className: '' });
+  const [newBook, setNewBook] = React.useState({ title: '', author: '', genre: '', units: 1, shelf: '', age: '' });
   
   // Import Config State
-  const [importClassName, setImportClassName] = useState('');
-  const [csvEncoding, setCsvEncoding] = useState<string>('windows-1252');
+  const [importClassName, setImportClassName] = React.useState('');
+  const [csvEncoding, setCsvEncoding] = React.useState<string>('windows-1252');
   
   // Edit User State
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = React.useState<User | null>(null);
+
+  // Points Management State
+  const [managingPointsUser, setManagingPointsUser] = React.useState<User | null>(null);
+  const [pointsAmount, setPointsAmount] = React.useState<number>(0);
+  const [pointsReason, setPointsReason] = React.useState<string>('');
 
   // Settings State
-  const [tempSettings, setTempSettings] = useState<AppSettings>(settings);
-  const [settingsSaved, setSettingsSaved] = useState(false);
-  const [newAdminPassword, setNewAdminPassword] = useState('');
-  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
-  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [tempSettings, setTempSettings] = React.useState<AppSettings>(settings);
+  const [settingsSaved, setSettingsSaved] = React.useState(false);
+  const [newAdminPassword, setNewAdminPassword] = React.useState('');
+  const [confirmAdminPassword, setConfirmAdminPassword] = React.useState('');
+  const [passwordSaved, setPasswordSaved] = React.useState(false);
   
   // ID Cards State
-  const [cardClassFilter, setCardClassFilter] = useState<string>('all');
+  const [cardClassFilter, setCardClassFilter] = React.useState<string>('all');
   
   // Loading States
-  const [isAddingBook, setIsAddingBook] = useState(false);
-  const [isImportingBooks, setIsImportingBooks] = useState(false);
+  const [isAddingBook, setIsAddingBook] = React.useState(false);
+  const [isImportingBooks, setIsImportingBooks] = React.useState(false);
+  const [loadingProgress, setLoadingProgress] = React.useState(0);
+  const [loadingMessage, setLoadingMessage] = React.useState('');
 
   // References for file inputs
-  const userFileInputRef = useRef<HTMLInputElement>(null);
-  const bookFileInputRef = useRef<HTMLInputElement>(null);
+  const userFileInputRef = React.useRef<HTMLInputElement>(null);
+  const bookFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // --- Handlers ---
 
@@ -76,7 +92,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
     // Validate Class Name Input
     if (!importClassName.trim()) {
-      alert("⚠️ Por favor, escribe el nombre de la CLASE antes de subir el archivo (ej: 5ºA).");
+      onShowToast("⚠️ Por favor, escribe el nombre de la CLASE antes de subir el archivo.", "error");
       if (userFileInputRef.current) userFileInputRef.current.value = ''; // Reset input
       return;
     }
@@ -135,10 +151,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
       
       if (parsedUsers.length > 0) {
         onAddUsers(parsedUsers);
-        alert(`✅ Se han importado ${importedCount} alumnos a la clase "${targetClass}".`);
+        onShowToast(`✅ Se han importado ${importedCount} alumnos a la clase "${targetClass}".`, "success");
         setImportClassName(''); 
       } else {
-        alert("⚠️ No se pudieron leer usuarios. Asegúrate del formato: 'Apellidos, Nombre'");
+        onShowToast("⚠️ No se pudieron leer usuarios. Verifica el formato.", "error");
       }
     };
     
@@ -152,16 +168,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
     if (!file) return;
 
     setIsImportingBooks(true);
+    setLoadingProgress(0);
+    setLoadingMessage("Iniciando lectura del archivo...");
 
     const reader = new FileReader();
     reader.onload = async (event) => {
       const text = event.target?.result as string;
       const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
       const startIndex = lines[0].toLowerCase().includes('titulo') ? 1 : 0;
+      const totalToProcess = lines.length - startIndex;
       
       const parsedBooks: Book[] = [];
-      const promises: Promise<void>[] = [];
       
+      // We process sequentially to provide accurate progress bar
       for (let i = startIndex; i < lines.length; i++) {
         const parts = lines[i].split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
         
@@ -171,31 +190,42 @@ export const AdminView: React.FC<AdminViewProps> = ({
           const genre = parts[2] || 'General';
           const units = parseInt(parts[3]) || 1;
           const shelf = parts[4] || 'Recepción';
+          const ageFromCsv = parts[5] || '';
 
           if (title) {
-            const p = searchBookCover(title, author).then(coverUrl => {
-               parsedBooks.push({
-                id: `book-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
-                title,
-                author,
-                genre,
-                unitsTotal: units,
-                unitsAvailable: units,
-                shelf,
-                coverUrl,
-                readCount: 0
-              });
-            });
-            promises.push(p);
+            // Update Progress UI
+            setLoadingProgress(Math.round(((i - startIndex) / totalToProcess) * 100));
+            setLoadingMessage(`Procesando (${i - startIndex + 1}/${totalToProcess}): "${title}"`);
+            
+            try {
+                // Fetch Metadata with detailed visual feedback
+                const coverUrl = await searchBookCover(title, author);
+                const recommendedAge = ageFromCsv || await determineBookAge(title, author);
+                
+                parsedBooks.push({
+                  id: `book-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
+                  title,
+                  author,
+                  genre,
+                  unitsTotal: units,
+                  unitsAvailable: units,
+                  shelf,
+                  coverUrl: coverUrl || undefined, // undefined triggers CSS fallback
+                  readCount: 0,
+                  recommendedAge
+                });
+            } catch (err) {
+                console.error(`Error processing ${title}`, err);
+            }
           }
         }
       }
 
-      await Promise.all(promises);
-      
       setIsImportingBooks(false);
+      setLoadingProgress(100);
+      setLoadingMessage("¡Completado!");
       onAddBooks(parsedBooks);
-      alert(`✅ Se han importado ${parsedBooks.length} libros con sus portadas.`);
+      onShowToast(`✅ Se han importado ${parsedBooks.length} libros correctamente.`, "success");
     };
     
     reader.readAsText(file, csvEncoding);
@@ -219,6 +249,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     };
     onAddUsers([user]);
     setNewUser({ name: '', lastname: '', className: '' });
+    onShowToast(`Usuario ${user.firstName} creado`, "success");
   };
 
   const handleAddSingleBook = async (e: React.FormEvent) => {
@@ -226,8 +257,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
     if (!newBook.title || !newBook.author) return;
 
     setIsAddingBook(true);
+    setLoadingMessage("Buscando portada y datos...");
     
     const coverUrl = await searchBookCover(newBook.title, newBook.author);
+    const finalAge = newBook.age || await determineBookAge(newBook.title, newBook.author);
 
     const book: Book = {
       id: `book-${Date.now()}`,
@@ -237,13 +270,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
       unitsTotal: newBook.units,
       unitsAvailable: newBook.units,
       shelf: newBook.shelf,
-      coverUrl: coverUrl,
-      readCount: 0
+      coverUrl: coverUrl || undefined,
+      readCount: 0,
+      recommendedAge: finalAge
     };
     
     onAddBooks([book]);
     setIsAddingBook(false);
-    setNewBook({ title: '', author: '', genre: '', units: 1, shelf: '' });
+    setNewBook({ title: '', author: '', genre: '', units: 1, shelf: '', age: '' });
+    onShowToast(`Libro "${book.title}" añadido`, "success");
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
@@ -255,6 +290,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
       };
       onUpdateUser(updatedUser);
       setEditingUser(null);
+    }
+  };
+
+  const handleAddPointsSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if(managingPointsUser && pointsAmount !== 0 && pointsReason) {
+       onAddPoints(managingPointsUser.id, pointsAmount, pointsReason);
+       setPointsAmount(0);
+       setPointsReason('');
     }
   };
 
@@ -281,11 +325,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
     if (newAdminPassword.length < 4) {
-      alert("La contraseña debe tener al menos 4 caracteres.");
+      onShowToast("La contraseña debe tener al menos 4 caracteres.", "error");
       return;
     }
     if (newAdminPassword !== confirmAdminPassword) {
-      alert("Las contraseñas no coinciden.");
+      onShowToast("Las contraseñas no coinciden.", "error");
       return;
     }
     onChangePassword(newAdminPassword);
@@ -348,7 +392,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <input 
                     type="text" 
                     placeholder="Buscar alumno..." 
-                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -377,6 +421,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <td className="p-3"><span className="font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-xs">{user.username}</span></td>
                         <td className="p-3 text-fun-orange font-bold">{user.points} XP</td>
                         <td className="p-3 flex justify-end gap-2">
+                          <button onClick={() => setManagingPointsUser(user)} className="text-fun-orange hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors" title="Gestionar Puntos">
+                            <Trophy size={16} />
+                          </button>
                            <button onClick={() => setEditingUser(user)} className="text-brand-400 hover:text-brand-600 p-2 hover:bg-brand-50 rounded-lg transition-colors" title="Editar">
                             <Edit2 size={16} />
                           </button>
@@ -397,9 +444,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
                 <form onSubmit={handleAddSingleUser} className="space-y-3">
-                  <input className="w-full p-2 border border-slate-200 rounded-xl" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
                   <Button type="submit" className="w-full">
                     <Plus size={18}/> Crear Usuario
                   </Button>
@@ -413,7 +460,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
                   <input 
                     type="text"
-                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
                     placeholder="Ej: 5º A"
                     value={importClassName}
                     onChange={(e) => setImportClassName(e.target.value)}
@@ -425,7 +472,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <select 
                     value={csvEncoding}
                     onChange={(e) => setCsvEncoding(e.target.value)}
-                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white"
+                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
                   >
                     <option value="windows-1252">Excel / ANSI (Recomendado)</option>
                     <option value="UTF-8">UTF-8 (Estándar)</option>
@@ -462,7 +509,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <input 
                     type="text" 
                     placeholder="Buscar libro..." 
-                    className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64"
+                    className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64 bg-white text-slate-900"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -472,13 +519,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     .filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase()))
                     .map(book => (
                        <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
-                          <img src={book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                          {book.coverUrl ? (
+                             <img src={book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                          ) : (
+                             <div className="w-16 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded shadow-sm flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center">
+                                {book.title.substring(0, 10)}...
+                             </div>
+                          )}
                           <div className="flex-1 min-w-0">
                              <h4 className="font-bold text-slate-800 truncate text-sm" title={book.title}>{book.title}</h4>
                              <p className="text-xs text-slate-500 mb-1">{book.author}</p>
-                             <div className="flex gap-2 text-xs text-slate-400 mb-2">
-                               <span>Estante: {book.shelf}</span>
-                               <span>Stock: {book.unitsAvailable}/{book.unitsTotal}</span>
+                             <div className="flex gap-2 text-xs text-slate-400 mb-2 flex-wrap">
+                               <span>{book.shelf}</span>
+                               <span className={book.unitsAvailable > 0 ? "text-green-600" : "text-red-500"}>{book.unitsAvailable}/{book.unitsTotal}</span>
+                               {book.recommendedAge && <span className="text-purple-500 font-bold">{book.recommendedAge}</span>}
                              </div>
                              <button onClick={() => onDeleteBook(book.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Trash2 size={12}/> Eliminar
@@ -495,16 +549,29 @@ export const AdminView: React.FC<AdminViewProps> = ({
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
                 <form onSubmit={handleAddSingleBook} className="space-y-3">
-                  <input className="w-full p-2 border border-slate-200 rounded-xl" placeholder="Título" value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl" placeholder="Autor" value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Título" value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Autor" value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} />
                   <div className="flex gap-2">
-                     <input className="w-1/2 p-2 border border-slate-200 rounded-xl" placeholder="Género" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})} />
-                     <input className="w-1/2 p-2 border border-slate-200 rounded-xl" placeholder="Estantería" value={newBook.shelf} onChange={e => setNewBook({...newBook, shelf: e.target.value})} />
+                     <input className="w-1/2 p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Género" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})} />
+                     <input className="w-1/2 p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Estantería" value={newBook.shelf} onChange={e => setNewBook({...newBook, shelf: e.target.value})} />
                   </div>
-                  <div className="flex items-center gap-2">
-                     <span className="text-sm text-slate-500">Unidades:</span>
-                     <input type="number" min="1" className="w-20 p-2 border border-slate-200 rounded-xl" value={newBook.units} onChange={e => setNewBook({...newBook, units: parseInt(e.target.value)})} />
+                  <div className="flex gap-2">
+                     <div className="flex items-center gap-2 w-1/2">
+                        <span className="text-sm text-slate-500">Ud:</span>
+                        <input type="number" min="1" className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" value={newBook.units} onChange={e => setNewBook({...newBook, units: parseInt(e.target.value)})} />
+                     </div>
+                     <div className="w-1/2">
+                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Edad (Auto)" value={newBook.age} onChange={e => setNewBook({...newBook, age: e.target.value})} />
+                     </div>
                   </div>
+                  
+                  {isAddingBook && (
+                     <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded-lg flex items-center gap-2 mb-2">
+                        <Loader2 size={14} className="animate-spin"/>
+                        {loadingMessage || "Procesando..."}
+                     </div>
+                  )}
+
                   <Button type="submit" className="w-full" isLoading={isAddingBook}>
                     <Plus size={18}/> Guardar Libro
                   </Button>
@@ -514,17 +581,34 @@ export const AdminView: React.FC<AdminViewProps> = ({
              {/* CSV Import */}
              <div className="bg-fun-purple/10 p-6 rounded-3xl border border-fun-purple/20">
                <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
+               <p className="text-xs text-purple-600 mb-3">Formato: Título, Autor, Género, Unidades, Estantería, Edad Rec.</p>
                <div className="mb-4">
                   <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación del Archivo</label>
                   <select 
                     value={csvEncoding}
                     onChange={(e) => setCsvEncoding(e.target.value)}
-                    className="w-full p-2 border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                    className="w-full p-2 border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white text-slate-900"
                   >
                     <option value="windows-1252">Excel / ANSI (Recomendado)</option>
                     <option value="UTF-8">UTF-8 (Estándar)</option>
                   </select>
                </div>
+
+               {/* PROGRESS BAR */}
+               {isImportingBooks && (
+                   <div className="mb-4 bg-white p-3 rounded-xl border border-purple-200">
+                        <div className="flex justify-between text-xs font-bold text-purple-700 mb-1">
+                             <span>{loadingMessage}</span>
+                             <span>{loadingProgress}%</span>
+                        </div>
+                        <div className="w-full bg-purple-100 rounded-full h-2.5 overflow-hidden">
+                             <div 
+                                className="bg-purple-600 h-2.5 rounded-full transition-all duration-300" 
+                                style={{ width: `${loadingProgress}%` }}
+                             ></div>
+                        </div>
+                   </div>
+               )}
 
                <input 
                   type="file" 
@@ -541,7 +625,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     ) : (
                        <Upload size={24} className="mb-2"/>
                     )}
-                    <span className="font-semibold">{isImportingBooks ? 'Buscando portadas...' : 'Subir catálogo'}</span>
+                    <span className="font-semibold">{isImportingBooks ? 'Importando...' : 'Subir catálogo'}</span>
                  </div>
                </label>
              </div>
@@ -644,24 +728,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
                </div>
            </div>
 
-           <div className="print-area bg-white p-4 rounded-3xl min-h-[500px]" id="printable-carnets">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 print:grid-cols-2 print:gap-2">
-                 {users
-                    .filter(u => u.role === UserRole.STUDENT)
-                    .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
-                    .map(user => (
-                       <IDCard 
-                          key={user.id} 
-                          user={user} 
-                          schoolName={settings.schoolName}
-                          logoUrl={settings.logoUrl}
-                       />
-                    ))
-                 }
-                 {users.filter(u => u.role === UserRole.STUDENT).length === 0 && (
-                   <p className="col-span-full text-center py-20 text-slate-400 no-print">No hay alumnos para generar carnets.</p>
-                 )}
-              </div>
+           {/* Printable Container: Must correspond to ID in CSS */}
+           <div id="printable-area" className="bg-white p-4 rounded-3xl min-h-[500px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {users
+                 .filter(u => u.role === UserRole.STUDENT)
+                 .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
+                 .map(user => (
+                    <IDCard 
+                       key={user.id} 
+                       user={user} 
+                       schoolName={settings.schoolName}
+                       logoUrl={settings.logoUrl}
+                    />
+                 ))
+              }
+              {users.filter(u => u.role === UserRole.STUDENT).length === 0 && (
+                <p className="col-span-full text-center py-20 text-slate-400 no-print">No hay alumnos para generar carnets.</p>
+              )}
            </div>
         </div>
       )}
@@ -677,7 +760,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
                     <input 
                         type="text" 
-                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
                         value={tempSettings.schoolName}
                         onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
                     />
@@ -711,7 +794,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             <div>
                                 <input 
                                     type="text" 
-                                    className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm text-slate-600"
+                                    className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm bg-white text-slate-900"
                                     value={tempSettings.logoUrl}
                                     onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
                                     placeholder="https://..."
@@ -749,7 +832,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                    <div className="relative">
                       <input 
                          type="password" 
-                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
                          value={newAdminPassword}
                          onChange={e => setNewAdminPassword(e.target.value)}
                          placeholder="••••••••"
@@ -763,7 +846,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                    <div className="relative">
                       <input 
                          type="password" 
-                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
                          value={confirmAdminPassword}
                          onChange={e => setConfirmAdminPassword(e.target.value)}
                          placeholder="••••••••"
@@ -801,7 +884,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label>
                 <input 
-                  className="w-full p-3 border border-slate-200 rounded-xl" 
+                  className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900" 
                   value={editingUser.firstName} 
                   onChange={e => setEditingUser({...editingUser, firstName: e.target.value})} 
                 />
@@ -809,7 +892,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Apellido</label>
                 <input 
-                  className="w-full p-3 border border-slate-200 rounded-xl" 
+                  className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900" 
                   value={editingUser.lastName} 
                   onChange={e => setEditingUser({...editingUser, lastName: e.target.value})} 
                 />
@@ -817,18 +900,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Clase</label>
                 <input 
-                  className="w-full p-3 border border-slate-200 rounded-xl" 
+                  className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900" 
                   value={editingUser.className} 
                   onChange={e => setEditingUser({...editingUser, className: e.target.value})} 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Puntos (XP)</label>
-                <input 
-                  type="number"
-                  className="w-full p-3 border border-slate-200 rounded-xl" 
-                  value={editingUser.points} 
-                  onChange={e => setEditingUser({...editingUser, points: parseInt(e.target.value) || 0})} 
                 />
               </div>
               
@@ -841,6 +915,93 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* POINTS MANAGEMENT MODAL */}
+      {managingPointsUser && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm no-print">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl transform transition-all scale-100 max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+               <div>
+                  <h3 className="text-xl font-bold font-display text-slate-800 flex items-center gap-2">
+                    <Trophy className="text-fun-orange" size={24}/> 
+                    Gestionar Puntos
+                  </h3>
+                  <p className="text-sm text-slate-500">{managingPointsUser.firstName} {managingPointsUser.lastName} • <span className="font-bold text-brand-600">{managingPointsUser.points} XP Total</span></p>
+               </div>
+               <button onClick={() => setManagingPointsUser(null)} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full">
+                  <X size={20} />
+               </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+               {/* 1. Adjust Form */}
+               <div className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100">
+                  <h4 className="text-sm font-bold text-slate-600 uppercase mb-3">Ajuste Manual</h4>
+                  <form onSubmit={handleAddPointsSubmit} className="space-y-3">
+                     <div className="flex gap-3">
+                        <div className="w-1/3">
+                           <input 
+                              type="number" 
+                              placeholder="+/-" 
+                              className="w-full p-2 border border-slate-200 rounded-xl text-center font-bold text-slate-700 bg-white"
+                              value={pointsAmount === 0 ? '' : pointsAmount}
+                              onChange={e => setPointsAmount(parseInt(e.target.value) || 0)}
+                           />
+                        </div>
+                        <div className="flex-1">
+                           <input 
+                              type="text" 
+                              placeholder="Motivo (ej. Ayuda en biblioteca)" 
+                              className="w-full p-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-900"
+                              value={pointsReason}
+                              onChange={e => setPointsReason(e.target.value)}
+                           />
+                        </div>
+                     </div>
+                     <Button type="submit" size="sm" className="w-full" disabled={!pointsAmount || !pointsReason}>
+                        Aplicar Ajuste
+                     </Button>
+                  </form>
+               </div>
+
+               {/* 2. History List */}
+               <div>
+                  <h4 className="text-sm font-bold text-slate-600 uppercase mb-3 flex items-center gap-2">
+                     <History size={16}/> Historial de Puntos
+                  </h4>
+                  <div className="space-y-2">
+                     {pointHistory
+                        .filter(ph => ph.userId === managingPointsUser.id)
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map(entry => (
+                           <div key={entry.id} className="flex justify-between items-center p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
+                              <div>
+                                 <p className="text-sm font-bold text-slate-700">{entry.reason}</p>
+                                 <p className="text-[10px] text-slate-400">{new Date(entry.date).toLocaleDateString()} - {new Date(entry.date).toLocaleTimeString()}</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                 <span className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                    {entry.amount > 0 ? '+' : ''}{entry.amount} XP
+                                 </span>
+                                 <button 
+                                    onClick={() => onDeletePointEntry(entry.id)} 
+                                    className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Borrar entrada y revertir puntos"
+                                 >
+                                    <Trash2 size={16}/>
+                                 </button>
+                              </div>
+                           </div>
+                        ))}
+                     {pointHistory.filter(ph => ph.userId === managingPointsUser.id).length === 0 && (
+                        <p className="text-center text-slate-400 text-sm py-4">No hay historial disponible.</p>
+                     )}
+                  </div>
+               </div>
+            </div>
           </div>
         </div>
       )}
