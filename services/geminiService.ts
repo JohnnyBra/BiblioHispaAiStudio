@@ -1,7 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 import { Book } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get the AI client only when needed (Lazy Initialization)
+// This prevents the "An API Key must be set" error from crashing the whole app on load
+const getAIClient = () => {
+  // Guidelines: The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("API Key no encontrada. Configura process.env.API_KEY");
+  }
+  
+  return new GoogleGenAI({ apiKey });
+};
 
 export const chatWithLibrarian = async (
   userQuery: string,
@@ -14,6 +25,7 @@ export const chatWithLibrarian = async (
     .join('\n');
 
   try {
+    const ai = getAIClient();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
@@ -38,13 +50,14 @@ export const chatWithLibrarian = async (
     return response.text || "¡Ups! Se me ha caído un libro y no te he escuchado. ¿Repites?";
   } catch (error) {
     console.error("Error calling Gemini:", error);
-    return "Mi cerebro de robot está echando humo. Verifica tu API Key en el archivo .env.";
+    return "Mi cerebro de robot está desconectado. Dile al profe que revise la API Key.";
   }
 };
 
 // New function to determine age range automatically
 export const getAIRecommendedAge = async (title: string, author: string): Promise<string> => {
   try {
+    const ai = getAIClient();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
