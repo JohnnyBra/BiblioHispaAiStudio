@@ -1,12 +1,18 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Book } from "../types";
 
-// Helper to get the AI client only when needed (Lazy Initialization)
+// Helper to initialize AI only when needed (Lazy Load)
 const getAIClient = () => {
-  // Use process.env.API_KEY directly as per guidelines.
+  // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
   // Assume this variable is pre-configured, valid, and accessible.
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    console.error("API Key not found. Please check your .env file and ensure API_KEY is set.");
+    throw new Error("API Key missing");
+  }
+  
+  return new GoogleGenAI({ apiKey });
 };
 
 export const chatWithLibrarian = async (
@@ -14,13 +20,13 @@ export const chatWithLibrarian = async (
   userAgeGroup: string,
   availableBooks: Book[]
 ): Promise<string> => {
-  // Create a simplified catalog for the AI to process efficiently
   const bookList = availableBooks
     .map(b => `- "${b.title}" de ${b.author} (${b.genre}, Estante: ${b.shelf})`)
     .join('\n');
 
   try {
     const ai = getAIClient();
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
@@ -45,14 +51,14 @@ export const chatWithLibrarian = async (
     return response.text || "¡Ups! Se me ha caído un libro y no te he escuchado. ¿Repites?";
   } catch (error) {
     console.error("Error calling Gemini:", error);
-    return "Mi cerebro de robot está desconectado. Dile al profe que revise la API Key en el servidor.";
+    return "No puedo conectar con mi cerebro robot. Por favor, avisa al profesor para revisar la conexión.";
   }
 };
 
-// New function to determine age range automatically
 export const getAIRecommendedAge = async (title: string, author: string): Promise<string> => {
   try {
     const ai = getAIClient();
+    
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
@@ -70,7 +76,6 @@ export const getAIRecommendedAge = async (title: string, author: string): Promis
     });
     
     const text = response.text?.trim() || 'TP';
-    // Clean up response if AI adds extra text
     const validRanges = ['0-5', '6-8', '9-11', '12-14', '+15'];
     const found = validRanges.find(r => text.includes(r));
     return found || 'TP';
@@ -81,7 +86,6 @@ export const getAIRecommendedAge = async (title: string, author: string): Promis
   }
 };
 
-// Legacy support if needed, redirects to chat
 export const getBookRecommendation = async (
   userAgeGroup: string,
   userInterests: string,
