@@ -15,8 +15,8 @@
     "lucide-react": "^0.555.0",
     "html5-qrcode": "^2.3.8",
     "react-qr-code": "^2.0.18",
-    "@vitejs/plugin-react": "^5.1.1",
-    "vite": "^7.2.6"
+    "vite": "^7.2.6",
+    "@vitejs/plugin-react": "^5.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
