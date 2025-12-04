@@ -138,9 +138,9 @@ Para que la web sea visible en internet o en la red local.
 
 ---
 
-## 🔐 PASO EXTRA: Activar HTTPS (Para que funcione la cámara)
+## 🔒 PASO EXTRA: Activar HTTPS (Para que funcione la cámara en Red Local)
 
-Los móviles bloquean la cámara si la web no es segura (HTTPS). Sigue estos pasos para crear un "certificado casero" (autofirmado) que te permitirá usar la cámara.
+Los móviles bloquean la cámara si la web no es segura (HTTPS). Sigue estos pasos para crear un "certificado casero" (autofirmado) que te permitirá usar la cámara si accedes por IP dentro del colegio.
 
 **1. Crear carpeta para certificados:**
 ```bash
@@ -153,10 +153,33 @@ Te pedirá datos (país, etc), puedes pulsar ENTER a todo.
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/selfsigned.key -out /etc/nginx/ssl/selfsigned.crt
 ```
 
-**3. Aplicar la configuración segura:**
-Vamos a copiar el archivo `nginx-ssl.conf` que hay en el proyecto a la configuración de Nginx.
+**3. Configurar Nginx para SSL:**
+Edita el archivo de configuración:
 ```bash
-sudo cp /var/www/BiblioHispaAiStudio/nginx-ssl.conf /etc/nginx/sites-available/bibliohispa
+sudo nano /etc/nginx/sites-available/bibliohispa
+```
+Y sustituye su contenido por este:
+```nginx
+server {
+    listen 80;
+    server_name _;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name _;
+
+    ssl_certificate /etc/nginx/ssl/selfsigned.crt;
+    ssl_certificate_key /etc/nginx/ssl/selfsigned.key;
+
+    root /var/www/BiblioHispaAiStudio/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
 ```
 
 **4. Reiniciar el servidor:**
@@ -164,10 +187,50 @@ sudo cp /var/www/BiblioHispaAiStudio/nginx-ssl.conf /etc/nginx/sites-available/b
 sudo systemctl restart nginx
 ```
 
-**¡LISTO!**
-Ahora entra en `https://TU_IP_DEL_SERVIDOR` (Fíjate en la **S** de https).
-El navegador te dirá **"La conexión no es privada"**. Esto es normal.
-*   En Chrome/Móvil: Pulsa "Configuración Avanzada" -> "Acceder al sitio (no seguro)".
+---
+
+## 🌍 PARTE 3: Acceso desde Internet (Fuera del Colegio)
+
+Para que los alumnos puedan entrar desde casa sin estar conectados al wifi del colegio, tienes 3 opciones.
+
+### Opción 1: Cloudflare Tunnel (Recomendada 🏆)
+Esta opción es la más segura y profesional. Te da HTTPS automático (candadito verde real) y no necesitas tocar el router del colegio.
+
+**Requisitos:** Un dominio propio (ej: `tubiblioteca.com`). Cuestan unos 10€/año en Namecheap o Google Domains.
+
+1.  Crea una cuenta gratuita en **[Cloudflare](https://www.cloudflare.com/)** y añade tu dominio.
+2.  En el panel de Cloudflare, ve a **Zero Trust** > **Networks** > **Tunnels**.
+3.  Dale a **Create a Tunnel**, elige **Cloudflared** y ponle nombre.
+4.  Copia el comando de instalación para **Debian/Ubuntu** y ejecútalo en tu servidor.
+5.  En la pestaña **Public Hostname**:
+    *   **Subdomain:** `biblioteca`
+    *   **Domain:** `tudominio.com`
+    *   **Service Type:** `HTTP`
+    *   **URL:** `localhost:80`
+6.  Guarda y listo. Accede por `https://biblioteca.tudominio.com`.
+
+### Opción 2: Ngrok (Gratis y Rápido)
+Ideal para pruebas rápidas. No necesitas dominio, pero la URL cambia si reinicias el servidor.
+
+1.  Instala Ngrok en el servidor:
+    ```bash
+    curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list && sudo apt update && sudo apt install ngrok
+    ```
+2.  Regístrate en **[ngrok.com](https://ngrok.com)** y consigue tu `AUTH_TOKEN`.
+3.  Conecta tu cuenta: `ngrok config add-authtoken TU_TOKEN`
+4.  Inicia el túnel:
+    ```bash
+    ngrok http 80
+    ```
+5.  Copia la URL que te da (ej: `https://...ngrok-free.app`).
+
+### Opción 3: Abrir Puertos (Método Clásico)
+Solo si tienes acceso al Router del colegio.
+
+1.  Entra al Router (normalmente 192.168.1.1).
+2.  Busca **Port Forwarding**.
+3.  Abre el puerto **443** (HTTPS) hacia la **IP LOCAL** de tu servidor Ubuntu.
+4.  Usa tu **IP PÚBLICA** para acceder.
 
 ---
 
