@@ -1,14 +1,21 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Book } from "../types";
 
 // Helper to get the AI client only when needed (Lazy Initialization)
-// This prevents the "An API Key must be set" error from crashing the whole app on load
 const getAIClient = () => {
-  // Guidelines: The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-  const apiKey = process.env.API_KEY;
+  // En Vite (producción), las variables están en import.meta.env y deben empezar por VITE_
+  // Usamos 'as any' para evitar errores de TypeScript si los tipos de Vite no están cargados globalmente
+  let apiKey = (import.meta as any).env?.VITE_API_KEY;
+
+  // Fallback para entornos de prueba o Node.js estándar
+  if (!apiKey) {
+    apiKey = process.env.API_KEY;
+  }
   
   if (!apiKey) {
-    throw new Error("API Key no encontrada. Configura process.env.API_KEY");
+    console.error("API Key no encontrada. Se buscó VITE_API_KEY en import.meta.env y API_KEY en process.env");
+    throw new Error("API Key no encontrada. Asegúrate de tener un archivo .env con VITE_API_KEY=AIza...");
   }
   
   return new GoogleGenAI({ apiKey });
@@ -50,7 +57,7 @@ export const chatWithLibrarian = async (
     return response.text || "¡Ups! Se me ha caído un libro y no te he escuchado. ¿Repites?";
   } catch (error) {
     console.error("Error calling Gemini:", error);
-    return "Mi cerebro de robot está desconectado. Dile al profe que revise la API Key.";
+    return "Mi cerebro de robot está desconectado. Dile al profe que revise la API Key en el servidor.";
   }
 };
 
