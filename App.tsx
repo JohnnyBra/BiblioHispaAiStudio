@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { storageService } from './services/storageService';
 import { User, Book, Transaction, UserRole, Review, AppSettings, PointHistory } from './types';
@@ -16,7 +17,6 @@ const App: React.FC = () => {
   const [reviews, setReviews] = React.useState<Review[]>([]);
   const [pointHistory, setPointHistory] = React.useState<PointHistory[]>([]);
   const [settings, setSettings] = React.useState<AppSettings>(storageService.getSettings());
-  const [adminPassword, setAdminPassword] = React.useState<string>(storageService.getAdminPassword());
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
 
   // --- Auth State ---
@@ -37,7 +37,6 @@ const App: React.FC = () => {
     setReviews(storageService.getReviews());
     setPointHistory(storageService.getPointHistory());
     setSettings(storageService.getSettings());
-    setAdminPassword(storageService.getAdminPassword());
   }, []);
 
   // --- Persistance Effects ---
@@ -47,7 +46,6 @@ const App: React.FC = () => {
   React.useEffect(() => { if(reviews.length) storageService.setReviews(reviews); }, [reviews]);
   React.useEffect(() => { if(pointHistory.length) storageService.setPointHistory(pointHistory); }, [pointHistory]);
   React.useEffect(() => { storageService.setSettings(settings); }, [settings]);
-  React.useEffect(() => { storageService.setAdminPassword(adminPassword); }, [adminPassword]);
 
   // --- Toast Handler ---
   const addToast = (message: string, type: ToastType) => {
@@ -66,17 +64,23 @@ const App: React.FC = () => {
     setAuthError('');
 
     if (isAdminMode) {
-      // Admin Login
-      if (loginInput === 'admin' && passwordInput === adminPassword) {
-        const admin = users.find(u => u.role === UserRole.ADMIN);
-        if (admin) {
-           setCurrentUser(admin);
-           addToast(`Bienvenido al panel, ${admin.firstName}`, 'info');
+      // Admin/SuperAdmin Login: Checks username AND password from User object
+      const adminUser = users.find(u => 
+        (u.username === loginInput || u.username === loginInput.toLowerCase()) && 
+        (u.role === UserRole.SUPERADMIN || u.role === UserRole.ADMIN)
+      );
+
+      if (adminUser) {
+        if (adminUser.password === passwordInput) {
+            setCurrentUser(adminUser);
+            addToast(`Bienvenido, ${adminUser.firstName} (${adminUser.role === UserRole.SUPERADMIN ? 'SuperAdmin' : 'Profesor'})`, 'info');
+        } else {
+            setAuthError('Contraseña incorrecta');
+            addToast('Contraseña incorrecta', 'error');
         }
-        else setAuthError('Configuración de admin corrupta.');
       } else {
-        setAuthError('Contraseña incorrecta');
-        addToast('Contraseña incorrecta', 'error');
+        setAuthError('Usuario administrador no encontrado.');
+        addToast('Usuario no encontrado', 'error');
       }
     } else {
       // Student login: firstname.lastname
@@ -138,11 +142,6 @@ const App: React.FC = () => {
   const updateSettings = (newSettings: AppSettings) => {
     setSettings(newSettings);
     addToast('Configuración guardada', 'success');
-  };
-
-  const updateAdminPassword = (newPwd: string) => {
-    setAdminPassword(newPwd);
-    addToast('Contraseña de administrador actualizada', 'success');
   };
 
   const handleManualPointAdjustment = (userId: string, amount: number, reason: string) => {
@@ -347,6 +346,7 @@ const App: React.FC = () => {
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 autoFocus={isAdminMode}
+                placeholder={isAdminMode ? 'superadmin' : 'juan.garcia'}
               />
             </div>
             
@@ -358,7 +358,7 @@ const App: React.FC = () => {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="admin123"
+                  placeholder="••••••••"
                 />
               </div>
             )}
@@ -386,49 +386,51 @@ const App: React.FC = () => {
     );
   }
 
+  // Determine correct view based on role
+  if (currentUser.role === UserRole.SUPERADMIN || currentUser.role === UserRole.ADMIN) {
+     return (
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+           <ToastContainer toasts={toasts} removeToast={removeToast} />
+           <AdminView 
+             currentUser={currentUser} // Pass the admin user to check permissions
+             users={users}
+             books={books}
+             reviews={reviews}
+             pointHistory={pointHistory}
+             settings={settings}
+             onAddUsers={addUsers}
+             onAddBooks={addBooks}
+             onDeleteUser={deleteUser}
+             onUpdateUser={updateUser}
+             onDeleteBook={deleteBook}
+             onDeleteReview={handleDeleteReview}
+             onUpdateSettings={updateSettings}
+             onShowToast={addToast}
+             onAddPoints={handleManualPointAdjustment}
+             onDeletePointEntry={handleDeletePointEntry}
+           />
+           <div className="fixed bottom-6 right-6 z-50 no-print">
+              <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-lg">Cerrar Sesión</Button>
+           </div>
+        </div>
+     );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      
-      {currentUser.role === UserRole.ADMIN ? (
-        <AdminView 
-          users={users}
-          books={books}
-          reviews={reviews}
-          pointHistory={pointHistory}
-          settings={settings}
-          onAddUsers={addUsers}
-          onAddBooks={addBooks}
-          onDeleteUser={deleteUser}
-          onUpdateUser={updateUser}
-          onDeleteBook={deleteBook}
-          onDeleteReview={handleDeleteReview}
-          onUpdateSettings={updateSettings}
-          onChangePassword={updateAdminPassword}
-          onShowToast={addToast}
-          onAddPoints={handleManualPointAdjustment}
-          onDeletePointEntry={handleDeletePointEntry}
-        />
-      ) : (
-        <StudentView 
-          currentUser={currentUser}
-          books={books}
-          transactions={transactions}
-          users={users}
-          reviews={reviews}
-          settings={settings}
-          onBorrow={handleBorrow}
-          onReturn={handleReturn}
-          onAddReview={handleAddReview}
-          onLogout={handleLogout}
-        />
-      )}
-      
-      {currentUser.role === UserRole.ADMIN && (
-        <div className="fixed bottom-6 right-6 z-50 no-print">
-           <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-lg">Cerrar Sesión</Button>
-        </div>
-      )}
+      <StudentView 
+        currentUser={currentUser}
+        books={books}
+        transactions={transactions}
+        users={users}
+        reviews={reviews}
+        settings={settings}
+        onBorrow={handleBorrow}
+        onReturn={handleReturn}
+        onAddReview={handleAddReview}
+        onLogout={handleLogout}
+      />
     </div>
   );
 };

@@ -1,5 +1,4 @@
 
-
 import { Book, User, Transaction, UserRole, Review, AppSettings, PointHistory } from '../types';
 
 const KEYS = {
@@ -8,18 +7,29 @@ const KEYS = {
   TRANSACTIONS: 'bibliohispa_transactions',
   REVIEWS: 'bibliohispa_reviews',
   POINT_HISTORY: 'bibliohispa_points_history',
-  SETTINGS: 'bibliohispa_settings',
-  ADMIN_PWD: 'bibliohispa_admin_pwd'
+  SETTINGS: 'bibliohispa_settings'
 };
 
 // Initial Mock Data
 const INITIAL_USERS: User[] = [
   {
-    id: 'admin-1',
-    firstName: 'Admin',
-    lastName: 'Principal',
-    username: 'admin',
-    className: 'STAFF',
+    id: 'super-admin-1',
+    firstName: 'Director',
+    lastName: 'General',
+    username: 'superadmin',
+    password: 'admin123', // Default superadmin password
+    className: 'DIRECCIÓN',
+    role: UserRole.SUPERADMIN,
+    points: 0,
+    booksRead: 0
+  },
+  {
+    id: 'teacher-1',
+    firstName: 'Profe',
+    lastName: 'Juan',
+    username: 'profe.juan',
+    password: 'profe123', // Default teacher password
+    className: 'PROFESORADO',
     role: UserRole.ADMIN,
     points: 0,
     booksRead: 0
@@ -121,9 +131,6 @@ export const storageService = {
 
   getSettings: () => getStorage<AppSettings>(KEYS.SETTINGS, INITIAL_SETTINGS),
   setSettings: (settings: AppSettings) => setStorage(KEYS.SETTINGS, settings),
-
-  getAdminPassword: () => getStorage<string>(KEYS.ADMIN_PWD, 'admin123'),
-  setAdminPassword: (pwd: string) => setStorage(KEYS.ADMIN_PWD, pwd),
 };
 
 export const normalizeString = (str: string): string => {
