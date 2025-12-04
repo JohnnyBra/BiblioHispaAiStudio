@@ -4,21 +4,9 @@ import { Book } from "../types";
 
 // Helper to get the AI client only when needed (Lazy Initialization)
 const getAIClient = () => {
-  // En Vite (producción), las variables están en import.meta.env y deben empezar por VITE_
-  // Usamos 'as any' para evitar errores de TypeScript si los tipos de Vite no están cargados globalmente
-  let apiKey = (import.meta as any).env?.VITE_API_KEY;
-
-  // Fallback para entornos de prueba o Node.js estándar
-  if (!apiKey) {
-    apiKey = process.env.API_KEY;
-  }
-  
-  if (!apiKey) {
-    console.error("API Key no encontrada. Se buscó VITE_API_KEY en import.meta.env y API_KEY en process.env");
-    throw new Error("API Key no encontrada. Asegúrate de tener un archivo .env con VITE_API_KEY=AIza...");
-  }
-  
-  return new GoogleGenAI({ apiKey });
+  // Use process.env.API_KEY directly as per guidelines.
+  // Assume this variable is pre-configured, valid, and accessible.
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const chatWithLibrarian = async (
