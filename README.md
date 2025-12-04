@@ -77,7 +77,7 @@ cd bibliohispa
 ```
 
 ### 3. Instalar Dependencias
-Instalamos las librerías necesarias para que la web funcione.
+Instalamos las librerías necesarias para que la web funcione (React, Vite, QR, Gemini, etc.).
 
 ```bash
 npm install
@@ -139,13 +139,38 @@ Abre el navegador y pon la **IP de tu servidor**. ¡Tu BiblioHispa debería esta
 
 ---
 
-## 🔄 ¿Cómo actualizar la web si hago cambios?
-Si mejoras el código en tu ordenador y lo subes a GitHub, solo tienes que hacer esto en el servidor:
+## 🔄 PARTE 3: Cómo actualizar la web (Día a día)
 
+Cuando hagas mejoras en el código y las subas a GitHub, sigue estos pasos en tu servidor para aplicarlas:
+
+### 1. Método Manual (Paso a paso)
 ```bash
 cd /var/www/bibliohispa
-git pull            # Descarga los cambios nuevos
-npm install         # Por si añadiste librerías nuevas
-npm run build       # Reconstruye la web
-# ¡No hace falta reiniciar Nginx!
+
+# Descarga los cambios nuevos
+git pull origin main  
+
+# Instala librerías nuevas (si las hubiera)
+npm install         
+
+# Reconstruye la web (CRÍTICO: Si no haces esto, no verás los cambios)
+npm run build       
+```
+
+### 2. Solución de Problemas Comunes
+
+**Problema:** "error: Your local changes to the following files would be overwritten by merge..."
+**Causa:** Has editado archivos directamente en el servidor y GitHub no quiere borrarlos.
+**Solución:** Descarta los cambios del servidor y fuerza la actualización.
+```bash
+git reset --hard HEAD
+git pull origin main
+npm run build
+```
+
+**Problema:** "Permission denied"
+**Causa:** Permisos de carpeta incorrectos.
+**Solución:**
+```bash
+sudo chown -R $USER:$USER /var/www/bibliohispa
 ```
