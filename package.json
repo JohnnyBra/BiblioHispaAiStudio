@@ -9,19 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^1.31.0",
+    "@vitejs/plugin-react": "^5.1.1",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.555.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "@google/genai": "^1.31.0",
-    "lucide-react": "^0.555.0",
-    "html5-qrcode": "^2.3.8",
     "react-qr-code": "^2.0.18",
-    "vite": "^7.2.6",
-    "@vitejs/plugin-react": "^5.1.1",
-    "url": "^0.11.4",
-    "express": "^5.2.1",
-    "cors": "^2.8.5",
-    "path": "^0.12.7",
-    "fs": "^0.0.1-security"
+    "vite": "^7.2.6"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
