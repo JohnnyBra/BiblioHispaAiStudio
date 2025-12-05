@@ -134,12 +134,51 @@ app.post('/api/settings', async (req, res) => {
 });
 
 // Cualquier otra ruta devuelve el index.html (para React Router si lo usáramos, o refresh)
-app.get('/:path*', (req, res) => {
+app.get(/^(.*)$/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// --- SISTEMA DE COPIAS DE SEGURIDAD ---
+async function performBackup() {
+  const backupDir = path.join(process.cwd(), 'data', 'backups');
+  try {
+    await fs.mkdir(backupDir, { recursive: true });
+
+    const date = new Date();
+    const timestamp = date.toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(backupDir, `db-backup-${timestamp}.json`);
+
+    // Leer y copiar
+    const data = await fs.readFile(DB_FILE, 'utf-8');
+    await fs.writeFile(backupFile, data);
+
+    console.log(`[BACKUP] Copia de seguridad creada: ${backupFile}`);
+
+    // Limpieza: Mantener solo los últimos 30 backups
+    const files = await fs.readdir(backupDir);
+    const backupFiles = files.filter(f => f.startsWith('db-backup-')).sort();
+
+    if (backupFiles.length > 30) {
+      const toDelete = backupFiles.slice(0, backupFiles.length - 30);
+      for (const file of toDelete) {
+        await fs.unlink(path.join(backupDir, file));
+        console.log(`[BACKUP] Eliminado backup antiguo: ${file}`);
+      }
+    }
+
+  } catch (err) {
+    console.error('[BACKUP] Error creando copia de seguridad:', err);
+  }
+}
+
+// Programar backup cada 24 horas (86400000 ms)
+setInterval(performBackup, 86400000);
+
 // Iniciar servidor
 initDB().then(() => {
+  // Ejecutar backup inicial al arrancar (opcional, pero útil para probar)
+  performBackup();
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor BiblioHispa corriendo en http://localhost:${PORT}`);
     console.log(`📁 Base de datos en: ${DB_FILE}`);
