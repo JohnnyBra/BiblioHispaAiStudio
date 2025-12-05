@@ -200,14 +200,18 @@ Esta opción es la más segura y profesional. Te da HTTPS automático (candadito
 
 1.  Crea una cuenta gratuita en **[Cloudflare](https://www.cloudflare.com/)** y añade tu dominio.
 2.  En el panel de Cloudflare, ve a **Zero Trust** > **Networks** > **Tunnels**.
-3.  Dale a **Create a Tunnel**, elige **Cloudflared** y ponle nombre.
-4.  Copia el comando de instalación para **Debian/Ubuntu** y ejecútalo en tu servidor.
-5.  En la pestaña **Public Hostname**:
-    *   **Subdomain:** `biblioteca`
-    *   **Domain:** `tudominio.com`
-    *   **Service Type:** `HTTP`
-    *   **URL:** `localhost:80`
-6.  Guarda y listo. Accede por `https://biblioteca.tudominio.com`.
+3.  Dale a **Create a Tunnel**, elige **Cloudflared** y ponle nombre (ej: "servidor-cole").
+4.  Copia el comando de instalación para **Debian/Ubuntu** que te aparece y pégalo en la terminal de tu servidor.
+5.  **Configurar el dominio:**
+    *   Si acabas de instalarlo, dale a "Next".
+    *   Si te has salido, ve a **Networks > Tunnels**, haz clic en tu túnel y entra en la pestaña **Public Hostname**.
+6.  Dale a **Add a public hostname** y rellena así:
+    *   **Subdomain:** Escribe lo que quieras (ej: `biblioteca`).
+    *   **Domain:** Selecciona tu dominio de la lista.
+    *   **Path:** Vacío.
+    *   **Service Type:** `HTTP`.
+    *   **URL:** `localhost:80`.
+7.  Dale a **Save**. ¡Listo! Accede por `https://biblioteca.tudominio.com`.
 
 ### Opción 2: Ngrok (Gratis y Rápido)
 Ideal para pruebas rápidas. No necesitas dominio, pero la URL cambia si reinicias el servidor.
@@ -231,6 +235,21 @@ Solo si tienes acceso al Router del colegio.
 2.  Busca **Port Forwarding**.
 3.  Abre el puerto **443** (HTTPS) hacia la **IP LOCAL** de tu servidor Ubuntu.
 4.  Usa tu **IP PÚBLICA** para acceder.
+
+---
+
+## 🆘 Solución de Problemas
+
+### Error: `ERR_TOO_MANY_REDIRECTS` (La página no carga)
+Si ves este error, es porque **Cloudflare** y **Nginx** se están peleando por ver quién pone la seguridad (HTTPS).
+
+**Solución rápida:**
+1. Ve a tu panel de **Cloudflare**.
+2. Entra en **SSL/TLS** (menú izquierda).
+3. Cambia la configuración de **Flexible** a **Full** (o **Full (Strict)**).
+4. Espera 1 minuto y recarga la web.
+
+*¿Por qué pasa esto?* Cloudflare estaba intentando entrar a tu servidor como "Inseguro" (HTTP), pero tu servidor (Nginx) le obligaba a ir a "Seguro" (HTTPS), creando un bucle infinito.
 
 ---
 
