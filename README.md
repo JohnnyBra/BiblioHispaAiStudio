@@ -1,12 +1,13 @@
-# 📚 BiblioHispa - Guía de Despliegue con GitHub
+# 📚 BiblioHispa - Guía de Despliegue (Versión Full Stack)
 
-Esta guía te explica cómo llevar esta aplicación desde tu ordenador hasta un servidor Ubuntu usando GitHub.
+Esta guía te explica cómo instalar la aplicación en tu servidor. 
+**NOVEDAD:** Ahora la aplicación cuenta con una base de datos real alojada en tu servidor (`data/db.json`), por lo que los datos no se pierden y se sincronizan entre todos los dispositivos (tablets, ordenadores del profesor, móviles).
 
 ---
 
 ## 🔑 PASO 0: Conseguir la API Key de Google Gemini (Gratis)
 
-Necesitas esto para que la IA funcione.
+Necesitas esto para que la IA (recomendaciones, chat) funcione.
 
 1.  Entra en **[Google AI Studio](https://aistudio.google.com/app/apikey)**.
 2.  Inicia sesión y pulsa **"Create API key"**.
@@ -16,19 +17,14 @@ Necesitas esto para que la IA funcione.
 
 ## 💻 PARTE 1: Preparar el código en tu ordenador (Local)
 
-Antes de ir al servidor, necesitas tener este código en un repositorio de GitHub.
-
 1.  **Crea una carpeta** en tu ordenador llamada `bibliohispa`.
-2.  **Copia todos los archivos** que te ha generado la IA dentro de esa carpeta.
-3.  Abre una terminal en esa carpeta y ejecuta:
+2.  **Copia todos los archivos** del proyecto dentro.
+3.  Abre una terminal en esa carpeta y sube el código a GitHub:
     ```bash
     git init
     git add .
-    git commit -m "Primera versión BiblioHispa"
-    ```
-4.  Ve a **[GitHub.com](https://github.com)**, crea un **Nuevo Repositorio** (ponle nombre `bibliohispa`).
-5.  Copia y ejecuta los comandos que te da GitHub:
-    ```bash
+    git commit -m "Versión con Base de Datos"
+    # Crea el repo en GitHub.com y luego:
     git branch -M main
     git remote add origin https://github.com/TU_USUARIO/bibliohispa.git
     git push -u origin main
@@ -38,70 +34,88 @@ Antes de ir al servidor, necesitas tener este código en un repositorio de GitHu
 
 ## 🚀 PARTE 2: Despliegue en Servidor Ubuntu
 
+Como ahora tenemos un "backend" (servidor de datos), la instalación cambia ligeramente respecto a una web estática simple.
+
 ### 1. Conectar y Preparar el Servidor
 En tu servidor Ubuntu:
 
 ```bash
-# Actualizar e instalar herramientas básicas
+# Actualizar sistema
 sudo apt update && sudo apt upgrade -y
 sudo apt install curl git nginx unzip -y
 
-# Instalar Node.js (versión 20)
+# Instalar Node.js (Versión 20 recomendada)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
+
+# Instalar PM2 (Gestor de procesos para mantener la app siempre encendida)
+sudo npm install -g pm2
 ```
 
-### 2. Descargar el Código
+### 2. Descargar e Instalar
 ```bash
 cd /var/www
 # Clona tu repo (cambia TU_USUARIO)
-sudo git clone https://github.com/TU_USUARIO/bibliohispa.git BiblioHispaAiStudio
+sudo git clone https://github.com/TU_USUARIO/bibliohispa.git BiblioHispaApp
 
-# Dar permisos
-sudo chown -R $USER:$USER /var/www/BiblioHispaAiStudio
-cd /var/www/BiblioHispaAiStudio
-```
+# Entrar en la carpeta
+cd /var/www/BiblioHispaApp
 
-### 3. Instalar y Configurar
-```bash
-# Instalar dependencias
+# Dar permisos a tu usuario
+sudo chown -R $USER:$USER .
+
+# Instalar TODAS las dependencias (Frontend y Backend)
 npm install
 
-# Crear archivo de claves
+# Crear archivo de configuración
 nano .env
 # DENTRO PEGA: VITE_API_KEY=AIzaSy... (Tu clave del Paso 0)
 # Guarda con Ctrl+O, Enter, Ctrl+X
 
-# Construir la web
+# Construir la parte visual (Frontend)
 npm run build
 ```
 
-### 4. Configurar Nginx (Modo Simple)
-Esta configuración evita errores con Cloudflare. Nginx solo servirá los archivos en el puerto 80.
+### 3. Iniciar el Servidor de Datos (Backend)
+Ahora no basta con servir los archivos, hay que arrancar el cerebro de la aplicación (`server.js`). Usaremos PM2 para que se reinicie solo si el servidor se apaga.
+
+```bash
+# Iniciar el servidor en el puerto 3000
+pm2 start server.js --name "biblioteca"
+
+# Guardar la lista de procesos para que arranque al inicio de Windows/Linux
+pm2 save
+pm2 startup
+# (Ejecuta el comando que te diga 'pm2 startup' si te lo pide)
+```
+
+### 4. Configurar Nginx (Reverse Proxy)
+Ahora Nginx actuará de "portero": recibirá las peticiones del puerto 80 (internet) y se las pasará a tu aplicación que vive en el puerto 3000.
 
 1.  Edita la configuración:
     ```bash
     sudo nano /etc/nginx/sites-available/bibliohispa
     ```
 
-2.  **Borra todo** y pega solo esto:
+2.  **Borra todo** y pega esta configuración de Proxy:
     ```nginx
     server {
         listen 80;
         server_name _;
         
-        # Ruta donde está tu web construida
-        root /var/www/BiblioHispaAiStudio/dist;
-        index index.html;
-
-        # Esto permite que React maneje las rutas
         location / {
-            try_files $uri $uri/ /index.html;
+            # Redirige todo el tráfico a tu aplicación Node.js en el puerto 3000
+            proxy_pass http://localhost:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
         }
     }
     ```
 
-3.  Activa la web:
+3.  Activa y reinicia:
     ```bash
     sudo ln -s /etc/nginx/sites-available/bibliohispa /etc/nginx/sites-enabled/
     sudo rm /etc/nginx/sites-enabled/default
@@ -110,32 +124,29 @@ Esta configuración evita errores con Cloudflare. Nginx solo servirá los archiv
 
 ---
 
-## 🌍 PARTE 3: Conectar con Cloudflare (Internet)
+## 🌍 PARTE 3: Acceso Seguro desde Internet (Cloudflare)
 
-Para que funcione la cámara y acceder desde casa de forma segura.
+Para que funcione la cámara (QR) y sea seguro, usa Cloudflare Tunnel.
 
-1.  En tu panel de **Cloudflare Zero Trust** > **Networks** > **Tunnels**.
-2.  Instala el túnel en tu servidor (copiando el comando que te dan).
-3.  Ve a la pestaña **Public Hostname** de tu túnel.
-4.  Añade un hostname:
-    *   **Subdomain:** `biblioteca` (o lo que quieras).
-    *   **Domain:** `tudominio.com`.
-    *   **Service Type:** `HTTP` (Importante: HTTP, no HTTPS).
-    *   **URL:** `localhost:80`.
-5.  Guarda.
+1.  Instala el túnel de Cloudflare en tu servidor (si no lo has hecho ya).
+2.  En el panel de Cloudflare Zero Trust > Tunnels, configura el "Public Hostname":
+    *   **Domain:** `biblioteca.tucolegio.com`
+    *   **Service:** `HTTP` -> `localhost:80` (Nginx) O DIRECTAMENTE `localhost:3000` (Node.js). Ambos funcionan.
 
-¡Listo! Al entrar en `https://biblioteca.tudominio.com`, Cloudflare pone el candado de seguridad (HTTPS) y tu servidor Nginx le entrega los archivos por detrás sin conflictos.
-
-**Nota sobre la cámara:**
-La cámara funcionará perfectamente entrando por el dominio de Cloudflare (porque tiene HTTPS). Si entras por la IP local (`http://192.168.x.x`), la cámara NO funcionará porque los navegadores exigen HTTPS. Usa siempre el dominio.
+¡Listo! Ahora todos los datos de libros y alumnos se guardan en el servidor en el archivo `/var/www/BiblioHispaApp/data/db.json`.
 
 ---
 
-## 🔄 Cómo actualizar en el futuro
+## 🛠️ Mantenimiento y Copias de Seguridad
 
+**Actualizar la web:**
 ```bash
-cd /var/www/BiblioHispaAiStudio
+cd /var/www/BiblioHispaApp
 git pull origin main
 npm install
 npm run build
+pm2 restart biblioteca
 ```
+
+**Hacer backup manual de la base de datos:**
+Simplemente descarga el archivo `/var/www/BiblioHispaApp/data/db.json` o usa el botón "Descargar Backup" desde el panel de administrador en la web.

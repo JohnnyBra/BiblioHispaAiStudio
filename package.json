@@ -16,7 +16,12 @@
     "html5-qrcode": "^2.3.8",
     "react-qr-code": "^2.0.18",
     "vite": "^7.2.6",
-    "@vitejs/plugin-react": "^5.1.1"
+    "@vitejs/plugin-react": "^5.1.1",
+    "url": "^0.11.4",
+    "express": "^5.2.1",
+    "cors": "^2.8.5",
+    "path": "^0.12.7",
+    "fs": "^0.0.1-security"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

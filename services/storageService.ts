@@ -1,136 +1,54 @@
 
-import { Book, User, Transaction, UserRole, Review, AppSettings, PointHistory } from '../types';
+import { Book, User, Transaction, Review, AppSettings, PointHistory } from '../types';
 
-const KEYS = {
-  USERS: 'bibliohispa_users',
-  BOOKS: 'bibliohispa_books',
-  TRANSACTIONS: 'bibliohispa_transactions',
-  REVIEWS: 'bibliohispa_reviews',
-  POINT_HISTORY: 'bibliohispa_points_history',
-  SETTINGS: 'bibliohispa_settings'
-};
+// El servidor inyecta la URL base o usa relativa si estamos en producción
+const API_URL = '/api';
 
-// Initial Mock Data
-const INITIAL_USERS: User[] = [
-  {
-    id: 'super-admin-1',
-    firstName: 'Director',
-    lastName: 'General',
-    username: 'superadmin',
-    password: 'admin123', // Default superadmin password
-    className: 'DIRECCIÓN',
-    role: UserRole.SUPERADMIN,
-    points: 0,
-    booksRead: 0
-  },
-  {
-    id: 'teacher-1',
-    firstName: 'Profe',
-    lastName: 'Juan',
-    username: 'profe.juan',
-    password: 'profe123', // Default teacher password
-    className: 'PROFESORADO',
-    role: UserRole.ADMIN,
-    points: 0,
-    booksRead: 0
-  },
-  {
-    id: 'student-1',
-    firstName: 'Juan',
-    lastName: 'García',
-    username: 'juan.garcia',
-    className: '3A',
-    role: UserRole.STUDENT,
-    points: 150,
-    booksRead: 15
-  },
-  {
-    id: 'student-2',
-    firstName: 'María',
-    lastName: 'López',
-    username: 'maria.lopez',
-    className: '4B',
-    role: UserRole.STUDENT,
-    points: 320,
-    booksRead: 32
+// Función auxiliar para llamadas a la API
+const apiCall = async (endpoint: string, method: 'GET' | 'POST', body?: any) => {
+  try {
+    const options: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+    if (body) options.body = JSON.stringify(body);
+
+    const res = await fetch(`${API_URL}${endpoint}`, options);
+    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+    return await res.json();
+  } catch (error) {
+    console.error(`Error en API (${endpoint}):`, error);
+    throw error; // Propagar error para manejarlo en la UI (mostrar modo offline)
   }
-];
-
-const INITIAL_BOOKS: Book[] = [
-  {
-    id: 'b1',
-    title: 'El Principito',
-    author: 'Antoine de Saint-Exupéry',
-    genre: 'Fantasía',
-    unitsTotal: 5,
-    unitsAvailable: 4,
-    shelf: 'A1',
-    coverUrl: 'https://books.google.com/books/content?id=N7R8DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-    readCount: 120,
-    recommendedAge: '6-8'
-  },
-  {
-    id: 'b2',
-    title: 'Don Quijote de la Mancha',
-    author: 'Miguel de Cervantes',
-    genre: 'Clásico',
-    unitsTotal: 3,
-    unitsAvailable: 3,
-    shelf: 'C2',
-    coverUrl: 'https://books.google.com/books/content?id=Z-xbAAAAMAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-    readCount: 45,
-    recommendedAge: '+12'
-  },
-  {
-    id: 'b3',
-    title: 'Harry Potter y la Piedra Filosofal',
-    author: 'J.K. Rowling',
-    genre: 'Fantasía',
-    unitsTotal: 8,
-    unitsAvailable: 2,
-    shelf: 'F5',
-    coverUrl: 'https://books.google.com/books/content?id=5iTebBW-w7QC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-    readCount: 200,
-    recommendedAge: '9-11'
-  }
-];
-
-const INITIAL_SETTINGS: AppSettings = {
-  schoolName: 'BiblioHispa',
-  logoUrl: 'https://cdn-icons-png.flaticon.com/512/3413/3413535.png' // Default school icon
-};
-
-export const getStorage = <T>(key: string, initial: T): T => {
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    return JSON.parse(saved);
-  }
-  localStorage.setItem(key, JSON.stringify(initial));
-  return initial;
-};
-
-export const setStorage = <T>(key: string, data: T): void => {
-  localStorage.setItem(key, JSON.stringify(data));
 };
 
 export const storageService = {
-  getUsers: () => getStorage<User[]>(KEYS.USERS, INITIAL_USERS),
-  setUsers: (users: User[]) => setStorage(KEYS.USERS, users),
+  // Carga inicial de TODOS los datos
+  fetchAllData: async () => {
+    return await apiCall('/db', 'GET');
+  },
 
-  getBooks: () => getStorage<Book[]>(KEYS.BOOKS, INITIAL_BOOKS),
-  setBooks: (books: Book[]) => setStorage(KEYS.BOOKS, books),
+  // Guardado granular (se llama cuando React detecta cambios)
+  // Nota: Estas funciones ahora son ASÍNCRONAS.
+  setUsers: async (users: User[]) => apiCall('/users', 'POST', users),
+  setBooks: async (books: Book[]) => apiCall('/books', 'POST', books),
+  setTransactions: async (txs: Transaction[]) => apiCall('/transactions', 'POST', txs),
+  setReviews: async (reviews: Review[]) => apiCall('/reviews', 'POST', reviews),
+  setPointHistory: async (history: PointHistory[]) => apiCall('/pointHistory', 'POST', history),
+  setSettings: async (settings: AppSettings) => apiCall('/settings', 'POST', settings),
+  
+  // Para compatibilidad con backup completo
+  restoreBackup: async (fullData: any) => apiCall('/restore', 'POST', fullData),
 
-  getTransactions: () => getStorage<Transaction[]>(KEYS.TRANSACTIONS, []),
-  setTransactions: (txs: Transaction[]) => setStorage(KEYS.TRANSACTIONS, txs),
-
-  getReviews: () => getStorage<Review[]>(KEYS.REVIEWS, []),
-  setReviews: (reviews: Review[]) => setStorage(KEYS.REVIEWS, reviews),
-
-  getPointHistory: () => getStorage<PointHistory[]>(KEYS.POINT_HISTORY, []),
-  setPointHistory: (history: PointHistory[]) => setStorage(KEYS.POINT_HISTORY, history),
-
-  getSettings: () => getStorage<AppSettings>(KEYS.SETTINGS, INITIAL_SETTINGS),
-  setSettings: (settings: AppSettings) => setStorage(KEYS.SETTINGS, settings),
+  // Métodos legacy (ya no se usan directamente para leer, pero mantenemos por compatibilidad de tipos si fuera necesario)
+  getUsers: () => [],
+  getBooks: () => [],
+  getTransactions: () => [],
+  getReviews: () => [],
+  getPointHistory: () => [],
+  getSettings: () => ({ schoolName: 'Cargando...', logoUrl: '' }),
 };
 
 export const normalizeString = (str: string): string => {
