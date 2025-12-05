@@ -134,7 +134,7 @@ app.post('/api/settings', async (req, res) => {
 });
 
 // Cualquier otra ruta devuelve el index.html (para React Router si lo usáramos, o refresh)
-app.get('/*path', (req, res) => {
+app.get('/:path*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
