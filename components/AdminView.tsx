@@ -1,12 +1,12 @@
 
 import * as React from 'react';
-import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction } from '../types';
+import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
 import { searchBookCover, determineBookAge } from '../services/bookService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -15,6 +15,7 @@ interface AdminViewProps {
   reviews?: Review[];
   pointHistory: PointHistory[];
   settings: AppSettings;
+  transactions?: Transaction[];
   onAddUsers: (users: User[]) => void;
   onAddBooks: (books: Book[]) => void;
   onDeleteUser: (id: string) => void;
@@ -25,13 +26,8 @@ interface AdminViewProps {
   onShowToast: (message: string, type: ToastType) => void;
   onAddPoints: (userId: string, amount: number, reason: string) => void;
   onDeletePointEntry: (entryId: string) => void;
-  // We need transactions prop to show history
-  transactions?: Transaction[]; 
+  onRestoreBackup: (data: BackupData) => void;
 }
-
-// Need to update the props usage. Since Transaction wasn't in original props of AdminView in previous file, 
-// we assume it is passed. If not, we should default to empty array or ask for it.
-// Assuming parent passes transactions now.
 
 export const AdminView: React.FC<AdminViewProps> = ({
   currentUser,
@@ -40,6 +36,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   reviews = [],
   pointHistory,
   settings,
+  transactions = [],
   onAddUsers,
   onAddBooks,
   onDeleteUser,
@@ -50,7 +47,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onShowToast,
   onAddPoints,
   onDeletePointEntry,
-  transactions = []
+  onRestoreBackup
 }) => {
   const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards' | 'teachers' | 'history'>('users');
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -93,6 +90,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // References for file inputs
   const userFileInputRef = React.useRef<HTMLInputElement>(null);
   const bookFileInputRef = React.useRef<HTMLInputElement>(null);
+  const backupInputRef = React.useRef<HTMLInputElement>(null);
 
   // --- Handlers ---
 
@@ -375,6 +373,55 @@ export const AdminView: React.FC<AdminViewProps> = ({
   };
 
   const handlePrintCards = () => window.print();
+
+  // --- BACKUP HANDLERS ---
+  const handleDownloadBackup = () => {
+    const backupData: BackupData = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      users,
+      books,
+      transactions,
+      reviews,
+      pointHistory,
+      settings
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `bibliohispa-backup-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    onShowToast("Copia de seguridad descargada", "success");
+  };
+
+  const handleUploadBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!window.confirm("⚠️ ATENCIÓN: Al restaurar una copia, se BORRARÁN todos los datos actuales y se reemplazarán por los del archivo. ¿Estás seguro?")) {
+        if (backupInputRef.current) backupInputRef.current.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target?.result as string) as BackupData;
+            // Basic validation
+            if (!data.users || !data.books) {
+                throw new Error("Formato inválido");
+            }
+            onRestoreBackup(data);
+        } catch (error) {
+            onShowToast("El archivo no es válido o está corrupto.", "error");
+        }
+    };
+    reader.readAsText(file);
+    if (backupInputRef.current) backupInputRef.current.value = '';
+  };
 
   const availableClasses = Array.from(new Set(users.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort();
 
@@ -924,67 +971,108 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {activeTab === 'settings' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
            {isSuperAdmin ? (
-               <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                  <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">Configuración General</h2>
-                  <form onSubmit={handleSaveSettings} className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
-                        <input 
-                            type="text" 
-                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                            value={tempSettings.schoolName}
-                            onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
-                        <div className="flex flex-col md:flex-row gap-4 items-start">
-                            <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
-                                <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
-                            </div>
-                            <div className="flex-1 space-y-3">
-                                <div>
-                                  <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
-                                  <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
-                                      <ImageIcon size={16} />
-                                      <span>Elegir archivo...</span>
-                                      <input 
-                                        type="file" 
-                                        accept="image/*"
-                                        onChange={handleLogoUpload}
-                                        className="hidden"
-                                      />
-                                  </label>
-                                </div>
-                                <div className="relative flex py-1 items-center">
-                                    <div className="flex-grow border-t border-slate-100"></div>
-                                    <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
-                                    <div className="flex-grow border-t border-slate-100"></div>
-                                </div>
-                                <div>
-                                    <input 
-                                        type="text" 
-                                        className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm bg-white text-slate-900"
-                                        value={tempSettings.logoUrl}
-                                        onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
-                                        placeholder="https://..."
-                                    />
-                                </div>
-                            </div>
+               <div className="space-y-6">
+                 {/* General Config */}
+                 <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">Configuración General</h2>
+                    <form onSubmit={handleSaveSettings} className="space-y-6">
+                        <div>
+                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
+                          <input 
+                              type="text" 
+                              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                              value={tempSettings.schoolName}
+                              onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
+                          />
                         </div>
-                      </div>
 
-                      <div className="pt-4 border-t border-slate-100 flex justify-end">
-                        <Button type="submit" variant="primary" disabled={settingsSaved}>
-                            {settingsSaved ? (
-                              <span className="flex items-center gap-2"><Check size={18} /> Guardado</span>
-                            ) : (
-                              <span className="flex items-center gap-2"><Save size={18} /> Guardar Configuración</span>
-                            )}
+                        <div>
+                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
+                          <div className="flex flex-col md:flex-row gap-4 items-start">
+                              <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
+                                  <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                              </div>
+                              <div className="flex-1 space-y-3">
+                                  <div>
+                                    <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
+                                    <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
+                                        <ImageIcon size={16} />
+                                        <span>Elegir archivo...</span>
+                                        <input 
+                                          type="file" 
+                                          accept="image/*"
+                                          onChange={handleLogoUpload}
+                                          className="hidden"
+                                        />
+                                    </label>
+                                  </div>
+                                  <div className="relative flex py-1 items-center">
+                                      <div className="flex-grow border-t border-slate-100"></div>
+                                      <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
+                                      <div className="flex-grow border-t border-slate-100"></div>
+                                  </div>
+                                  <div>
+                                      <input 
+                                          type="text" 
+                                          className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm bg-white text-slate-900"
+                                          value={tempSettings.logoUrl}
+                                          onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
+                                          placeholder="https://..."
+                                      />
+                                  </div>
+                              </div>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 flex justify-end">
+                          <Button type="submit" variant="primary" disabled={settingsSaved}>
+                              {settingsSaved ? (
+                                <span className="flex items-center gap-2"><Check size={18} /> Guardado</span>
+                              ) : (
+                                <span className="flex items-center gap-2"><Save size={18} /> Guardar Configuración</span>
+                              )}
+                          </Button>
+                        </div>
+                    </form>
+                 </div>
+
+                 {/* BACKUP SECTION */}
+                 <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2 font-display flex items-center gap-2">
+                        <Download className="text-brand-600" /> Copia de Seguridad
+                    </h2>
+                    <p className="text-slate-500 text-sm mb-6">Exporta todos los datos (libros, usuarios, historial) a un archivo seguro o restaura una copia anterior.</p>
+                    
+                    <div className="flex flex-col gap-4">
+                        <Button onClick={handleDownloadBackup} variant="outline" className="w-full flex justify-center py-4 border-slate-200 hover:bg-slate-50">
+                            <Download size={20} className="mr-2"/> Descargar Copia de Seguridad (.json)
                         </Button>
-                      </div>
-                  </form>
+
+                        <div className="relative flex py-2 items-center">
+                            <div className="flex-grow border-t border-slate-100"></div>
+                            <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">RESTAURAR DATOS</span>
+                            <div className="flex-grow border-t border-slate-100"></div>
+                        </div>
+
+                        <input 
+                            type="file" 
+                            accept=".json" 
+                            ref={backupInputRef}
+                            onChange={handleUploadBackup}
+                            className="hidden"
+                            id="backup-upload"
+                        />
+                        <label htmlFor="backup-upload">
+                            <div className="w-full bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <RefreshCcw size={20} />
+                                    <span>Restaurar Copia</span>
+                                </div>
+                                <span className="text-[10px] font-normal opacity-80">⚠️ Esto borrará los datos actuales</span>
+                            </div>
+                        </label>
+                    </div>
+                 </div>
                </div>
            ) : (
                <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 text-center">

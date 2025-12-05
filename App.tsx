@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { storageService } from './services/storageService';
-import { User, Book, Transaction, UserRole, Review, AppSettings, PointHistory } from './types';
+import { User, Book, Transaction, UserRole, Review, AppSettings, PointHistory, BackupData } from './types';
 import { AdminView } from './components/AdminView';
 import { StudentView } from './components/StudentView';
 import { Button } from './components/Button';
@@ -282,6 +282,30 @@ const App: React.FC = () => {
     addToast('Reseña eliminada', 'info');
   };
 
+  const handleRestoreBackup = (data: BackupData) => {
+    try {
+      if (data.users) setUsers(data.users);
+      if (data.books) setBooks(data.books);
+      if (data.transactions) setTransactions(data.transactions);
+      if (data.reviews) setReviews(data.reviews);
+      if (data.pointHistory) setPointHistory(data.pointHistory);
+      if (data.settings) setSettings(data.settings);
+      
+      // Force persistence immediately to avoid sync issues
+      storageService.setUsers(data.users || []);
+      storageService.setBooks(data.books || []);
+      storageService.setTransactions(data.transactions || []);
+      storageService.setReviews(data.reviews || []);
+      storageService.setPointHistory(data.pointHistory || []);
+      storageService.setSettings(data.settings);
+
+      addToast("✅ Copia de seguridad restaurada correctamente.", "success");
+    } catch (error) {
+      console.error("Backup Restore Error:", error);
+      addToast("❌ Error al restaurar datos. Archivo corrupto.", "error");
+    }
+  };
+
   // --- Views ---
 
   if (!currentUser) {
@@ -398,6 +422,7 @@ const App: React.FC = () => {
              reviews={reviews}
              pointHistory={pointHistory}
              settings={settings}
+             transactions={transactions} // Passed explicitly for backup
              onAddUsers={addUsers}
              onAddBooks={addBooks}
              onDeleteUser={deleteUser}
@@ -408,6 +433,7 @@ const App: React.FC = () => {
              onShowToast={addToast}
              onAddPoints={handleManualPointAdjustment}
              onDeletePointEntry={handleDeletePointEntry}
+             onRestoreBackup={handleRestoreBackup}
            />
            <div className="fixed bottom-6 right-6 z-50 no-print">
               <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-lg">Cerrar Sesión</Button>

@@ -1,3 +1,4 @@
+
 export enum UserRole {
   SUPERADMIN = 'SUPERADMIN', // Director / IT
   ADMIN = 'ADMIN',           // Teachers
@@ -81,4 +82,15 @@ export interface RawBookImport {
   genero: string;
   unidades: number;
   estanteria: string;
+}
+
+export interface BackupData {
+  version: string;
+  timestamp: string;
+  users: User[];
+  books: Book[];
+  transactions: Transaction[];
+  reviews: Review[];
+  pointHistory: PointHistory[];
+  settings: AppSettings;
 }
