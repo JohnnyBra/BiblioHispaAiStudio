@@ -1,5 +1,6 @@
 
 import { getAIRecommendedAge } from './geminiService';
+import { Book } from '../types';
 
 export interface BookDetails {
   description: string;
@@ -84,183 +85,22 @@ const validateImageUrl = (url: string): Promise<boolean> => {
     });
 };
 
-const GOOGLE_PLACEHOLDERS = [
-    'gbs_preview_button1',
-    'no_cover_thumb',
-    'printsec=frontcover' // Sometimes returns a generic generated cover we want to avoid if possible
-];
-
 export const searchBookCover = async (title: string, author: string): Promise<string | null> => {
-  const cleanTitle = cleanSearchText(title);
-  const cleanAuthor = cleanSearchText(author);
-
-  const queryStrict = `${cleanTitle} ${cleanAuthor}`;
-  const queryLoose = cleanTitle; // Fallback to just title
-  
-  const encodedQueryStrict = encodeURIComponent(queryStrict);
-  const encodedQueryLoose = encodeURIComponent(queryLoose);
-
-  let foundIsbn: string | null = null;
-
-  // Helper function with timeout
-  const fetchWithTimeout = async (url: string, timeout = 3000) => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(id);
-      return response;
-    } catch (err) {
-      clearTimeout(id);
-      throw err;
-    }
-  };
-
-  // --- SOURCE 1: Google Books API (Best for general metadata) ---
-  try {
-    const res = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=${encodedQueryStrict}&maxResults=1&printType=books`);
-    if (res.ok) {
-      const data = await res.json();
-      const item = data.items?.[0];
-      const volumeInfo = item?.volumeInfo;
-      
-      // Capture ISBN for subsequent fallbacks
-      if (volumeInfo?.industryIdentifiers) {
-        const isbnObj = volumeInfo.industryIdentifiers.find((id: any) => id.type === 'ISBN_13') || 
-                        volumeInfo.industryIdentifiers.find((id: any) => id.type === 'ISBN_10');
-        if (isbnObj) foundIsbn = isbnObj.identifier;
-      }
-
-      const imageLinks = volumeInfo?.imageLinks;
-      if (imageLinks) {
-        // Try to get the largest available image
-        const bestImage = imageLinks.extraLarge || imageLinks.large || imageLinks.medium || imageLinks.thumbnail || imageLinks.smallThumbnail;
-        if (bestImage) {
-          const url = bestImage.replace('http://', 'https://').replace('&zoom=1', '');
-          // Google sometimes returns generic "no cover" images. We try to filter them.
-          if (!url.includes('gbs_preview_button') && await validateImageUrl(url)) {
-              return url;
-          }
-        }
-      }
-    }
-  } catch (e) { /* continue */ }
-
-  // --- SOURCE 2: iTunes Search API (Great for high-res covers of popular books) ---
-  try {
-    const res = await fetchWithTimeout(`https://itunes.apple.com/search?term=${encodedQueryStrict}&media=ebook&entity=ebook&limit=1`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.results?.[0]?.artworkUrl100) {
-        // Hack to get higher resolution from iTunes
-        const url = data.results[0].artworkUrl100.replace('100x100', '600x600');
-        if (await validateImageUrl(url)) return url;
-      }
-    }
-  } catch (e) { /* continue */ }
-
-  // --- SOURCE 3: Open Library (ISBN Search) ---
-  // Highly accurate if Google found an ISBN but no cover
-  if (foundIsbn) {
-    try {
-       const url = `https://covers.openlibrary.org/b/isbn/${foundIsbn}-L.jpg?default=false`;
-       // OpenLibrary returns 404 if 'default=false' and no cover exists, or a 1x1 pixel if we don't use that param.
-       // We use validateImageUrl to be sure.
-       if (await validateImageUrl(url)) return url;
-    } catch (e) { /* continue */ }
-  }
-
-  // --- SOURCE 4: Open Library (Text Search) ---
-  try {
-    const res = await fetchWithTimeout(`https://openlibrary.org/search.json?title=${encodeURIComponent(cleanTitle)}&author=${encodeURIComponent(cleanAuthor)}&limit=1`);
-    if (res.ok) {
-      const data = await res.json();
-      const doc = data.docs?.[0];
-      if (doc?.cover_i) {
-        const url = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
-        if (await validateImageUrl(url)) return url;
-      }
-    }
-  } catch (e) { /* continue */ }
-
-  // --- SOURCE 5: Gutendex (Project Gutenberg - Excellent for public domain classics) ---
-  try {
-    const res = await fetchWithTimeout(`https://gutendex.com/books?search=${encodeURIComponent(cleanTitle)}`);
-    if (res.ok) {
-      const data = await res.json();
-      // Try to match author strictly within results
-      const book = data.results?.find((b: any) => 
-        b.authors.some((a: any) => cleanAuthor.toLowerCase().includes(a.name.toLowerCase().split(',')[0].trim()))
-      ) || data.results?.[0];
-
-      if (book?.formats?.['image/jpeg']) {
-        const url = book.formats['image/jpeg'];
-        if (await validateImageUrl(url)) return url;
-      }
-    }
-  } catch (e) { /* continue */ }
-
-  // --- SOURCE 6: Google Books (LOOSE SEARCH - Title Only) ---
-  // Fallback for when author names are misspelled or "Unknown"
-  try {
-    const res = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodedQueryLoose}&maxResults=1&printType=books&orderBy=relevance`);
-    if (res.ok) {
-      const data = await res.json();
-      const item = data.items?.[0];
-      const imageLinks = item?.volumeInfo?.imageLinks;
-      if (imageLinks?.thumbnail) {
-        const url = imageLinks.thumbnail.replace('http://', 'https://').replace('&zoom=1', '');
-         if (await validateImageUrl(url)) return url;
-      }
-    }
-  } catch (e) { /* continue */ }
-
-  // --- FALLBACK: Return null to let the UI render a CSS generated cover ---
-  // We prefer a nice CSS gradient with text over a generic "No Image" placeholder
-  return null;
+    const meta = await searchBookMetadata(title);
+    return meta.coverUrl || null;
 };
 
 export const getBookDetails = async (title: string, author: string): Promise<BookDetails> => {
-    const q = encodeURIComponent(`${cleanSearchText(title)} ${cleanSearchText(author)}`);
-  
-    // 1. Google Books (Restricted to Spanish)
-    try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&langRestrict=es&maxResults=1`);
-      if (res.ok) {
-        const data = await res.json();
-        const info = data.items?.[0]?.volumeInfo;
-        if (info && info.description) {
-          return {
-            description: cleanSynopsisText(info.description),
-            pages: info.pageCount,
-            publisher: info.publisher,
-            publishedDate: info.publishedDate,
-            source: 'Google Books'
-          };
-        }
-      }
-    } catch (e) { console.error(e); }
-  
-    // 2. Wikipedia (Spanish) - Good for classics
-    try {
-      const searchRes = await fetch(`https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${q}&format=json&origin=*`);
-      const searchData = await searchRes.json();
-      
-      if (searchData.query?.search?.length > 0) {
-        const pageId = searchData.query.search[0].pageid;
-        const extractRes = await fetch(`https://es.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&pageids=${pageId}&format=json&origin=*`);
-        const extractData = await extractRes.json();
-        const extract = extractData.query?.pages?.[pageId]?.extract;
-  
-        if (extract) {
-           return {
-              description: cleanSynopsisText(extract),
-              source: 'Wikipedia'
-           };
-        }
-      }
-    } catch (e) { console.error(e); }
-  
+    const meta = await searchBookMetadata(title);
+    if (meta.description) {
+        return {
+            description: meta.description,
+            pages: meta.pageCount,
+            publisher: meta.publisher,
+            publishedDate: meta.publishedDate,
+            source: 'Internet'
+        };
+    }
     return {
       description: "No disponemos de una sinopsis detallada para este libro en este momento. ¡Pero seguro que es fantástico!",
       source: 'Local'
@@ -270,4 +110,85 @@ export const getBookDetails = async (title: string, author: string): Promise<Boo
 export const determineBookAge = async (title: string, author: string): Promise<string> => {
    // Currently defaulting to AI as it's the most reliable for standardizing age ranges
    return await getAIRecommendedAge(title, author);
+};
+
+export const searchBookMetadata = async (query: string): Promise<Partial<Book>> => {
+    const cleanQuery = cleanSearchText(query);
+    const encodedQuery = encodeURIComponent(cleanQuery);
+
+    let result: Partial<Book> = {
+        title: query,
+        author: 'Desconocido',
+        genre: 'General',
+        recommendedAge: 'TP'
+    };
+
+    // 1. Google Books API (Primary Source)
+    try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=1&printType=books`);
+        if (res.ok) {
+            const data = await res.json();
+            const item = data.items?.[0];
+
+            if (item && item.volumeInfo) {
+                const info = item.volumeInfo;
+
+                // Extract best image
+                let coverUrl: string | undefined = undefined;
+                if (info.imageLinks) {
+                     const bestImage = info.imageLinks.extraLarge || info.imageLinks.large || info.imageLinks.medium || info.imageLinks.thumbnail || info.imageLinks.smallThumbnail;
+                     if (bestImage) {
+                         const url = bestImage.replace('http://', 'https://').replace('&zoom=1', '');
+                         if (!url.includes('gbs_preview_button')) {
+                             coverUrl = url;
+                         }
+                     }
+                }
+
+                // Extract ISBN
+                let isbn = undefined;
+                if (info.industryIdentifiers) {
+                    const isbnObj = info.industryIdentifiers.find((id: any) => id.type === 'ISBN_13') ||
+                                    info.industryIdentifiers.find((id: any) => id.type === 'ISBN_10');
+                    if (isbnObj) isbn = isbnObj.identifier;
+                }
+
+                // Map Genre (Categories)
+                let genre = 'General';
+                if (info.categories && info.categories.length > 0) {
+                    const cat = info.categories[0].toLowerCase();
+                    if (cat.includes('fiction') || cat.includes('ficción')) genre = 'Ficción';
+                    else if (cat.includes('fantasy') || cat.includes('fantasía')) genre = 'Fantasía';
+                    else if (cat.includes('adventure') || cat.includes('aventura')) genre = 'Aventuras';
+                    else if (cat.includes('science') || cat.includes('ciencia')) genre = 'Ciencia';
+                    else if (cat.includes('biography') || cat.includes('biografía')) genre = 'Biografía';
+                    else if (cat.includes('history') || cat.includes('historia')) genre = 'Historia';
+                    else if (cat.includes('horror') || cat.includes('miedo')) genre = 'Miedo';
+                    else genre = info.categories[0];
+                }
+
+                result = {
+                    title: info.title || query,
+                    author: info.authors ? info.authors.join(', ') : 'Desconocido',
+                    description: cleanSynopsisText(info.description),
+                    coverUrl: coverUrl,
+                    genre: genre,
+                    pageCount: info.pageCount,
+                    publisher: info.publisher,
+                    publishedDate: info.publishedDate,
+                    isbn: isbn
+                };
+            }
+        }
+    } catch (e) {
+        console.error("Error searching Google Books:", e);
+    }
+
+    // AI Augmentation for Age (and Genre if generic)
+    try {
+        const age = await getAIRecommendedAge(result.title || query, result.author || '');
+        result.recommendedAge = age;
+    } catch (e) { /* ignore */ }
+
+    return result;
 };
