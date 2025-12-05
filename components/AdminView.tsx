@@ -2,11 +2,11 @@
 import * as React from 'react';
 import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
-import { searchBookCover, determineBookAge } from '../services/bookService';
+import { searchBookCover, determineBookAge, searchBookMetadata } from '../services/bookService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -54,7 +54,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
   
   // Single Entry States
   const [newUser, setNewUser] = React.useState({ name: '', lastname: '', className: '' });
-  const [newBook, setNewBook] = React.useState({ title: '', author: '', genre: '', units: 1, shelf: '', age: '' });
+
+  // Add Book State
+  const [addBookStep, setAddBookStep] = React.useState<'search' | 'confirm'>('search');
+  const [newBookSearch, setNewBookSearch] = React.useState({ title: '', shelf: '' });
+  const [pendingBook, setPendingBook] = React.useState<Partial<Book>>({});
+
   const [newTeacher, setNewTeacher] = React.useState({ name: '', username: '', password: '' });
   
   // Import Config State
@@ -198,23 +203,32 @@ export const AdminView: React.FC<AdminViewProps> = ({
             setLoadingMessage(`Procesando (${i - startIndex + 1}/${totalToProcess}): "${title}"`);
             
             try {
-                const coverUrl = await searchBookCover(title, author);
-                const recommendedAge = ageFromCsv || await determineBookAge(title, author);
+                const meta = await searchBookMetadata(title);
                 
                 parsedBooks.push({
                   id: `book-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
-                  title,
-                  author,
-                  genre,
+                  title: meta.title || title,
+                  author: meta.author || author,
+                  genre: meta.genre || genre,
                   unitsTotal: units,
                   unitsAvailable: units,
                   shelf,
-                  coverUrl: coverUrl || undefined,
+                  coverUrl: meta.coverUrl || undefined,
                   readCount: 0,
-                  recommendedAge
+                  recommendedAge: ageFromCsv || meta.recommendedAge || 'TP',
+                  description: meta.description,
+                  isbn: meta.isbn,
+                  pageCount: meta.pageCount,
+                  publisher: meta.publisher,
+                  publishedDate: meta.publishedDate
                 });
             } catch (err) {
                 console.error(`Error processing ${title}`, err);
+                // Fallback basic
+                parsedBooks.push({
+                    id: `book-${Date.now()}-${i}`,
+                    title, author, genre, unitsTotal: units, unitsAvailable: units, shelf, readCount: 0
+                });
             }
           }
         }
@@ -279,31 +293,60 @@ export const AdminView: React.FC<AdminViewProps> = ({
     onShowToast(`Profesor ${teacher.firstName} creado correctamente.`, "success");
   };
 
-  const handleAddSingleBook = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBook.title || !newBook.author) return;
-    setIsAddingBook(true);
-    setLoadingMessage("Buscando portada y datos...");
-    
-    const coverUrl = await searchBookCover(newBook.title, newBook.author);
-    const finalAge = newBook.age || await determineBookAge(newBook.title, newBook.author);
+  // --- NEW ADD BOOK FLOW ---
+  const handleSearchBook = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newBookSearch.title) return;
 
-    const book: Book = {
-      id: `book-${Date.now()}`,
-      title: newBook.title,
-      author: newBook.author,
-      genre: newBook.genre,
-      unitsTotal: newBook.units,
-      unitsAvailable: newBook.units,
-      shelf: newBook.shelf,
-      coverUrl: coverUrl || undefined,
-      readCount: 0,
-      recommendedAge: finalAge
-    };
-    onAddBooks([book]);
-    setIsAddingBook(false);
-    setNewBook({ title: '', author: '', genre: '', units: 1, shelf: '', age: '' });
-    onShowToast(`Libro "${book.title}" añadido`, "success");
+      setIsAddingBook(true);
+      setLoadingMessage("Buscando información...");
+
+      try {
+          const meta = await searchBookMetadata(newBookSearch.title);
+
+          setPendingBook({
+              ...meta,
+              shelf: newBookSearch.shelf,
+              unitsTotal: 1,
+              unitsAvailable: 1
+          });
+          setAddBookStep('confirm');
+      } catch (error) {
+          onShowToast("Error buscando el libro. Inténtalo de nuevo.", "error");
+      } finally {
+          setIsAddingBook(false);
+      }
+  };
+
+  const handleConfirmBook = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!pendingBook.title || !pendingBook.author) return;
+
+      const book: Book = {
+          id: `book-${Date.now()}`,
+          title: pendingBook.title,
+          author: pendingBook.author,
+          genre: pendingBook.genre || 'General',
+          unitsTotal: pendingBook.unitsTotal || 1,
+          unitsAvailable: pendingBook.unitsTotal || 1, // Start with all available
+          shelf: pendingBook.shelf || 'Recepción',
+          coverUrl: pendingBook.coverUrl,
+          readCount: 0,
+          recommendedAge: pendingBook.recommendedAge || 'TP',
+          description: pendingBook.description,
+          isbn: pendingBook.isbn,
+          pageCount: pendingBook.pageCount,
+          publisher: pendingBook.publisher,
+          publishedDate: pendingBook.publishedDate
+      };
+
+      onAddBooks([book]);
+      onShowToast(`Libro "${book.title}" añadido correctamente`, "success");
+
+      // Reset
+      setAddBookStep('search');
+      setNewBookSearch({ title: '', shelf: '' });
+      setPendingBook({});
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
@@ -690,37 +733,116 @@ export const AdminView: React.FC<AdminViewProps> = ({
            </div>
            
            <div className="space-y-6">
-             {/* Add Single Book */}
+             {/* Add Book Panel */}
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
-                <form onSubmit={handleAddSingleBook} className="space-y-3">
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Título" value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Autor" value={newBook.author} onChange={e => setNewBook({...newBook, author: e.target.value})} />
-                  <div className="flex gap-2">
-                     <input className="w-1/2 p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Género" value={newBook.genre} onChange={e => setNewBook({...newBook, genre: e.target.value})} />
-                     <input className="w-1/2 p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Estantería" value={newBook.shelf} onChange={e => setNewBook({...newBook, shelf: e.target.value})} />
-                  </div>
-                  <div className="flex gap-2">
-                     <div className="flex items-center gap-2 w-1/2">
-                        <span className="text-sm text-slate-500">Ud:</span>
-                        <input type="number" min="1" className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" value={newBook.units} onChange={e => setNewBook({...newBook, units: parseInt(e.target.value)})} />
-                     </div>
-                     <div className="w-1/2">
-                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Edad (Auto)" value={newBook.age} onChange={e => setNewBook({...newBook, age: e.target.value})} />
-                     </div>
-                  </div>
-                  
-                  {isAddingBook && (
-                     <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded-lg flex items-center gap-2 mb-2">
-                        <Loader2 size={14} className="animate-spin"/>
-                        {loadingMessage || "Procesando..."}
-                     </div>
-                  )}
 
-                  <Button type="submit" className="w-full" isLoading={isAddingBook}>
-                    <Plus size={18}/> Guardar Libro
-                  </Button>
-                </form>
+                {addBookStep === 'search' ? (
+                    <form onSubmit={handleSearchBook} className="space-y-3">
+                        <input
+                            className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
+                            placeholder="Título del libro..."
+                            value={newBookSearch.title}
+                            onChange={e => setNewBookSearch({...newBookSearch, title: e.target.value})}
+                        />
+                        <input
+                            className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
+                            placeholder="Estantería (ej: Recepción)"
+                            value={newBookSearch.shelf}
+                            onChange={e => setNewBookSearch({...newBookSearch, shelf: e.target.value})}
+                        />
+
+                        {isAddingBook && (
+                             <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded-lg flex items-center gap-2 mb-2">
+                                <Loader2 size={14} className="animate-spin"/>
+                                {loadingMessage || "Buscando datos..."}
+                             </div>
+                        )}
+
+                        <Button type="submit" className="w-full" isLoading={isAddingBook} disabled={!newBookSearch.title}>
+                            <Search size={18} className="mr-2"/> Buscar y Autocompletar
+                        </Button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleConfirmBook} className="space-y-3 animate-fade-in">
+                        <div className="flex gap-2 mb-2">
+                            {pendingBook.coverUrl && (
+                                <img src={pendingBook.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="Cover"/>
+                            )}
+                            <div className="flex-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Título</label>
+                                <input
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 font-bold"
+                                    value={pendingBook.title || ''}
+                                    onChange={e => setPendingBook({...pendingBook, title: e.target.value})}
+                                />
+                                <label className="text-[10px] font-bold text-slate-400 uppercase mt-1">Autor</label>
+                                <input
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={pendingBook.author || ''}
+                                    onChange={e => setPendingBook({...pendingBook, author: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Género</label>
+                                <input
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={pendingBook.genre || ''}
+                                    onChange={e => setPendingBook({...pendingBook, genre: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
+                                <input
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={pendingBook.recommendedAge || ''}
+                                    onChange={e => setPendingBook({...pendingBook, recommendedAge: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
+                                <input
+                                    type="number" min="1"
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={pendingBook.unitsTotal || 1}
+                                    onChange={e => setPendingBook({...pendingBook, unitsTotal: parseInt(e.target.value)})}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Estantería</label>
+                                <input
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={pendingBook.shelf || ''}
+                                    onChange={e => setPendingBook({...pendingBook, shelf: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Sinopsis</label>
+                            <textarea
+                                className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 text-slate-700 h-20"
+                                value={pendingBook.description || ''}
+                                onChange={e => setPendingBook({...pendingBook, description: e.target.value})}
+                            />
+                        </div>
+
+                        <div className="flex gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setAddBookStep('search')}>
+                                Cancelar
+                            </Button>
+                            <Button type="submit" size="sm" className="flex-1">
+                                <Check size={16} className="mr-1"/> Confirmar
+                            </Button>
+                        </div>
+                    </form>
+                )}
              </div>
 
              {/* CSV Import */}
