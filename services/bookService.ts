@@ -200,3 +200,45 @@ export const searchBookMetadata = async (query: string): Promise<Partial<Book>> 
 
     return bestMatch;
 };
+
+
+// --- CRUD operations ---
+
+const API_URL = '/api/books';
+
+export const addBook = async (book: Partial<Book>): Promise<Book> => {
+    const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(book)
+    });
+    if (!res.ok) throw new Error('Failed to add book');
+    return res.json();
+};
+
+export const updateBook = async (book: Book): Promise<Book> => {
+    const res = await fetch(`${API_URL}/${book.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(book)
+    });
+    if (!res.ok) throw new Error('Failed to update book');
+    return res.json();
+};
+
+export const deleteBook = async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete book');
+};
+
+export const importBooks = async (books: Partial<Book>[]): Promise<Book[]> => {
+    const res = await fetch(`${API_URL}/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(books)
+    });
+    if (!res.ok) throw new Error('Failed to import books');
+    return res.json();
+};

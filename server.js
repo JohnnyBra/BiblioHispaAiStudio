@@ -4,6 +4,10 @@ import cors from 'cors';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fetch from 'node-fetch'; // Ensure node-fetch is installed
+import dotenv from 'dotenv'; // Load env vars
+
+dotenv.config();
 
 // Configuración básica
 const app = express();
@@ -111,6 +115,64 @@ app.post('/api/users', async (req, res) => {
 app.post('/api/books', async (req, res) => {
   await saveDB(req.body, 'books');
   res.json({ success: true });
+});
+
+// Update a book (Used for editing)
+app.put('/api/books/:id', async (req, res) => {
+    const currentData = await readDB();
+    const books = currentData.books || [];
+    const index = books.findIndex(b => b.id === req.params.id);
+
+    if (index !== -1) {
+        books[index] = { ...books[index], ...req.body };
+        await saveDB(books, 'books');
+        res.json({ success: true, book: books[index] });
+    } else {
+        res.status(404).json({ error: 'Book not found' });
+    }
+});
+
+// Delete a book (Added explicit route though frontend might use filtered save)
+app.delete('/api/books/:id', async (req, res) => {
+    const currentData = await readDB();
+    const books = currentData.books || [];
+    const newBooks = books.filter(b => b.id !== req.params.id);
+    await saveDB(newBooks, 'books');
+    res.json({ success: true });
+});
+
+// Batch import books (enhanced)
+app.post('/api/books/batch', async (req, res) => {
+  const booksToAdd = req.body;
+  const currentData = await readDB();
+  const currentBooks = currentData.books || [];
+
+  // Metadata fetching logic for batch items
+  for (let book of booksToAdd) {
+      if (book.title && (!book.cover || !book.description || !book.genre)) {
+          try {
+             // Simple search to fill gaps
+             const query = `${book.title} ${book.author || ''}`;
+             const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&key=${process.env.VITE_API_KEY}`);
+             const data = await response.json();
+             if (data.items && data.items.length > 0) {
+                 const info = data.items[0].volumeInfo;
+                 if (!book.cover && info.imageLinks?.thumbnail) book.cover = info.imageLinks.thumbnail.replace('http:', 'https:');
+                 if (!book.description && info.description) book.description = info.description;
+                 if (!book.genre && info.categories) book.genre = info.categories[0];
+                 if (!book.recommendedAge) book.recommendedAge = 'TP';
+             }
+          } catch (e) { console.error(e); }
+      }
+      // Assign ID if missing
+      if (!book.id) book.id = crypto.randomUUID();
+      book.addedDate = new Date().toISOString();
+      book.available = true;
+  }
+
+  const newBooks = [...currentBooks, ...booksToAdd];
+  await saveDB(newBooks, 'books');
+  res.json({ success: true, count: booksToAdd.length });
 });
 
 app.post('/api/transactions', async (req, res) => {
