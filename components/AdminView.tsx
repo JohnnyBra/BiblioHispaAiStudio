@@ -20,6 +20,7 @@ interface AdminViewProps {
   onAddBooks: (books: Book[]) => void;
   onDeleteUser: (id: string) => void;
   onDeleteBook: (id: string) => void;
+  onUpdateBook: (book: Book) => void;
   onUpdateUser?: (updatedUser: User) => void;
   onDeleteReview?: (id: string) => void;
   onUpdateSettings: (settings: AppSettings) => void;
@@ -41,6 +42,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onAddBooks,
   onDeleteUser,
   onDeleteBook,
+  onUpdateBook,
   onUpdateUser,
   onDeleteReview,
   onUpdateSettings,
@@ -400,22 +402,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handleSaveEdit = async () => {
       if (!editingBook) return;
       try {
+          // Llamamos al backend primero para asegurar que no hay errores (opcional, pero recomendado)
           await updateBook(editingBook);
-          // Update local state by re-adding (replacing)
-          // Ideally onAddBooks should handle update or we need onUpdateBook prop
-          // Since onAddBooks is just `setBooks`, we can't easily replace without modifying parent.
-          // But we can delete and add? No, ID changes.
-          // We need a way to update the book list in parent.
-          // Assuming we can't change parent, we rely on a reload or we hack it.
-          // Wait, the parent `App` passes `books`.
-          // `onAddBooks` appends. `onDeleteBook` removes.
-          // We don't have `onUpdateBook`.
-          // I should add `onUpdateBook` to props but that requires changing parent.
-          // Instead, I will assume the user reloads or I can delete and re-add with same ID?
-          // `onDeleteBook` uses ID. `onAddBooks` accepts array.
-          // Let's try: delete old, add new (with SAME ID).
-          onDeleteBook(editingBook.id);
-          onAddBooks([editingBook]);
+
+          // En lugar de borrar y añadir, usamos la actualización directa:
+          onUpdateBook(editingBook);
+
           onShowToast("Libro actualizado", "success");
       } catch (e) {
           onShowToast("Error al actualizar", "error");
