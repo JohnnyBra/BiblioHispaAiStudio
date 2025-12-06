@@ -155,8 +155,20 @@ export const StudentView: React.FC<StudentViewProps> = ({
   const handleViewDetails = async (book: Book) => {
     setViewingBook(book);
     setBookDetails(null);
-    setIsLoadingDetails(true);
     
+    // IF WE ALREADY HAVE THE DETAILS, USE THEM
+    if (book.description) {
+        setBookDetails({
+            description: book.description,
+            pages: book.pageCount,
+            publisher: book.publisher,
+            publishedDate: book.publishedDate,
+            source: 'Local'
+        });
+        return;
+    }
+
+    setIsLoadingDetails(true);
     const details = await getBookDetails(book.title, book.author);
     setBookDetails(details);
     setIsLoadingDetails(false);

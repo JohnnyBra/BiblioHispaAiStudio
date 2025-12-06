@@ -28,6 +28,11 @@ export interface Book {
   coverUrl?: string;
   readCount: number;
   recommendedAge?: string; // e.g. "6-8", "+10", "TP"
+  description?: string;
+  isbn?: string;
+  pageCount?: number;
+  publisher?: string;
+  publishedDate?: string;
 }
 
 export interface Transaction {
