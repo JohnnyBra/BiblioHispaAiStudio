@@ -61,6 +61,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [newBook, setNewBook] = React.useState<Partial<Book>>({ unitsTotal: 1, unitsAvailable: 1, shelf: 'Recepción' });
   const [candidates, setCandidates] = React.useState<Partial<Book>[]>([]);
   const [showCandidates, setShowCandidates] = React.useState(false);
+  const [isCoverSelectionMode, setIsCoverSelectionMode] = React.useState(false);
 
   // Edit Book State
   const [editingBook, setEditingBook] = React.useState<Book | null>(null);
@@ -327,6 +328,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
   };
 
   const handleSelectCandidate = (candidate: Partial<Book>) => {
+      if (isCoverSelectionMode && editingBook) {
+          setEditingBook(prev => prev ? ({ ...prev, coverUrl: candidate.coverUrl }) : null);
+          setShowCandidates(false);
+          setIsCoverSelectionMode(false);
+          onShowToast("Portada actualizada.", "success");
+          return;
+      }
+
       const targetSetter = editingBook ? setEditingBook : setNewBook;
       targetSetter((prev: any) => ({
           ...prev,
@@ -974,40 +983,62 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   </h3>
                   <p className="text-sm text-slate-500">Hemos encontrado varias coincidencias.</p>
                </div>
-               <button onClick={() => setShowCandidates(false)} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full">
+               <button onClick={() => { setShowCandidates(false); setIsCoverSelectionMode(false); }} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full">
                   <X size={20} />
                </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
-                {candidates.map((cand, idx) => (
-                    <div
-                        key={idx}
-                        className="flex gap-4 p-3 border border-slate-200 rounded-xl hover:bg-brand-50 cursor-pointer transition-colors group"
-                        onClick={() => handleSelectCandidate(cand)}
-                    >
-                        <div className="w-16 h-24 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden">
-                            {cand.coverUrl ? (
-                                <img src={cand.coverUrl} className="w-full h-full object-cover" alt="cover"/>
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 text-center p-1">Sin imagen</div>
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-slate-800 text-sm">{cand.title}</h4>
-                            <p className="text-xs text-slate-600">{cand.author}</p>
-                            <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{cand.description}</p>
-                            <div className="flex gap-2 mt-2">
-                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">{cand.genre}</span>
-                                {cand.publishedDate && <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">{cand.publishedDate.split('-')[0]}</span>}
+            {isCoverSelectionMode ? (
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <p className="text-sm text-slate-500 mb-3">Selecciona una imagen para usarla como portada:</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                        {candidates.map((cand, idx) => (
+                            <div
+                                key={idx}
+                                onClick={() => handleSelectCandidate(cand)}
+                                className="aspect-[2/3] bg-slate-100 rounded-lg cursor-pointer hover:ring-4 hover:ring-brand-200 transition-all overflow-hidden relative group"
+                            >
+                                {cand.coverUrl ? (
+                                    <img src={cand.coverUrl} className="w-full h-full object-cover" alt={cand.title} />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 p-2 text-center">Sin imagen</div>
+                                )}
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                    {candidates.map((cand, idx) => (
+                        <div
+                            key={idx}
+                            className="flex gap-4 p-3 border border-slate-200 rounded-xl hover:bg-brand-50 cursor-pointer transition-colors group"
+                            onClick={() => handleSelectCandidate(cand)}
+                        >
+                            <div className="w-16 h-24 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden">
+                                {cand.coverUrl ? (
+                                    <img src={cand.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 text-center p-1">Sin imagen</div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-slate-800 text-sm">{cand.title}</h4>
+                                <p className="text-xs text-slate-600">{cand.author}</p>
+                                <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{cand.description}</p>
+                                <div className="flex gap-2 mt-2">
+                                    <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">{cand.genre}</span>
+                                    {cand.publishedDate && <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">{cand.publishedDate.split('-')[0]}</span>}
+                                </div>
+                            </div>
+                            <div className="flex items-center">
+                                <ArrowRight size={20} className="text-slate-300 group-hover:text-brand-500" />
                             </div>
                         </div>
-                        <div className="flex items-center">
-                            <ArrowRight size={20} className="text-slate-300 group-hover:text-brand-500" />
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
           </div>
         </div>
       )}
@@ -1027,7 +1058,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <div className="flex-1 space-y-2">
                             <input className="w-full p-2 border rounded" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} placeholder="Título" />
                             <input className="w-full p-2 border rounded" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} placeholder="Autor" />
-                            <Button size="sm" variant="outline" onClick={() => setShowCandidates(true)}><Wand2 size={14} className="mr-2"/> Buscar Portada Alternativa</Button>
+                            <Button size="sm" variant="outline" onClick={() => { setIsCoverSelectionMode(true); setShowCandidates(true); }}><Wand2 size={14} className="mr-2"/> Buscar Portada Alternativa</Button>
                         </div>
                     </div>
 
