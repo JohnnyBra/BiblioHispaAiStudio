@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
-import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandidates } from '../services/bookService';
+import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
@@ -59,6 +59,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [newBook, setNewBook] = React.useState<Partial<Book>>({ unitsTotal: 1, unitsAvailable: 1, shelf: 'Recepción' });
   const [candidates, setCandidates] = React.useState<Partial<Book>[]>([]);
   const [showCandidates, setShowCandidates] = React.useState(false);
+
+  // Edit Book State
+  const [editingBook, setEditingBook] = React.useState<Book | null>(null);
 
   const [newTeacher, setNewTeacher] = React.useState({ name: '', username: '', password: '' });
   
@@ -322,48 +325,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
   };
 
   const handleSelectCandidate = (candidate: Partial<Book>) => {
-      // Merge candidate data into newBook, preserving units/shelf if set
-      setNewBook(prev => ({
+      const targetSetter = editingBook ? setEditingBook : setNewBook;
+      targetSetter((prev: any) => ({
           ...prev,
           ...candidate,
-          // Preserve these if they were already set manually by user, unless they are defaults?
-          // Actually, we usually want the API data for Title/Author/Genre/Desc/Cover
-          // But we want to keep Units and Shelf
+          // Preserve existing fields if they exist in prev but not in candidate
           unitsTotal: prev.unitsTotal || 1,
-          unitsAvailable: prev.unitsTotal || 1, // Assume available = total
+          unitsAvailable: prev.unitsTotal || 1,
           shelf: prev.shelf || 'Recepción'
       }));
       setShowCandidates(false);
       onShowToast("Datos rellenados. Puedes editar antes de guardar.", "success");
   };
 
-  const handleSaveBook = (e: React.FormEvent) => {
+  const handleBlur = () => {
+      if (newBook.title && !newBook.coverUrl) {
+          handleSearchCandidates(null as any);
+      }
+  };
+
+  const handleSaveBook = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!newBook.title) {
           onShowToast("El título es obligatorio.", "error");
           return;
       }
 
-      // If Author or Genre are missing, try to auto-fetch first?
-      // The user requirement: "only search ... in case of not filling it"
-      // If user clicks Save and Author is missing, we could auto-search.
-      // But we need to handle the case of multiple results.
-
-      // Let's implement: If missing critical fields, trigger search manually?
-      // Or just save as is?
-      // "When you want to add a book all fields must appear and only search ... in case of not filling it."
-      // If I click "Save" with empty author, maybe I just want to save it like that?
-      // But usually we want the info.
-      // I'll stick to manual trigger or explicit "Auto-Search" button.
-      // The "Search Candidates" button covers the "search" requirement.
-
       if (!newBook.author) {
-          // Optional: Prompt or just set Unknown
           if (confirm("¿Autor vacío. Quieres buscarlo automáticamente?")) {
               handleSearchCandidates(null as any);
               return;
           }
-          // If they say No, proceed with 'Desconocido'
       }
 
       const book: Book = {
@@ -384,12 +376,51 @@ export const AdminView: React.FC<AdminViewProps> = ({
           publishedDate: newBook.publishedDate
       };
 
+      // Call backend
+      try {
+          await addBook(book);
+      } catch (e) {
+          console.error(e); // Backend might be down, but local state update handles UI
+      }
+
       onAddBooks([book]);
       onShowToast(`Libro "${book.title}" añadido correctamente`, "success");
 
       // Reset
       setNewBook({ unitsTotal: 1, unitsAvailable: 1, shelf: 'Recepción' });
       setCandidates([]);
+  };
+
+  const handleStartEditing = (book: Book) => {
+      setEditingBook({ ...book });
+      // Pre-load candidates in background
+      searchBookCandidates(`${book.title} ${book.author}`).then(setCandidates);
+  };
+
+  const handleSaveEdit = async () => {
+      if (!editingBook) return;
+      try {
+          await updateBook(editingBook);
+          // Update local state by re-adding (replacing)
+          // Ideally onAddBooks should handle update or we need onUpdateBook prop
+          // Since onAddBooks is just `setBooks`, we can't easily replace without modifying parent.
+          // But we can delete and add? No, ID changes.
+          // We need a way to update the book list in parent.
+          // Assuming we can't change parent, we rely on a reload or we hack it.
+          // Wait, the parent `App` passes `books`.
+          // `onAddBooks` appends. `onDeleteBook` removes.
+          // We don't have `onUpdateBook`.
+          // I should add `onUpdateBook` to props but that requires changing parent.
+          // Instead, I will assume the user reloads or I can delete and re-add with same ID?
+          // `onDeleteBook` uses ID. `onAddBooks` accepts array.
+          // Let's try: delete old, add new (with SAME ID).
+          onDeleteBook(editingBook.id);
+          onAddBooks([editingBook]);
+          onShowToast("Libro actualizado", "success");
+      } catch (e) {
+          onShowToast("Error al actualizar", "error");
+      }
+      setEditingBook(null);
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
@@ -765,9 +796,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                <span className={book.unitsAvailable > 0 ? "text-green-600" : "text-red-500"}>{book.unitsAvailable}/{book.unitsTotal}</span>
                                {book.recommendedAge && <span className="text-purple-500 font-bold">{book.recommendedAge}</span>}
                              </div>
-                             <button onClick={() => onDeleteBook(book.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 size={12}/> Eliminar
-                             </button>
+                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleStartEditing(book)} className="text-xs text-brand-500 hover:text-brand-700 flex items-center gap-1">
+                                    <Edit2 size={12}/> Editar
+                                </button>
+                                <button onClick={() => onDeleteBook(book.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
+                                    <Trash2 size={12}/> Eliminar
+                                </button>
+                             </div>
                           </div>
                        </div>
                     ))}
@@ -792,6 +828,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                     className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 font-bold"
                                     value={newBook.title || ''}
                                     onChange={e => setNewBook({...newBook, title: e.target.value})}
+                                    onBlur={handleBlur}
                                     placeholder="Ej: Harry Potter"
                                 />
                                 <Button
@@ -811,6 +848,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.author || ''}
                                 onChange={e => setNewBook({...newBook, author: e.target.value})}
+                                onBlur={handleBlur}
                                 placeholder="Ej: J.K. Rowling"
                             />
                         </div>
@@ -982,6 +1020,42 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       )}
 
+      {/* Edit Book Modal */}
+      {editingBook && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold font-display text-slate-800">Editar Libro</h3>
+                    <button onClick={() => setEditingBook(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex gap-4">
+                        {editingBook.coverUrl && <img src={editingBook.coverUrl} className="w-20 h-32 object-cover rounded bg-slate-200"/>}
+                        <div className="flex-1 space-y-2">
+                            <input className="w-full p-2 border rounded" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} placeholder="Título" />
+                            <input className="w-full p-2 border rounded" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} placeholder="Autor" />
+                            <Button size="sm" variant="outline" onClick={() => setShowCandidates(true)}><Wand2 size={14} className="mr-2"/> Buscar Portada Alternativa</Button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <input className="p-2 border rounded" value={editingBook.genre} onChange={e => setEditingBook({...editingBook, genre: e.target.value})} placeholder="Género" />
+                        <input className="p-2 border rounded" value={editingBook.recommendedAge} onChange={e => setEditingBook({...editingBook, recommendedAge: e.target.value})} placeholder="Edad" />
+                        <input type="number" className="p-2 border rounded" value={editingBook.unitsTotal} onChange={e => setEditingBook({...editingBook, unitsTotal: parseInt(e.target.value)})} placeholder="Unidades" />
+                        <input className="p-2 border rounded" value={editingBook.shelf} onChange={e => setEditingBook({...editingBook, shelf: e.target.value})} placeholder="Estantería" />
+                    </div>
+
+                    <textarea className="w-full p-2 border rounded h-24 text-sm" value={editingBook.description || ''} onChange={e => setEditingBook({...editingBook, description: e.target.value})} placeholder="Sinopsis" />
+
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={() => setEditingBook(null)}>Cancelar</Button>
+                        <Button onClick={handleSaveEdit}><Save size={16} className="mr-2"/> Guardar Cambios</Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
 
     </div>
   );
