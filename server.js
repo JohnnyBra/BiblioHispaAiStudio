@@ -11,7 +11,7 @@ dotenv.config();
 
 // Configuración básica
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000; // Hardcoded to match Vite proxy expectation
 const DB_FILE = path.join(process.cwd(), 'data', 'db.json');
 
 // Simular __dirname en módulos ES
