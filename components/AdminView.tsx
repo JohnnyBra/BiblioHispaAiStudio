@@ -6,7 +6,7 @@ import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandid
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, Info } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2 } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -1076,86 +1076,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <Button onClick={handleSaveEdit}><Save size={16} className="mr-2"/> Guardar Cambios</Button>
                     </div>
                 </div>
-            </div>
-        </div>
-      )}
-
-      {/* --- MODAL EDITAR USUARIO (Faltaba este bloque) --- */}
-      {editingUser && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold font-display text-slate-800 flex items-center gap-2">
-                        <Edit2 size={24} className="text-brand-600"/>
-                        Editar Alumno
-                    </h3>
-                    <button
-                        onClick={() => setEditingUser(null)}
-                        className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"
-                    >
-                        <X size={20}/>
-                    </button>
-                </div>
-
-                <form onSubmit={handleUpdateUser} className="space-y-4">
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre</label>
-                        <input
-                            className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none transition-all"
-                            value={editingUser.firstName}
-                            onChange={e => setEditingUser({...editingUser, firstName: e.target.value})}
-                            placeholder="Nombre"
-                            required
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Apellido</label>
-                        <input
-                            className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none transition-all"
-                            value={editingUser.lastName}
-                            onChange={e => setEditingUser({...editingUser, lastName: e.target.value})}
-                            placeholder="Apellido"
-                            required
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Clase</label>
-                        <input
-                            className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none transition-all"
-                            value={editingUser.className}
-                            onChange={e => setEditingUser({...editingUser, className: e.target.value})}
-                            placeholder="Ej: 5º A"
-                            required
-                        />
-                    </div>
-
-                    {editingUser.role === 'ADMIN' && (
-                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre de Usuario</label>
-                            <input
-                                className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none transition-all"
-                                value={editingUser.username}
-                                onChange={e => setEditingUser({...editingUser, username: e.target.value})}
-                            />
-                        </div>
-                    )}
-
-                    {editingUser.role === 'STUDENT' && (
-                        <div className="bg-brand-50 p-3 rounded-xl border border-brand-100 flex gap-2 items-start">
-                             <Info size={16} className="text-brand-500 mt-0.5 flex-shrink-0"/>
-                             <p className="text-xs text-brand-700">
-                                Al guardar, el <strong>usuario de acceso</strong> se regenerará automáticamente basado en el nuevo nombre (<i>nombre.apellido</i>).
-                             </p>
-                        </div>
-                    )}
-
-                    <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                        <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>Cancelar</Button>
-                        <Button type="submit"><Save size={18} /> Guardar Cambios</Button>
-                    </div>
-                </form>
             </div>
         </div>
       )}
