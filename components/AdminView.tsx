@@ -973,7 +973,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* CANDIDATES SELECTION MODAL */}
       {showCandidates && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
             <div className="flex justify-between items-center mb-4">
                <div>
@@ -1049,7 +1049,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Editar Libro</h3>
-                    <button onClick={() => setEditingBook(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
+                    <button onClick={() => { setEditingBook(null); setShowCandidates(false); setIsCoverSelectionMode(false); }} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
                 </div>
 
                 <div className="space-y-3">
@@ -1072,7 +1072,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <textarea className="w-full p-2 border rounded h-24 text-sm" value={editingBook.description || ''} onChange={e => setEditingBook({...editingBook, description: e.target.value})} placeholder="Sinopsis" />
 
                     <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="outline" onClick={() => setEditingBook(null)}>Cancelar</Button>
+                        <Button variant="outline" onClick={() => { setEditingBook(null); setShowCandidates(false); setIsCoverSelectionMode(false); }}>Cancelar</Button>
                         <Button onClick={handleSaveEdit}><Save size={16} className="mr-2"/> Guardar Cambios</Button>
                     </div>
                 </div>
