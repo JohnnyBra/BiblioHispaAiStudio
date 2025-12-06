@@ -113,14 +113,41 @@ app.post('/api/users', async (req, res) => {
 });
 
 app.post('/api/books', async (req, res) => {
-  await saveDB(req.body, 'books');
+  const payload = req.body;
+
+  // Leemos los datos actuales
+  const currentData = await readDB();
+  let currentBooks = currentData.books;
+
+  // Protección: Asegurar que currentBooks sea un array
+  if (!Array.isArray(currentBooks)) {
+      currentBooks = [];
+  }
+
+  if (Array.isArray(payload)) {
+      // Caso A: El frontend nos envía la lista COMPLETA (desde App.tsx useEffect)
+      // Sobrescribimos todo
+      await saveDB(payload, 'books');
+  } else {
+      // Caso B: El frontend nos envía UN SOLO libro (desde addBook)
+      // Lo añadimos a la lista existente
+      currentBooks.push(payload);
+      await saveDB(currentBooks, 'books');
+  }
+
   res.json({ success: true });
 });
 
 // Update a book (Used for editing)
 app.put('/api/books/:id', async (req, res) => {
     const currentData = await readDB();
-    const books = currentData.books || [];
+    let books = currentData.books;
+
+    // Protección: Si la DB estaba corrupta y books no es array, lo reiniciamos
+    if (!Array.isArray(books)) {
+        books = [];
+    }
+
     const index = books.findIndex(b => b.id === req.params.id);
 
     if (index !== -1) {
@@ -132,10 +159,14 @@ app.put('/api/books/:id', async (req, res) => {
     }
 });
 
-// Delete a book (Added explicit route though frontend might use filtered save)
+// Delete a book
 app.delete('/api/books/:id', async (req, res) => {
     const currentData = await readDB();
-    const books = currentData.books || [];
+    let books = currentData.books;
+
+    // Protección
+    if (!Array.isArray(books)) books = [];
+
     const newBooks = books.filter(b => b.id !== req.params.id);
     await saveDB(newBooks, 'books');
     res.json({ success: true });
