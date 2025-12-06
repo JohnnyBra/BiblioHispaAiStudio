@@ -142,6 +142,10 @@ const App: React.FC = () => {
     addToast('Usuario eliminado', 'info');
   };
   const addBooks = (newBooks: Book[]) => setBooks(prev => [...prev, ...newBooks]);
+  const handleUpdateBook = (updatedBook: Book) => {
+    setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
+    // The useEffect will handle saving to server automatically
+  };
   const deleteBook = (id: string) => {
     setBooks(prev => prev.filter(b => b.id !== id));
     addToast('Libro eliminado', 'info');
@@ -387,6 +391,7 @@ const App: React.FC = () => {
              onDeleteUser={deleteUser}
              onUpdateUser={updateUser}
              onDeleteBook={deleteBook}
+             onUpdateBook={handleUpdateBook}
              onDeleteReview={handleDeleteReview}
              onUpdateSettings={updateSettings}
              onShowToast={addToast}
