@@ -112,25 +112,18 @@ export const determineBookAge = async (title: string, author: string): Promise<s
    return await getAIRecommendedAge(title, author);
 };
 
-export const searchBookMetadata = async (query: string): Promise<Partial<Book>> => {
+export const searchBookCandidates = async (query: string): Promise<Partial<Book>[]> => {
     const cleanQuery = cleanSearchText(query);
     const encodedQuery = encodeURIComponent(cleanQuery);
 
-    let result: Partial<Book> = {
-        title: query,
-        author: 'Desconocido',
-        genre: 'General',
-        recommendedAge: 'TP'
-    };
-
-    // 1. Google Books API (Primary Source)
     try {
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=1&printType=books`);
+        // Fetch up to 10 candidates
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=10&printType=books`);
         if (res.ok) {
             const data = await res.json();
-            const item = data.items?.[0];
+            if (!data.items) return [];
 
-            if (item && item.volumeInfo) {
+            return data.items.map((item: any) => {
                 const info = item.volumeInfo;
 
                 // Extract best image
@@ -167,7 +160,7 @@ export const searchBookMetadata = async (query: string): Promise<Partial<Book>> 
                     else genre = info.categories[0];
                 }
 
-                result = {
+                return {
                     title: info.title || query,
                     author: info.authors ? info.authors.join(', ') : 'Desconocido',
                     description: cleanSynopsisText(info.description),
@@ -176,19 +169,34 @@ export const searchBookMetadata = async (query: string): Promise<Partial<Book>> 
                     pageCount: info.pageCount,
                     publisher: info.publisher,
                     publishedDate: info.publishedDate,
-                    isbn: isbn
+                    isbn: isbn,
+                    recommendedAge: 'TP' // Will be augmented by AI later if selected
                 };
-            }
+            });
         }
     } catch (e) {
         console.error("Error searching Google Books:", e);
     }
+    return [];
+}
 
-    // AI Augmentation for Age (and Genre if generic)
-    try {
-        const age = await getAIRecommendedAge(result.title || query, result.author || '');
-        result.recommendedAge = age;
-    } catch (e) { /* ignore */ }
+// Kept for backward compatibility and simple usage (returns top result)
+export const searchBookMetadata = async (query: string): Promise<Partial<Book>> => {
+    const candidates = await searchBookCandidates(query);
+    const bestMatch = candidates[0] || {
+        title: query,
+        author: 'Desconocido',
+        genre: 'General',
+        recommendedAge: 'TP'
+    };
 
-    return result;
+    // Augment with AI Age if valid match
+    if (candidates.length > 0) {
+        try {
+            const age = await getAIRecommendedAge(bestMatch.title || query, bestMatch.author || '');
+            bestMatch.recommendedAge = age;
+        } catch (e) { /* ignore */ }
+    }
+
+    return bestMatch;
 };

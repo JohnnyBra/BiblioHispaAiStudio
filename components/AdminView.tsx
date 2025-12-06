@@ -2,11 +2,11 @@
 import * as React from 'react';
 import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
-import { searchBookCover, determineBookAge, searchBookMetadata } from '../services/bookService';
+import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandidates } from '../services/bookService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2 } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -56,9 +56,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [newUser, setNewUser] = React.useState({ name: '', lastname: '', className: '' });
 
   // Add Book State
-  const [addBookStep, setAddBookStep] = React.useState<'search' | 'confirm'>('search');
-  const [newBookSearch, setNewBookSearch] = React.useState({ title: '', shelf: '' });
-  const [pendingBook, setPendingBook] = React.useState<Partial<Book>>({});
+  const [newBook, setNewBook] = React.useState<Partial<Book>>({ unitsTotal: 1, unitsAvailable: 1, shelf: 'Recepción' });
+  const [candidates, setCandidates] = React.useState<Partial<Book>[]>([]);
+  const [showCandidates, setShowCandidates] = React.useState(false);
 
   const [newTeacher, setNewTeacher] = React.useState({ name: '', username: '', password: '' });
   
@@ -203,13 +203,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
             setLoadingMessage(`Procesando (${i - startIndex + 1}/${totalToProcess}): "${title}"`);
             
             try {
+                // If Author or Genre are missing or generic, we try to fetch metadata
+                // But we always fetch to get Cover/Synopsis if possible.
                 const meta = await searchBookMetadata(title);
                 
                 parsedBooks.push({
                   id: `book-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
-                  title: meta.title || title,
-                  author: meta.author || author,
-                  genre: meta.genre || genre,
+                  title: title, // Always trust CSV title
+                  author: (!author || author === 'Desconocido') ? (meta.author || 'Desconocido') : author,
+                  genre: (!genre || genre === 'General') ? (meta.genre || 'General') : genre,
                   unitsTotal: units,
                   unitsAvailable: units,
                   shelf,
@@ -294,59 +296,100 @@ export const AdminView: React.FC<AdminViewProps> = ({
   };
 
   // --- NEW ADD BOOK FLOW ---
-  const handleSearchBook = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!newBookSearch.title) return;
+  const handleSearchCandidates = async (e: React.FormEvent | React.MouseEvent) => {
+      if (e) e.preventDefault();
+      if (!newBook.title) {
+          onShowToast("Escribe al menos el título para buscar", "error");
+          return;
+      }
 
       setIsAddingBook(true);
-      setLoadingMessage("Buscando información...");
+      setLoadingMessage("Buscando candidatos...");
 
       try {
-          const meta = await searchBookMetadata(newBookSearch.title);
-
-          setPendingBook({
-              ...meta,
-              shelf: newBookSearch.shelf,
-              unitsTotal: 1,
-              unitsAvailable: 1
-          });
-          setAddBookStep('confirm');
+          const results = await searchBookCandidates(newBook.title + (newBook.author ? ` ${newBook.author}` : ''));
+          setCandidates(results);
+          if (results.length === 0) {
+              onShowToast("No se encontraron libros.", "info");
+          } else {
+              setShowCandidates(true);
+          }
       } catch (error) {
-          onShowToast("Error buscando el libro. Inténtalo de nuevo.", "error");
+          onShowToast("Error en la búsqueda.", "error");
       } finally {
           setIsAddingBook(false);
       }
   };
 
-  const handleConfirmBook = (e: React.FormEvent) => {
+  const handleSelectCandidate = (candidate: Partial<Book>) => {
+      // Merge candidate data into newBook, preserving units/shelf if set
+      setNewBook(prev => ({
+          ...prev,
+          ...candidate,
+          // Preserve these if they were already set manually by user, unless they are defaults?
+          // Actually, we usually want the API data for Title/Author/Genre/Desc/Cover
+          // But we want to keep Units and Shelf
+          unitsTotal: prev.unitsTotal || 1,
+          unitsAvailable: prev.unitsTotal || 1, // Assume available = total
+          shelf: prev.shelf || 'Recepción'
+      }));
+      setShowCandidates(false);
+      onShowToast("Datos rellenados. Puedes editar antes de guardar.", "success");
+  };
+
+  const handleSaveBook = (e: React.FormEvent) => {
       e.preventDefault();
-      if (!pendingBook.title || !pendingBook.author) return;
+      if (!newBook.title) {
+          onShowToast("El título es obligatorio.", "error");
+          return;
+      }
+
+      // If Author or Genre are missing, try to auto-fetch first?
+      // The user requirement: "only search ... in case of not filling it"
+      // If user clicks Save and Author is missing, we could auto-search.
+      // But we need to handle the case of multiple results.
+
+      // Let's implement: If missing critical fields, trigger search manually?
+      // Or just save as is?
+      // "When you want to add a book all fields must appear and only search ... in case of not filling it."
+      // If I click "Save" with empty author, maybe I just want to save it like that?
+      // But usually we want the info.
+      // I'll stick to manual trigger or explicit "Auto-Search" button.
+      // The "Search Candidates" button covers the "search" requirement.
+
+      if (!newBook.author) {
+          // Optional: Prompt or just set Unknown
+          if (confirm("¿Autor vacío. Quieres buscarlo automáticamente?")) {
+              handleSearchCandidates(null as any);
+              return;
+          }
+          // If they say No, proceed with 'Desconocido'
+      }
 
       const book: Book = {
           id: `book-${Date.now()}`,
-          title: pendingBook.title,
-          author: pendingBook.author,
-          genre: pendingBook.genre || 'General',
-          unitsTotal: pendingBook.unitsTotal || 1,
-          unitsAvailable: pendingBook.unitsTotal || 1, // Start with all available
-          shelf: pendingBook.shelf || 'Recepción',
-          coverUrl: pendingBook.coverUrl,
+          title: newBook.title,
+          author: newBook.author || 'Desconocido',
+          genre: newBook.genre || 'General',
+          unitsTotal: newBook.unitsTotal || 1,
+          unitsAvailable: newBook.unitsTotal || 1,
+          shelf: newBook.shelf || 'Recepción',
+          coverUrl: newBook.coverUrl,
           readCount: 0,
-          recommendedAge: pendingBook.recommendedAge || 'TP',
-          description: pendingBook.description,
-          isbn: pendingBook.isbn,
-          pageCount: pendingBook.pageCount,
-          publisher: pendingBook.publisher,
-          publishedDate: pendingBook.publishedDate
+          recommendedAge: newBook.recommendedAge || 'TP',
+          description: newBook.description,
+          isbn: newBook.isbn,
+          pageCount: newBook.pageCount,
+          publisher: newBook.publisher,
+          publishedDate: newBook.publishedDate
       };
 
       onAddBooks([book]);
       onShowToast(`Libro "${book.title}" añadido correctamente`, "success");
 
       // Reset
-      setAddBookStep('search');
-      setNewBookSearch({ title: '', shelf: '' });
-      setPendingBook({});
+      setNewBook({ unitsTotal: 1, unitsAvailable: 1, shelf: 'Recepción' });
+      setCandidates([]);
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
@@ -737,112 +780,101 @@ export const AdminView: React.FC<AdminViewProps> = ({
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
 
-                {addBookStep === 'search' ? (
-                    <form onSubmit={handleSearchBook} className="space-y-3">
-                        <input
-                            className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
-                            placeholder="Título del libro..."
-                            value={newBookSearch.title}
-                            onChange={e => setNewBookSearch({...newBookSearch, title: e.target.value})}
-                        />
-                        <input
-                            className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
-                            placeholder="Estantería (ej: Recepción)"
-                            value={newBookSearch.shelf}
-                            onChange={e => setNewBookSearch({...newBookSearch, shelf: e.target.value})}
-                        />
-
-                        {isAddingBook && (
-                             <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded-lg flex items-center gap-2 mb-2">
-                                <Loader2 size={14} className="animate-spin"/>
-                                {loadingMessage || "Buscando datos..."}
-                             </div>
+                <form onSubmit={handleSaveBook} className="space-y-3">
+                    <div className="flex gap-2 mb-2">
+                        {newBook.coverUrl && (
+                            <img src={newBook.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="Cover"/>
                         )}
-
-                        <Button type="submit" className="w-full" isLoading={isAddingBook} disabled={!newBookSearch.title}>
-                            <Search size={18} className="mr-2"/> Buscar y Autocompletar
-                        </Button>
-                    </form>
-                ) : (
-                    <form onSubmit={handleConfirmBook} className="space-y-3 animate-fade-in">
-                        <div className="flex gap-2 mb-2">
-                            {pendingBook.coverUrl && (
-                                <img src={pendingBook.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="Cover"/>
-                            )}
-                            <div className="flex-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Título</label>
+                        <div className="flex-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Título *</label>
+                            <div className="flex gap-2">
                                 <input
                                     className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 font-bold"
-                                    value={pendingBook.title || ''}
-                                    onChange={e => setPendingBook({...pendingBook, title: e.target.value})}
+                                    value={newBook.title || ''}
+                                    onChange={e => setNewBook({...newBook, title: e.target.value})}
+                                    placeholder="Ej: Harry Potter"
                                 />
-                                <label className="text-[10px] font-bold text-slate-400 uppercase mt-1">Autor</label>
-                                <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                    value={pendingBook.author || ''}
-                                    onChange={e => setPendingBook({...pendingBook, author: e.target.value})}
-                                />
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={handleSearchCandidates}
+                                    title="Buscar datos automáticos"
+                                    disabled={!newBook.title}
+                                >
+                                    <Wand2 size={16} />
+                                </Button>
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Género</label>
-                                <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                    value={pendingBook.genre || ''}
-                                    onChange={e => setPendingBook({...pendingBook, genre: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
-                                <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                    value={pendingBook.recommendedAge || ''}
-                                    onChange={e => setPendingBook({...pendingBook, recommendedAge: e.target.value})}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
-                                <input
-                                    type="number" min="1"
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                    value={pendingBook.unitsTotal || 1}
-                                    onChange={e => setPendingBook({...pendingBook, unitsTotal: parseInt(e.target.value)})}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Estantería</label>
-                                <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                    value={pendingBook.shelf || ''}
-                                    onChange={e => setPendingBook({...pendingBook, shelf: e.target.value})}
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Sinopsis</label>
-                            <textarea
-                                className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 text-slate-700 h-20"
-                                value={pendingBook.description || ''}
-                                onChange={e => setPendingBook({...pendingBook, description: e.target.value})}
+                            <label className="text-[10px] font-bold text-slate-400 uppercase mt-1">Autor</label>
+                            <input
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                value={newBook.author || ''}
+                                onChange={e => setNewBook({...newBook, author: e.target.value})}
+                                placeholder="Ej: J.K. Rowling"
                             />
                         </div>
+                    </div>
 
-                        <div className="flex gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => setAddBookStep('search')}>
-                                Cancelar
-                            </Button>
-                            <Button type="submit" size="sm" className="flex-1">
-                                <Check size={16} className="mr-1"/> Confirmar
-                            </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Género</label>
+                            <input
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                value={newBook.genre || ''}
+                                onChange={e => setNewBook({...newBook, genre: e.target.value})}
+                            />
                         </div>
-                    </form>
-                )}
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
+                            <input
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                value={newBook.recommendedAge || ''}
+                                onChange={e => setNewBook({...newBook, recommendedAge: e.target.value})}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
+                            <input
+                                type="number" min="1"
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                value={newBook.unitsTotal || 1}
+                                onChange={e => setNewBook({...newBook, unitsTotal: parseInt(e.target.value)})}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Estantería</label>
+                            <input
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                value={newBook.shelf || ''}
+                                onChange={e => setNewBook({...newBook, shelf: e.target.value})}
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Sinopsis</label>
+                        <textarea
+                            className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 text-slate-700 h-20"
+                            value={newBook.description || ''}
+                            onChange={e => setNewBook({...newBook, description: e.target.value})}
+                        />
+                    </div>
+
+                    {isAddingBook && (
+                         <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded-lg flex items-center gap-2">
+                            <Loader2 size={14} className="animate-spin"/>
+                            {loadingMessage || "Buscando..."}
+                         </div>
+                    )}
+
+                    <Button type="submit" size="sm" className="w-full" disabled={!newBook.title}>
+                        <Check size={16} className="mr-1"/> Guardar Libro
+                    </Button>
+                </form>
              </div>
 
              {/* CSV Import */}
@@ -900,499 +932,56 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       )}
 
-      {/* History Tab (NEW) */}
-      {activeTab === 'history' && (
-         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <div className="flex justify-between items-center mb-6">
-               <h2 className="text-xl font-bold font-display text-slate-700">Historial Completo de Préstamos</h2>
-               <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Buscar por alumno o libro..." 
-                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-64"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
-                </div>
-            </div>
-            
-            <div className="overflow-x-auto">
-               <table className="w-full text-left border-collapse">
-                  <thead>
-                     <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                        <th className="p-3">Alumno</th>
-                        <th className="p-3">Libro</th>
-                        <th className="p-3">Fecha Préstamo</th>
-                        <th className="p-3">Fecha Devolución</th>
-                        <th className="p-3">Estado</th>
-                     </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                     {[...transactions]
-                        .sort((a, b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime())
-                        .filter(tx => {
-                           const u = users.find(u => u.id === tx.userId);
-                           const b = books.find(b => b.id === tx.bookId);
-                           const search = searchTerm.toLowerCase();
-                           if (!u || !b) return false;
-                           return u.firstName.toLowerCase().includes(search) || 
-                                  u.lastName.toLowerCase().includes(search) || 
-                                  b.title.toLowerCase().includes(search);
-                        })
-                        .map(tx => {
-                           const user = users.find(u => u.id === tx.userId);
-                           const book = books.find(b => b.id === tx.bookId);
-                           
-                           return (
-                              <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50">
-                                 <td className="p-3">
-                                    <div className="font-bold text-slate-700">{user ? `${user.firstName} ${user.lastName}` : 'Usuario Borrado'}</div>
-                                    <div className="text-xs text-slate-400">{user?.className || '-'}</div>
-                                 </td>
-                                 <td className="p-3 font-medium text-slate-700">{book ? book.title : 'Libro Borrado'}</td>
-                                 <td className="p-3 text-slate-600">{new Date(tx.dateBorrowed).toLocaleDateString()}</td>
-                                 <td className="p-3 text-slate-600">
-                                    {tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}
-                                 </td>
-                                 <td className="p-3">
-                                    {tx.active ? (
-                                       <span className="bg-brand-50 text-brand-700 text-xs font-bold px-2 py-1 rounded">Activo</span>
-                                    ) : (
-                                       <span className="bg-green-50 text-green-700 text-xs font-bold px-2 py-1 rounded">Devuelto</span>
-                                    )}
-                                 </td>
-                              </tr>
-                           );
-                        })
-                     }
-                  </tbody>
-               </table>
-               {transactions.length === 0 && (
-                  <p className="p-10 text-center text-slate-400">No hay historial de transacciones.</p>
-               )}
-            </div>
-         </div>
-      )}
-
-      {/* Reviews Tab */}
-      {activeTab === 'reviews' && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-           <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold font-display text-slate-700">Opiniones y Reseñas</h2>
-           </div>
-           {reviews.length === 0 ? (
-             <div className="text-center py-10 text-slate-400">
-               <MessageSquare size={48} className="mx-auto mb-2 opacity-50"/>
-               <p>Aún no hay reseñas de los alumnos.</p>
-             </div>
-           ) : (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               {reviews.map(review => {
-                  const book = books.find(b => b.id === review.bookId);
-                  return (
-                    <div key={review.id} className="border border-slate-100 p-4 rounded-xl flex flex-col gap-2 hover:bg-slate-50">
-                       <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-bold text-slate-800 text-sm">{book?.title || 'Libro desconocido'}</h4>
-                            <p className="text-xs text-slate-500">por {review.authorName}</p>
-                          </div>
-                          <div className="flex gap-1 text-yellow-400">
-                             {[...Array(5)].map((_, i) => (
-                               <svg key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-current' : 'text-slate-200 fill-slate-200'}`} viewBox="0 0 20 20">
-                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                               </svg>
-                             ))}
-                          </div>
-                       </div>
-                       <p className="text-sm text-slate-600 italic">"{review.comment}"</p>
-                       <div className="flex justify-end pt-2 border-t border-slate-100 mt-auto">
-                          {onDeleteReview && (
-                            <button onClick={() => onDeleteReview(review.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
-                               <Trash2 size={12} /> Borrar
-                            </button>
-                          )}
-                       </div>
-                    </div>
-                  );
-               })}
-             </div>
-           )}
-        </div>
-      )}
-
-      {/* Stats Tab */}
-      {activeTab === 'stats' && (
-         <div className="bg-white p-8 rounded-3xl shadow-sm text-center py-20">
-            <h2 className="text-2xl font-bold text-slate-300 mb-4">Estadísticas de la Biblioteca</h2>
-            <div className="flex justify-center gap-8">
-               <div className="text-center">
-                  <div className="text-4xl font-bold text-brand-600">{users.filter(u => u.role === UserRole.STUDENT).length}</div>
-                  <div className="text-slate-500">Alumnos</div>
-               </div>
-               <div className="text-center">
-                  <div className="text-4xl font-bold text-fun-purple">{books.length}</div>
-                  <div className="text-slate-500">Títulos</div>
-               </div>
-               <div className="text-center">
-                  <div className="text-4xl font-bold text-fun-green">{books.reduce((acc, b) => acc + b.readCount, 0)}</div>
-                  <div className="text-slate-500">Préstamos Totales</div>
-               </div>
-            </div>
-         </div>
-      )}
-
-      {/* CARDS TAB */}
-      {activeTab === 'cards' && (
-        <div className="space-y-6">
-           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
-               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold font-display text-slate-800">Carnets Escolares</h2>
-                    <p className="text-slate-500">Genera e imprime los carnets con código QR</p>
-                  </div>
-                  <div className="flex gap-4">
-                      <select 
-                         className="p-2 border border-slate-200 rounded-xl bg-slate-50 text-slate-700 font-medium outline-none focus:ring-2 focus:ring-brand-500"
-                         value={cardClassFilter}
-                         onChange={(e) => setCardClassFilter(e.target.value)}
-                      >
-                         <option value="all">Todas las Clases</option>
-                         {availableClasses.map(cls => (
-                           <option key={cls} value={cls}>Clase {cls}</option>
-                         ))}
-                      </select>
-                      <Button onClick={handlePrintCards} className="flex items-center gap-2">
-                         <Printer size={18} /> Imprimir Carnets
-                      </Button>
-                  </div>
-               </div>
-           </div>
-
-           <div id="printable-area" className="bg-white p-4 rounded-3xl min-h-[500px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {users
-                 .filter(u => u.role === UserRole.STUDENT)
-                 .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
-                 .map(user => (
-                    <IDCard 
-                       key={user.id} 
-                       user={user} 
-                       schoolName={settings.schoolName}
-                       logoUrl={settings.logoUrl}
-                    />
-                 ))
-              }
-              {users.filter(u => u.role === UserRole.STUDENT).length === 0 && (
-                <p className="col-span-full text-center py-20 text-slate-400 no-print">No hay alumnos para generar carnets.</p>
-              )}
-           </div>
-        </div>
-      )}
-
-      {/* Settings Tab */}
-      {activeTab === 'settings' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           {isSuperAdmin ? (
-               <div className="space-y-6">
-                 {/* General Config */}
-                 <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">Configuración General</h2>
-                    <form onSubmit={handleSaveSettings} className="space-y-6">
-                        <div>
-                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
-                          <input 
-                              type="text" 
-                              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                              value={tempSettings.schoolName}
-                              onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Logo del Colegio</label>
-                          <div className="flex flex-col md:flex-row gap-4 items-start">
-                              <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden relative group">
-                                  <img src={tempSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
-                              </div>
-                              <div className="flex-1 space-y-3">
-                                  <div>
-                                    <label className="block text-xs font-semibold text-slate-400 mb-1">Subir imagen (PNG, JPG)</label>
-                                    <label className="flex items-center gap-2 w-full p-2 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
-                                        <ImageIcon size={16} />
-                                        <span>Elegir archivo...</span>
-                                        <input 
-                                          type="file" 
-                                          accept="image/*"
-                                          onChange={handleLogoUpload}
-                                          className="hidden"
-                                        />
-                                    </label>
-                                  </div>
-                                  <div className="relative flex py-1 items-center">
-                                      <div className="flex-grow border-t border-slate-100"></div>
-                                      <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">O PEGAR URL</span>
-                                      <div className="flex-grow border-t border-slate-100"></div>
-                                  </div>
-                                  <div>
-                                      <input 
-                                          type="text" 
-                                          className="w-full p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm bg-white text-slate-900"
-                                          value={tempSettings.logoUrl}
-                                          onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
-                                          placeholder="https://..."
-                                      />
-                                  </div>
-                              </div>
-                          </div>
-                        </div>
-
-                        <div className="pt-4 border-t border-slate-100 flex justify-end">
-                          <Button type="submit" variant="primary" disabled={settingsSaved}>
-                              {settingsSaved ? (
-                                <span className="flex items-center gap-2"><Check size={18} /> Guardado</span>
-                              ) : (
-                                <span className="flex items-center gap-2"><Save size={18} /> Guardar Configuración</span>
-                              )}
-                          </Button>
-                        </div>
-                    </form>
-                 </div>
-
-                 {/* BACKUP SECTION */}
-                 <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2 font-display flex items-center gap-2">
-                        <Download className="text-brand-600" /> Copia de Seguridad
-                    </h2>
-                    <p className="text-slate-500 text-sm mb-6">Exporta todos los datos (libros, usuarios, historial) a un archivo seguro o restaura una copia anterior.</p>
-                    
-                    <div className="flex flex-col gap-4">
-                        <Button onClick={handleDownloadBackup} variant="outline" className="w-full flex justify-center py-4 border-slate-200 hover:bg-slate-50">
-                            <Download size={20} className="mr-2"/> Descargar Copia de Seguridad (.json)
-                        </Button>
-
-                        <div className="relative flex py-2 items-center">
-                            <div className="flex-grow border-t border-slate-100"></div>
-                            <span className="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">RESTAURAR DATOS</span>
-                            <div className="flex-grow border-t border-slate-100"></div>
-                        </div>
-
-                        <input 
-                            type="file" 
-                            accept=".json" 
-                            ref={backupInputRef}
-                            onChange={handleUploadBackup}
-                            className="hidden"
-                            id="backup-upload"
-                        />
-                        <label htmlFor="backup-upload">
-                            <div className="w-full bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <RefreshCcw size={20} />
-                                    <span>Restaurar Copia</span>
-                                </div>
-                                <span className="text-[10px] font-normal opacity-80">⚠️ Esto borrará los datos actuales</span>
-                            </div>
-                        </label>
-                    </div>
-                 </div>
-               </div>
-           ) : (
-               <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 text-center">
-                   <Shield className="w-12 h-12 text-slate-300 mx-auto mb-4"/>
-                   <h3 className="text-lg font-bold text-slate-600">Acceso Restringido</h3>
-                   <p className="text-slate-400 text-sm">Solo el SuperAdmin puede modificar la configuración global del colegio.</p>
-               </div>
-           )}
-
-           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 h-fit">
-              <div className="flex items-center gap-2 mb-6 text-slate-800">
-                <Lock className="text-brand-600" size={24}/>
-                <h2 className="text-2xl font-bold font-display">Mi Seguridad</h2>
-              </div>
-              
-              <form onSubmit={handlePasswordChange} className="space-y-6">
-                <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600 mb-4 border border-slate-100">
-                  Cambia aquí tu contraseña de acceso.
-                </div>
-
-                <div>
-                   <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Nueva Contraseña</label>
-                   <div className="relative">
-                      <input 
-                         type="password" 
-                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                         value={newAdminPassword}
-                         onChange={e => setNewAdminPassword(e.target.value)}
-                         placeholder="••••••••"
-                      />
-                      <Key size={18} className="absolute left-3 top-3.5 text-slate-400"/>
-                   </div>
-                </div>
-
-                <div>
-                   <label className="block text-sm font-bold text-slate-500 uppercase mb-2">Confirmar Contraseña</label>
-                   <div className="relative">
-                      <input 
-                         type="password" 
-                         className="w-full p-3 pl-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                         value={confirmAdminPassword}
-                         onChange={e => setConfirmAdminPassword(e.target.value)}
-                         placeholder="••••••••"
-                      />
-                      <Key size={18} className="absolute left-3 top-3.5 text-slate-400"/>
-                   </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex justify-end">
-                    <Button type="submit" variant="secondary" disabled={passwordSaved || !newAdminPassword}>
-                        {passwordSaved ? (
-                          <span className="flex items-center gap-2"><Check size={18} /> Actualizada</span>
-                        ) : (
-                          <span className="flex items-center gap-2">Actualizar Contraseña</span>
-                        )}
-                    </Button>
-                </div>
-              </form>
-           </div>
-        </div>
-      )}
-
-      {/* EDIT USER MODAL */}
-      {editingUser && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm no-print">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl transform transition-all scale-100">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold font-display text-slate-800">Editar Alumno</h3>
-              <button onClick={() => setEditingUser(null)} className="text-slate-400 hover:text-slate-600">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleUpdateUser} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label>
-                <input 
-                  className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900" 
-                  value={editingUser.firstName} 
-                  onChange={e => setEditingUser({...editingUser, firstName: e.target.value})} 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Apellido</label>
-                <input 
-                  className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900" 
-                  value={editingUser.lastName} 
-                  onChange={e => setEditingUser({...editingUser, lastName: e.target.value})} 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Clase</label>
-                <input 
-                  className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900" 
-                  value={editingUser.className} 
-                  onChange={e => setEditingUser({...editingUser, className: e.target.value})} 
-                />
-              </div>
-              
-              <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => setEditingUser(null)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" variant="primary" className="flex-1">
-                  <Save size={18} /> Guardar Cambios
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* POINTS MANAGEMENT MODAL */}
-      {managingPointsUser && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm no-print">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl transform transition-all scale-100 max-h-[90vh] overflow-hidden flex flex-col">
+      {/* CANDIDATES SELECTION MODAL */}
+      {showCandidates && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
             <div className="flex justify-between items-center mb-4">
                <div>
                   <h3 className="text-xl font-bold font-display text-slate-800 flex items-center gap-2">
-                    <Trophy className="text-fun-orange" size={24}/> 
-                    Gestionar Puntos
+                    <Wand2 className="text-brand-500" size={24}/>
+                    Elige el libro correcto
                   </h3>
-                  <p className="text-sm text-slate-500">{managingPointsUser.firstName} {managingPointsUser.lastName} • <span className="font-bold text-brand-600">{managingPointsUser.points} XP Total</span></p>
+                  <p className="text-sm text-slate-500">Hemos encontrado varias coincidencias.</p>
                </div>
-               <button onClick={() => setManagingPointsUser(null)} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full">
+               <button onClick={() => setShowCandidates(false)} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full">
                   <X size={20} />
                </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-               {/* 1. Adjust Form */}
-               <div className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100">
-                  <h4 className="text-sm font-bold text-slate-600 uppercase mb-3">Ajuste Manual</h4>
-                  <form onSubmit={handleAddPointsSubmit} className="space-y-3">
-                     <div className="flex gap-3">
-                        <div className="w-1/3">
-                           <input 
-                              type="number" 
-                              placeholder="+/-" 
-                              className="w-full p-2 border border-slate-200 rounded-xl text-center font-bold text-slate-700 bg-white"
-                              value={pointsAmount === 0 ? '' : pointsAmount}
-                              onChange={e => setPointsAmount(parseInt(e.target.value) || 0)}
-                           />
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                {candidates.map((cand, idx) => (
+                    <div
+                        key={idx}
+                        className="flex gap-4 p-3 border border-slate-200 rounded-xl hover:bg-brand-50 cursor-pointer transition-colors group"
+                        onClick={() => handleSelectCandidate(cand)}
+                    >
+                        <div className="w-16 h-24 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden">
+                            {cand.coverUrl ? (
+                                <img src={cand.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 text-center p-1">Sin imagen</div>
+                            )}
                         </div>
-                        <div className="flex-1">
-                           <input 
-                              type="text" 
-                              placeholder="Motivo (ej. Ayuda en biblioteca)" 
-                              className="w-full p-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-900"
-                              value={pointsReason}
-                              onChange={e => setPointsReason(e.target.value)}
-                           />
+                        <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-slate-800 text-sm">{cand.title}</h4>
+                            <p className="text-xs text-slate-600">{cand.author}</p>
+                            <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{cand.description}</p>
+                            <div className="flex gap-2 mt-2">
+                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">{cand.genre}</span>
+                                {cand.publishedDate && <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">{cand.publishedDate.split('-')[0]}</span>}
+                            </div>
                         </div>
-                     </div>
-                     <Button type="submit" size="sm" className="w-full" disabled={!pointsAmount || !pointsReason}>
-                        Aplicar Ajuste
-                     </Button>
-                  </form>
-               </div>
-
-               {/* 2. History List */}
-               <div>
-                  <h4 className="text-sm font-bold text-slate-600 uppercase mb-3 flex items-center gap-2">
-                     <History size={16}/> Historial de Puntos
-                  </h4>
-                  <div className="space-y-2">
-                     {pointHistory
-                        .filter(ph => ph.userId === managingPointsUser.id)
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                        .map(entry => (
-                           <div key={entry.id} className="flex justify-between items-center p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
-                              <div>
-                                 <p className="text-sm font-bold text-slate-700">{entry.reason}</p>
-                                 <p className="text-[10px] text-slate-400">{new Date(entry.date).toLocaleDateString()} - {new Date(entry.date).toLocaleTimeString()}</p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                 <span className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                    {entry.amount > 0 ? '+' : ''}{entry.amount} XP
-                                 </span>
-                                 <button 
-                                    onClick={() => onDeletePointEntry(entry.id)} 
-                                    className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Borrar entrada y revertir puntos"
-                                 >
-                                    <Trash2 size={16}/>
-                                 </button>
-                              </div>
-                           </div>
-                        ))}
-                     {pointHistory.filter(ph => ph.userId === managingPointsUser.id).length === 0 && (
-                        <p className="text-center text-slate-400 text-sm py-4">No hay historial disponible.</p>
-                     )}
-                  </div>
-               </div>
+                        <div className="flex items-center">
+                            <ArrowRight size={20} className="text-slate-300 group-hover:text-brand-500" />
+                        </div>
+                    </div>
+                ))}
             </div>
           </div>
         </div>
       )}
+
 
     </div>
   );
