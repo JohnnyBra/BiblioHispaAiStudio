@@ -3,9 +3,10 @@ import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 import { getBookDetails, BookDetails } from '../services/bookService';
+import { fetchBadges } from '../services/gamificationService';
 
 interface StudentViewProps {
   currentUser: User;
@@ -65,6 +66,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
     { id: 'welcome', sender: 'ai', text: `¡Hola ${currentUser.firstName}! Soy BiblioBot 🤖. ¿Buscas algún libro en especial hoy?` }
   ]);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Badges State
+  const [badges, setBadges] = React.useState<any[]>([]);
+
+  // Initial Data Fetch
+  React.useEffect(() => {
+    fetchBadges().then(setBadges).catch(console.error);
+  }, []);
 
   // Scroll to bottom of chat
   React.useEffect(() => {
@@ -206,15 +215,42 @@ export const StudentView: React.FC<StudentViewProps> = ({
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-brand-50 px-3 py-1.5 rounded-full">
+            <div className="flex items-center gap-3 bg-brand-50 px-3 py-1.5 rounded-full transition-all hover:bg-brand-100 cursor-default group relative">
                <div className="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center text-brand-700 font-bold border-2 border-brand-100">
                   {currentUser.firstName[0]}
                </div>
                <div className="flex flex-col">
                   <span className="font-bold text-xs text-slate-700 leading-none">{currentUser.firstName}</span>
-                  <span className="flex items-center gap-0.5 text-[10px] font-bold text-fun-orange">
-                     <Star size={10} fill="currentColor" /> {currentUser.points} XP
-                  </span>
+                  <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-0.5 text-[10px] font-bold text-fun-orange">
+                         <Star size={10} fill="currentColor" /> {currentUser.points} XP
+                      </span>
+                      {currentUser.currentStreak && currentUser.currentStreak > 0 && (
+                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-red-500" title="Racha actual">
+                             <TrendingUp size={10} /> {currentUser.currentStreak} días
+                          </span>
+                      )}
+                  </div>
+               </div>
+
+               {/* Badges Preview Tooltip/Dropdown */}
+               <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 p-4 hidden group-hover:block z-50">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1"><Award size={12}/> Insignias</h4>
+                  <div className="grid grid-cols-4 gap-2">
+                     {currentUser.badges && currentUser.badges.length > 0 ? (
+                        currentUser.badges.map(bId => {
+                           const badgeDef = badges.find(b => b.id === bId);
+                           if (!badgeDef) return null;
+                           return (
+                              <div key={bId} className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-xl border border-slate-200" title={badgeDef.name + ': ' + badgeDef.description}>
+                                 {badgeDef.icon}
+                              </div>
+                           );
+                        })
+                     ) : (
+                        <p className="col-span-4 text-xs text-slate-400">Aún no tienes insignias.</p>
+                     )}
+                  </div>
                </div>
             </div>
             <Button variant="outline" size="sm" onClick={onLogout} className="border-slate-200 hover:border-red-200 hover:bg-red-50 hover:text-red-500">

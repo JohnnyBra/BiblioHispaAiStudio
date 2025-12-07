@@ -223,7 +223,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   shelf,
                   coverUrl: meta.coverUrl || undefined,
                   readCount: 0,
-                  recommendedAge: ageFromCsv || meta.recommendedAge || 'TP',
+                  recommendedAge: ageFromCsv || meta.recommendedAge || '6-8',
                   description: meta.description,
                   isbn: meta.isbn,
                   pageCount: meta.pageCount,
@@ -379,7 +379,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
           shelf: newBook.shelf || 'Recepción',
           coverUrl: newBook.coverUrl,
           readCount: 0,
-          recommendedAge: newBook.recommendedAge || 'TP',
+          recommendedAge: newBook.recommendedAge || '6-8',
           description: newBook.description,
           isbn: newBook.isbn,
           pageCount: newBook.pageCount,
@@ -866,11 +866,16 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
-                            <input
+                            <select
                                 className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.recommendedAge || ''}
                                 onChange={e => setNewBook({...newBook, recommendedAge: e.target.value})}
-                            />
+                            >
+                                <option value="">Seleccionar</option>
+                                {['0-5', '6-8', '9-11', '12-14', '+15'].map(age => (
+                                    <option key={age} value={age}>{age}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
@@ -1488,7 +1493,16 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                     <div className="grid grid-cols-2 gap-2">
                         <input className="p-2 border rounded" value={editingBook.genre} onChange={e => setEditingBook({...editingBook, genre: e.target.value})} placeholder="Género" />
-                        <input className="p-2 border rounded" value={editingBook.recommendedAge} onChange={e => setEditingBook({...editingBook, recommendedAge: e.target.value})} placeholder="Edad" />
+                        <select
+                            className="p-2 border rounded bg-white text-slate-900"
+                            value={editingBook.recommendedAge || ''}
+                            onChange={e => setEditingBook({...editingBook, recommendedAge: e.target.value})}
+                        >
+                            <option value="">Seleccionar Edad</option>
+                            {['0-5', '6-8', '9-11', '12-14', '+15'].map(age => (
+                                <option key={age} value={age}>{age}</option>
+                            ))}
+                        </select>
                         <input type="number" className="p-2 border rounded" value={editingBook.unitsTotal} onChange={e => setEditingBook({...editingBook, unitsTotal: parseInt(e.target.value)})} placeholder="Unidades" />
                         <input className="p-2 border rounded" value={editingBook.shelf} onChange={e => setEditingBook({...editingBook, shelf: e.target.value})} placeholder="Estantería" />
                     </div>
