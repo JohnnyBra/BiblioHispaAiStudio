@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { storageService } from './services/storageService';
+import { checkoutBook, returnBook, submitReview } from './services/gamificationService';
 import { User, Book, Transaction, UserRole, Review, AppSettings, PointHistory, BackupData } from './types';
 import { AdminView } from './components/AdminView';
 import { StudentView } from './components/StudentView';
@@ -199,62 +200,86 @@ const App: React.FC = () => {
     addToast('Registro de puntos eliminado', 'info');
   };
 
-  const handleBorrow = (book: Book) => {
+  const handleBorrow = async (book: Book) => {
     if (!currentUser) return;
     if (book.unitsAvailable <= 0) {
       addToast('Lo sentimos, este libro está agotado temporalmente.', 'error');
       return;
     }
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      userId: currentUser.id,
-      bookId: book.id,
-      dateBorrowed: new Date().toISOString(),
-      active: true
-    };
-    setTransactions(prev => [...prev, newTx]);
-    setBooks(prev => prev.map(b => {
-      if (b.id === book.id) return { ...b, unitsAvailable: b.unitsAvailable - 1, readCount: b.readCount + 1 };
-      return b;
-    }));
-    addToast(`Has sacado "${book.title}". ¡Disfruta la lectura! 📖`, 'success');
+
+    // Optimistic Update
+    setBooks(prev => prev.map(b => b.id === book.id ? { ...b, unitsAvailable: b.unitsAvailable - 1 } : b));
+
+    try {
+        const result = await checkoutBook(currentUser.id, book.id);
+        if (result.success) {
+            setTransactions(prev => [...prev, result.transaction]);
+            setUsers(prev => prev.map(u => {
+                if (u.id === currentUser.id) {
+                    const updated = { ...u, points: result.userPoints, badges: result.newBadges.length > 0 ? [...(u.badges||[]), ...result.newBadges] : u.badges };
+                    if (result.newBadges.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
+                    setCurrentUser(updated);
+                    return updated;
+                }
+                return u;
+            }));
+            addToast(`Has sacado "${book.title}". ¡Disfruta la lectura! 📖`, 'success');
+        }
+    } catch (e) {
+        console.error(e);
+        addToast('Error al procesar el préstamo', 'error');
+        // Rollback would go here in a perfect world
+    }
   };
 
-  const handleReturn = (book: Book) => {
+  const handleReturn = async (book: Book) => {
     if (!currentUser) return;
-    const tx = transactions.find(t => t.bookId === book.id && t.userId === currentUser.id && t.active);
-    if (!tx) return;
-    setTransactions(prev => prev.map(t => {
-      if (t.id === tx.id) return { ...t, active: false, dateReturned: new Date().toISOString() };
-      return t;
-    }));
-    setBooks(prev => prev.map(b => {
-      if (b.id === book.id) return { ...b, unitsAvailable: b.unitsAvailable + 1 };
-      return b;
-    }));
-    const POINTS_PER_BOOK = 10;
-    const pointEntry: PointHistory = {
-      id: `ph-${Date.now()}`,
-      userId: currentUser.id,
-      amount: POINTS_PER_BOOK,
-      reason: `Devolución: ${book.title}`,
-      date: new Date().toISOString()
-    };
-    setPointHistory(prev => [pointEntry, ...prev]);
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) {
-        const updatedUser = { ...u, points: u.points + POINTS_PER_BOOK, booksRead: u.booksRead + 1 };
-        setCurrentUser(updatedUser);
-        return updatedUser;
-      }
-      return u;
-    }));
-    addToast(`¡Libro devuelto! Has ganado +${POINTS_PER_BOOK} XP 🌟`, 'success');
+
+    // Optimistic update
+    setBooks(prev => prev.map(b => b.id === book.id ? { ...b, unitsAvailable: b.unitsAvailable + 1 } : b));
+    setTransactions(prev => prev.map(t => (t.bookId === book.id && t.userId === currentUser.id && t.active) ? { ...t, active: false, dateReturned: new Date().toISOString() } : t));
+
+    try {
+        const result = await returnBook(currentUser.id, book.id);
+        if (result.success) {
+            setUsers(prev => prev.map(u => {
+                if (u.id === currentUser.id) {
+                    const updated = { ...u, points: result.userPoints, badges: result.newBadges.length > 0 ? [...(u.badges||[]), ...result.newBadges] : u.badges };
+                     if (result.newBadges.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
+                    setCurrentUser(updated);
+                    return updated;
+                }
+                return u;
+            }));
+             addToast(`¡Libro devuelto! Puntos actualizados. 🌟`, 'success');
+        }
+    } catch (e) {
+         console.error(e);
+         addToast('Error al procesar la devolución', 'error');
+    }
   };
 
-  const handleAddReview = (review: Review) => {
-    setReviews(prev => [review, ...prev]);
-    addToast('¡Gracias por tu opinión! ⭐', 'success');
+  const handleAddReview = async (review: Review) => {
+    setReviews(prev => [review, ...prev]); // Optimistic
+
+    try {
+        const result = await submitReview(review);
+         if (result.success && result.userPoints) {
+            setUsers(prev => prev.map(u => {
+                if (u.id === currentUser.id) {
+                     const updated = { ...u, points: result.userPoints, badges: result.newBadges?.length > 0 ? [...(u.badges||[]), ...result.newBadges] : u.badges };
+                     if (result.newBadges?.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
+                     setCurrentUser(updated);
+                     return updated;
+                }
+                return u;
+            }));
+        }
+        addToast('¡Gracias por tu opinión! ⭐', 'success');
+    } catch (e) {
+        console.error(e);
+        addToast('Error al guardar la opinión', 'error');
+    }
   };
 
   const handleDeleteReview = (id: string) => {

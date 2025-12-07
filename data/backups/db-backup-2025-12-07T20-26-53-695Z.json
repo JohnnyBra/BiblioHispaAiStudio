@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "firstName": "Juan",
+      "lastName": "Garcia",
+      "username": "juan.garcia",
+      "className": "5A",
+      "role": "STUDENT",
+      "id": "user-test-juan"
+    }
+  ],
+  "books": [],
+  "transactions": [],
+  "reviews": [],
+  "pointHistory": [],
+  "settings": {
+    "schoolName": "BiblioHispa",
+    "logoUrl": "https://cdn-icons-png.flaticon.com/512/3413/3413535.png"
+  }
+}
