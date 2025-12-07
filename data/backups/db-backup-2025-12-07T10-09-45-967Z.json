@@ -10,26 +10,6 @@
       "role": "SUPERADMIN",
       "points": 0,
       "booksRead": 0
-    },
-    {
-      "id": "user-1765102531694",
-      "firstName": "TestStudent",
-      "lastName": "One",
-      "username": "teststudent.one",
-      "className": "1A",
-      "role": "STUDENT",
-      "points": 0,
-      "booksRead": 0
-    },
-    {
-      "id": "user-1765102610224",
-      "firstName": "TestStudent",
-      "lastName": "One",
-      "username": "teststudent.one",
-      "className": "1A",
-      "role": "STUDENT",
-      "points": 0,
-      "booksRead": 0
     }
   ],
   "books": [],
