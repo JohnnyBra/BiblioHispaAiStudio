@@ -74,21 +74,22 @@ export const getAIRecommendedAge = async (title: string, author: string): Promis
         Instrucciones:
         - Responde ÚNICAMENTE con el rango exacto (ej: "9-11").
         - No añadas texto adicional.
-        - Si el libro tiene un rango amplio, elige el más representativo.
-        - Si no conoces el libro, intenta deducirlo por el título.
-        - Si es imposible determinarlo, responde "TP" (Todos los públicos).
+        - Si el libro tiene un rango amplio, elige el más representativo basándote en la complejidad del texto y la temática.
+        - Si no conoces el libro, intenta deducirlo por el título y autor.
+        - JAMÁS respondas "TP". Debes elegir uno de los rangos numéricos obligatoriamente.
+        - Si dudas, elige '6-8' o '9-11' según parezca más infantil o juvenil.
       `,
     });
     
-    const text = response.text?.trim() || 'TP';
+    const text = response.text?.trim() || '6-8';
     const validRanges = ['0-5', '6-8', '9-11', '12-14', '+15'];
     // Check for exact match or substring match if the AI is chatty
     const found = validRanges.find(r => text.includes(r));
-    return found || 'TP';
+    return found || '6-8';
 
   } catch (error) {
     console.error("Error getting AI age:", error);
-    return 'TP';
+    return '6-8';
   }
 };
 
