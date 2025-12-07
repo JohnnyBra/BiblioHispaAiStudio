@@ -1303,7 +1303,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* CANDIDATES SELECTION MODAL */}
       {showCandidates && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[80] p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
             <div className="flex justify-between items-center mb-4">
                <div>
@@ -1375,11 +1375,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Edit User Modal */}
       {editingUser && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Editar Usuario</h3>
-                    <button onClick={() => setEditingUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
+                    <button type="button" onClick={() => setEditingUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
                 </div>
                 <form onSubmit={handleUpdateUser} className="space-y-4">
                     <div>
@@ -1413,14 +1413,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Manage Points Modal */}
       {managingPointsUser && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <h3 className="text-xl font-bold font-display text-slate-800">Gestión de Puntos</h3>
                         <p className="text-sm text-slate-500">{managingPointsUser.firstName} {managingPointsUser.lastName} • <span className="font-bold text-fun-orange">{managingPointsUser.points} XP</span></p>
                     </div>
-                    <button onClick={() => setManagingPointsUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
+                    <button type="button" onClick={() => setManagingPointsUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
@@ -1471,7 +1471,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Edit Book Modal */}
       {editingBook && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Editar Libro</h3>
