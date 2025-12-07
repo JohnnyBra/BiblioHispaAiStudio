@@ -57,6 +57,19 @@ const App: React.FC = () => {
     loadData();
   }, []);
 
+  // --- Restore Session ---
+  React.useEffect(() => {
+    if (isLoaded && !currentUser) {
+      const storedUserId = localStorage.getItem('biblio_session_user');
+      if (storedUserId) {
+        const foundUser = users.find(u => u.id === storedUserId);
+        if (foundUser) {
+          setCurrentUser(foundUser);
+        }
+      }
+    }
+  }, [isLoaded, users]);
+
   // --- Persistance Effects (Save to Server) ---
   // Solo guardamos si ya hemos cargado los datos iniciales (para evitar sobrescribir con arrays vacíos)
   // Usamos un pequeño debounce implícito por React batching, pero idealmente sería mejor un debounce real.
@@ -93,6 +106,7 @@ const App: React.FC = () => {
       if (adminUser) {
         if (adminUser.password === passwordInput) {
             setCurrentUser(adminUser);
+            localStorage.setItem('biblio_session_user', adminUser.id);
             addToast(`Bienvenido, ${adminUser.firstName}`, 'info');
         } else {
             setAuthError('Contraseña incorrecta');
@@ -104,6 +118,7 @@ const App: React.FC = () => {
       const student = users.find(u => u.username === loginInput.toLowerCase() && u.role === UserRole.STUDENT);
       if (student) {
         setCurrentUser(student);
+        localStorage.setItem('biblio_session_user', student.id);
         addToast(`¡Hola de nuevo, ${student.firstName}! 👋`, 'success');
       } else {
         setAuthError('Usuario no encontrado. Usa nombre.apellido');
@@ -115,6 +130,7 @@ const App: React.FC = () => {
     const student = users.find(u => u.username === scannedText.toLowerCase() && u.role === UserRole.STUDENT);
     if (student) {
       setCurrentUser(student);
+      localStorage.setItem('biblio_session_user', student.id);
       setShowQRScanner(false);
       addToast(`¡Acceso con QR exitoso! Hola ${student.firstName}`, 'success');
     } else {
@@ -124,6 +140,7 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setCurrentUser(null);
+    localStorage.removeItem('biblio_session_user');
     setLoginInput('');
     setPasswordInput('');
     setAuthError('');
