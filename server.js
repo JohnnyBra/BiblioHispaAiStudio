@@ -75,21 +75,32 @@ async function readDB() {
   }
 }
 
+// Simple Mutex for DB writes to prevent race conditions
+let dbLock = Promise.resolve();
+
+function withDbLock(task) {
+  const result = dbLock.then(() => task());
+  dbLock = result.catch(() => {}); // Prevent queue blockage on error
+  return result;
+}
+
 // Guardar DB (Parcial o Total)
 async function saveDB(data, key = null) {
-  const currentData = await readDB();
-  let newData;
-  
-  if (key) {
-    // Actualizar solo una parte (ej: solo users)
-    newData = { ...currentData, [key]: data };
-  } else {
-    // Actualizar todo (restore backup)
-    newData = { ...currentData, ...data };
-  }
+  return withDbLock(async () => {
+    const currentData = await readDB();
+    let newData;
 
-  await fs.writeFile(DB_FILE, JSON.stringify(newData, null, 2));
-  return newData;
+    if (key) {
+      // Actualizar solo una parte (ej: solo users)
+      newData = { ...currentData, [key]: data };
+    } else {
+      // Actualizar todo (restore backup)
+      newData = { ...currentData, ...data };
+    }
+
+    await fs.writeFile(DB_FILE, JSON.stringify(newData, null, 2));
+    return newData;
+  });
 }
 
 // --- API ENDPOINTS ---
