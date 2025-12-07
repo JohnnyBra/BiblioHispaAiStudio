@@ -971,6 +971,336 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       )}
 
+      {/* Reviews Tab */}
+      {activeTab === 'reviews' && (
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+           <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Opiniones de Lectores</h2>
+           <div className="overflow-x-auto">
+             <table className="w-full text-left border-collapse">
+               <thead>
+                 <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                   <th className="p-3">Fecha</th>
+                   <th className="p-3">Libro</th>
+                   <th className="p-3">Alumno</th>
+                   <th className="p-3">Valoración</th>
+                   <th className="p-3">Comentario</th>
+                   <th className="p-3 text-right">Acciones</th>
+                 </tr>
+               </thead>
+               <tbody className="text-sm">
+                 {reviews.length === 0 ? (
+                    <tr><td colSpan={6} className="p-4 text-center text-slate-400">No hay opiniones todavía.</td></tr>
+                 ) : (
+                    reviews.map(review => {
+                        const book = books.find(b => b.id === review.bookId);
+                        const user = users.find(u => u.id === review.userId);
+                        return (
+                           <tr key={review.id} className="border-b border-slate-50 hover:bg-slate-50">
+                             <td className="p-3 text-slate-500 text-xs">{new Date(review.date).toLocaleDateString()}</td>
+                             <td className="p-3 font-medium text-slate-700">{book?.title || 'Libro desconocido'}</td>
+                             <td className="p-3 text-slate-600">{user ? `${user.firstName} ${user.lastName}` : review.authorName}</td>
+                             <td className="p-3 text-fun-orange">{'★'.repeat(review.rating)}{'☆'.repeat(5-review.rating)}</td>
+                             <td className="p-3 text-slate-600 italic">"{review.comment}"</td>
+                             <td className="p-3 flex justify-end">
+                               <button onClick={() => onDeleteReview && onDeleteReview(review.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg">
+                                 <Trash2 size={16} />
+                               </button>
+                             </td>
+                           </tr>
+                        );
+                    })
+                 )}
+               </tbody>
+             </table>
+           </div>
+        </div>
+      )}
+
+      {/* History Tab */}
+      {activeTab === 'history' && (
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+           <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Historial de Préstamos</h2>
+           <div className="overflow-x-auto">
+             <table className="w-full text-left border-collapse">
+               <thead>
+                 <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                   <th className="p-3">Fecha Préstamo</th>
+                   <th className="p-3">Libro</th>
+                   <th className="p-3">Alumno</th>
+                   <th className="p-3">Estado</th>
+                   <th className="p-3">Fecha Devolución</th>
+                 </tr>
+               </thead>
+               <tbody className="text-sm">
+                 {transactions.length === 0 ? (
+                    <tr><td colSpan={5} className="p-4 text-center text-slate-400">No hay historial de préstamos.</td></tr>
+                 ) : (
+                    [...transactions].sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
+                        const book = books.find(b => b.id === tx.bookId);
+                        const user = users.find(u => u.id === tx.userId);
+                        return (
+                           <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50">
+                             <td className="p-3 text-slate-500 text-xs">{new Date(tx.dateBorrowed).toLocaleDateString()}</td>
+                             <td className="p-3 font-medium text-slate-700">{book?.title || 'Libro desconocido'}</td>
+                             <td className="p-3 text-slate-600">{user ? `${user.firstName} ${user.lastName}` : 'Usuario desconocido'}</td>
+                             <td className="p-3">
+                                {tx.active ? (
+                                    <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Prestado</span>
+                                ) : (
+                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Devuelto</span>
+                                )}
+                             </td>
+                             <td className="p-3 text-slate-500 text-xs">{tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}</td>
+                           </tr>
+                        );
+                    })
+                 )}
+               </tbody>
+             </table>
+           </div>
+        </div>
+      )}
+
+      {/* Stats Tab */}
+      {activeTab === 'stats' && (
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
+                    <div className="text-3xl font-display font-bold text-slate-800">{users.filter(u => u.role === UserRole.STUDENT).length}</div>
+                </div>
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Libros en Catálogo</div>
+                    <div className="text-3xl font-display font-bold text-slate-800">{books.length}</div>
+                </div>
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Préstamos Activos</div>
+                    <div className="text-3xl font-display font-bold text-brand-500">{transactions.filter(t => t.active).length}</div>
+                </div>
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Opiniones</div>
+                    <div className="text-3xl font-display font-bold text-fun-orange">{reviews.length}</div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 className="font-bold text-lg mb-4 text-slate-700">Lectores Top 🏆</h3>
+                    <ul className="space-y-3">
+                        {users
+                            .filter(u => u.role === UserRole.STUDENT)
+                            .sort((a, b) => b.booksRead - a.booksRead)
+                            .slice(0, 5)
+                            .map((u, i) => (
+                                <li key={u.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i===0 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-500'}`}>{i+1}</div>
+                                        <span className="font-medium text-slate-700">{u.firstName} {u.lastName}</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-brand-600">{u.booksRead} libros</div>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                 </div>
+
+                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 className="font-bold text-lg mb-4 text-slate-700">Libros Más Leídos 📖</h3>
+                    <ul className="space-y-3">
+                         {books
+                            .sort((a, b) => b.readCount - a.readCount)
+                            .slice(0, 5)
+                            .map((b, i) => (
+                                <li key={b.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500`}>{i+1}</div>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-slate-700 truncate max-w-[200px]">{b.title}</span>
+                                            <span className="text-[10px] text-slate-400">{b.author}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-sm font-bold text-brand-600">{b.readCount}</div>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                 </div>
+            </div>
+        </div>
+      )}
+
+      {/* Cards Tab */}
+      {activeTab === 'cards' && (
+        <div className="space-y-6">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold font-display text-slate-800">Generador de Carnets</h2>
+                        <p className="text-slate-500">Selecciona una clase para imprimir los carnets.</p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <select
+                            className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
+                            value={cardClassFilter}
+                            onChange={(e) => setCardClassFilter(e.target.value)}
+                        >
+                            <option value="all">Todas las clases</option>
+                            {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <Button onClick={handlePrintCards}>
+                            <Printer size={18} className="mr-2"/> Imprimir
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:block print:w-full print:p-0">
+                <style>{`
+                    @media print {
+                        @page { margin: 1cm; size: A4; }
+                        body * { visibility: hidden; }
+                        .print-area, .print-area * { visibility: visible; }
+                        .print-area { position: absolute; left: 0; top: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; }
+                        .no-print { display: none !important; }
+                        .id-card-print { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ddd !important; }
+                    }
+                `}</style>
+                <div className="contents print-area">
+                    {users
+                        .filter(u => u.role === UserRole.STUDENT)
+                        .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
+                        .map(user => (
+                            <div key={user.id} className="flex justify-center print:block">
+                                <IDCard user={user} schoolName={settings.schoolName} logoUrl={settings.logoUrl} />
+                            </div>
+                        ))
+                    }
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {activeTab === 'settings' && (
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Configuración General</h2>
+                    <form onSubmit={handleSaveSettings} className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Nombre del Colegio / Biblioteca</label>
+                            <input
+                                className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900 font-medium"
+                                value={tempSettings.schoolName}
+                                onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
+                                placeholder="Ej: Biblioteca Escolar Cervantes"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Logo (URL o Archivo)</label>
+                            <div className="flex items-center gap-4">
+                                <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center p-2">
+                                    {tempSettings.logoUrl ? (
+                                        <img src={tempSettings.logoUrl} className="w-full h-full object-contain" alt="Logo Preview" />
+                                    ) : (
+                                        <ImageIcon className="text-slate-300" size={32} />
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                    <input
+                                        className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                        value={tempSettings.logoUrl}
+                                        onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
+                                        placeholder="https://..."
+                                    />
+                                    <div className="relative">
+                                        <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                        <Button type="button" variant="secondary" size="sm" className="w-full">
+                                            <Upload size={14} className="mr-2"/> Subir imagen local
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 flex justify-end">
+                            <Button type="submit" disabled={settingsSaved}>
+                                {settingsSaved ? <Check size={18} className="mr-2"/> : <Save size={18} className="mr-2"/>}
+                                {settingsSaved ? 'Guardado' : 'Guardar Configuración'}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Seguridad</h2>
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                         <div className="flex gap-4 items-start bg-yellow-50 p-4 rounded-xl mb-4">
+                            <Lock className="text-yellow-600 flex-shrink-0 mt-1" size={20} />
+                            <div>
+                                <h4 className="font-bold text-yellow-800 text-sm">Cambiar contraseña de Administrador</h4>
+                                <p className="text-xs text-yellow-700">Esto cambiará la contraseña de tu usuario actual ({currentUser.username}).</p>
+                            </div>
+                         </div>
+
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nueva Contraseña</label>
+                                <input
+                                    type="password"
+                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
+                                    value={newAdminPassword}
+                                    onChange={e => setNewAdminPassword(e.target.value)}
+                                />
+                             </div>
+                             <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Confirmar</label>
+                                <input
+                                    type="password"
+                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
+                                    value={confirmAdminPassword}
+                                    onChange={e => setConfirmAdminPassword(e.target.value)}
+                                />
+                             </div>
+                         </div>
+                         <Button type="submit" disabled={!newAdminPassword || passwordSaved}>
+                                {passwordSaved ? 'Contraseña Actualizada' : 'Actualizar Contraseña'}
+                         </Button>
+                    </form>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 className="text-xl font-bold font-display text-slate-700 mb-4 flex items-center gap-2">
+                        <RefreshCcw size={20} className="text-brand-500"/> Copias de Seguridad
+                    </h2>
+                    <p className="text-sm text-slate-500 mb-6">Descarga una copia de toda la base de datos o restaura una anterior.</p>
+
+                    <div className="space-y-3">
+                        <Button onClick={handleDownloadBackup} variant="outline" className="w-full justify-start">
+                            <Download size={18} className="mr-2"/> Descargar Copia (JSON)
+                        </Button>
+
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept=".json"
+                                ref={backupInputRef}
+                                onChange={handleUploadBackup}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <Button variant="danger" className="w-full justify-start">
+                                <AlertTriangle size={18} className="mr-2"/> Restaurar Copia
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+         </div>
+      )}
+
       {/* CANDIDATES SELECTION MODAL */}
       {showCandidates && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
