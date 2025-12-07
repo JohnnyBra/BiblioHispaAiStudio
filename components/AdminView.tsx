@@ -89,6 +89,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
   
   // ID Cards State
   const [cardClassFilter, setCardClassFilter] = React.useState<string>('all');
+  const [cardPrintMode, setCardPrintMode] = React.useState<'class' | 'individual'>('class');
+  const [cardSearchTerm, setCardSearchTerm] = React.useState('');
+
+  // Books Filter State
+  const [shelfFilter, setShelfFilter] = React.useState<string>('all');
   
   // Loading States
   const [isAddingBook, setIsAddingBook] = React.useState(false);
@@ -542,6 +547,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   };
 
   const availableClasses = Array.from(new Set(users.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort();
+  const availableShelves = Array.from(new Set(books.map(b => b.shelf || 'Recepción'))).sort();
 
   // --- Render ---
 
@@ -767,19 +773,32 @@ export const AdminView: React.FC<AdminViewProps> = ({
            <div className="lg:col-span-2 space-y-6">
               {/* Books Grid Preview */}
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold font-display text-slate-700">Catálogo ({books.length})</h2>
-                    <input 
-                    type="text" 
-                    placeholder="Buscar libro..." 
-                    className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64 bg-white text-slate-900"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                 <div className="flex justify-between items-center mb-6 gap-4">
+                    <h2 className="text-xl font-bold font-display text-slate-700 whitespace-nowrap">Catálogo ({books.length})</h2>
+                    <div className="flex gap-2 w-full justify-end">
+                      <select
+                          className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm max-w-[150px]"
+                          value={shelfFilter}
+                          onChange={(e) => setShelfFilter(e.target.value)}
+                      >
+                          <option value="all">Todas las estanterías</option>
+                          {availableShelves.map(shelf => (
+                              <option key={shelf} value={shelf}>{shelf}</option>
+                          ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Buscar libro..."
+                        className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64 bg-white text-slate-900"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {books
                     .filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .filter(b => shelfFilter === 'all' || (b.shelf || 'Recepción') === shelfFilter)
                     .map(book => (
                        <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
                           {book.coverUrl ? (
@@ -1141,17 +1160,47 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
                         <h2 className="text-xl font-bold font-display text-slate-800">Generador de Carnets</h2>
-                        <p className="text-slate-500">Selecciona una clase para imprimir los carnets.</p>
+                        <p className="text-slate-500">Imprime los carnets por clase o individualmente.</p>
                     </div>
-                    <div className="flex gap-2 items-center">
-                        <select
-                            className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
-                            value={cardClassFilter}
-                            onChange={(e) => setCardClassFilter(e.target.value)}
-                        >
-                            <option value="all">Todas las clases</option>
-                            {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
+                    <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
+                        {/* Mode Selector */}
+                        <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
+                            <button
+                                className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'class' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                onClick={() => setCardPrintMode('class')}
+                            >
+                                Por Clase
+                            </button>
+                            <button
+                                className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'individual' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                onClick={() => setCardPrintMode('individual')}
+                            >
+                                Individual
+                            </button>
+                        </div>
+
+                        {cardPrintMode === 'class' ? (
+                            <select
+                                className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
+                                value={cardClassFilter}
+                                onChange={(e) => setCardClassFilter(e.target.value)}
+                            >
+                                <option value="all">Todas las clases</option>
+                                {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        ) : (
+                            <div className="relative">
+                                <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar alumno..."
+                                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-64"
+                                    value={cardSearchTerm}
+                                    onChange={(e) => setCardSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        )}
+
                         <Button onClick={handlePrintCards}>
                             <Printer size={18} className="mr-2"/> Imprimir
                         </Button>
@@ -1172,13 +1221,29 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 `}</style>
                 {users
                     .filter(u => u.role === UserRole.STUDENT)
-                    .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
+                    .filter(u => {
+                        if (cardPrintMode === 'class') {
+                            return cardClassFilter === 'all' || u.className === cardClassFilter;
+                        } else {
+                            if (!cardSearchTerm) return false;
+                            const search = cardSearchTerm.toLowerCase();
+                            return u.firstName.toLowerCase().includes(search) ||
+                                   u.lastName.toLowerCase().includes(search) ||
+                                   u.username.toLowerCase().includes(search);
+                        }
+                    })
                     .map(user => (
                         <div key={user.id} className="flex justify-center">
                             <IDCard user={user} schoolName={settings.schoolName} logoUrl={settings.logoUrl} />
                         </div>
                     ))
                 }
+                {cardPrintMode === 'individual' && !cardSearchTerm && (
+                    <div className="col-span-full text-center py-12 text-slate-400 no-print">
+                        <Search size={48} className="mx-auto mb-4 opacity-20"/>
+                        <p>Busca un alumno para generar su carnet.</p>
+                    </div>
+                )}
             </div>
         </div>
       )}
