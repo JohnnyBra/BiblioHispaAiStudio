@@ -1,6 +1,17 @@
 {
   "users": [
     {
+      "id": "super-admin-1",
+      "firstName": "Director",
+      "lastName": "General",
+      "username": "superadmin",
+      "password": "admin123",
+      "className": "DIRECCIÓN",
+      "role": "SUPERADMIN",
+      "points": 0,
+      "booksRead": 0
+    },
+    {
       "firstName": "Juan",
       "lastName": "Garcia",
       "username": "juan.garcia",
