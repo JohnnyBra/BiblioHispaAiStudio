@@ -15,6 +15,16 @@ export interface User {
   role: UserRole;
   points: number;
   booksRead: number;
+  badges?: string[]; // IDs of earned badges
+  currentStreak?: number; // Days in a row
+  lastActivityDate?: string; // ISO Date for streak calculation
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  icon: string; // Emoji or URL
+  description: string;
 }
 
 export interface Book {

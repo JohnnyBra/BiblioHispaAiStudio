@@ -170,7 +170,7 @@ export const searchBookCandidates = async (query: string): Promise<Partial<Book>
                     publisher: info.publisher,
                     publishedDate: info.publishedDate,
                     isbn: isbn,
-                    recommendedAge: 'TP' // Will be augmented by AI later if selected
+                    recommendedAge: '6-8' // Will be augmented by AI later if selected
                 };
             });
         }
@@ -187,7 +187,7 @@ export const searchBookMetadata = async (query: string): Promise<Partial<Book>> 
         title: query,
         author: 'Desconocido',
         genre: 'General',
-        recommendedAge: 'TP'
+        recommendedAge: '6-8'
     };
 
     // ALWAYS try to get AI age recommendation, even if we didn't find the book in Google Books
