@@ -1154,28 +1154,26 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:block print:w-full print:p-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print-area">
                 <style>{`
                     @media print {
                         @page { margin: 1cm; size: A4; }
                         body * { visibility: hidden; }
                         .print-area, .print-area * { visibility: visible; }
-                        .print-area { position: absolute; left: 0; top: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; }
+                        .print-area { position: absolute; left: 0; top: 0; width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 10mm; padding: 0 !important; margin: 0 !important; }
                         .no-print { display: none !important; }
                         .id-card-print { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ddd !important; }
                     }
                 `}</style>
-                <div className="contents print-area">
-                    {users
-                        .filter(u => u.role === UserRole.STUDENT)
-                        .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
-                        .map(user => (
-                            <div key={user.id} className="flex justify-center print:block">
-                                <IDCard user={user} schoolName={settings.schoolName} logoUrl={settings.logoUrl} />
-                            </div>
-                        ))
-                    }
-                </div>
+                {users
+                    .filter(u => u.role === UserRole.STUDENT)
+                    .filter(u => cardClassFilter === 'all' || u.className === cardClassFilter)
+                    .map(user => (
+                        <div key={user.id} className="flex justify-center">
+                            <IDCard user={user} schoolName={settings.schoolName} logoUrl={settings.logoUrl} />
+                        </div>
+                    ))
+                }
             </div>
         </div>
       )}
