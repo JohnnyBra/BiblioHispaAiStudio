@@ -1373,6 +1373,102 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       )}
 
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold font-display text-slate-800">Editar Usuario</h3>
+                    <button onClick={() => setEditingUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
+                </div>
+                <form onSubmit={handleUpdateUser} className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nombre</label>
+                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900" value={editingUser.firstName} onChange={e => setEditingUser({...editingUser, firstName: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Apellido</label>
+                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900" value={editingUser.lastName} onChange={e => setEditingUser({...editingUser, lastName: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Clase</label>
+                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900" value={editingUser.className} onChange={e => setEditingUser({...editingUser, className: e.target.value})} />
+                    </div>
+                    {editingUser.role === UserRole.STUDENT && (
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Usuario (Auto-generado)</label>
+                            <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-500 text-sm font-mono">
+                                {normalizeString(editingUser.firstName)}.{normalizeString(editingUser.lastName)}
+                            </div>
+                        </div>
+                    )}
+                    <div className="pt-2 flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>Cancelar</Button>
+                        <Button type="submit">Guardar</Button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
+      {/* Manage Points Modal */}
+      {managingPointsUser && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 className="text-xl font-bold font-display text-slate-800">Gestión de Puntos</h3>
+                        <p className="text-sm text-slate-500">{managingPointsUser.firstName} {managingPointsUser.lastName} • <span className="font-bold text-fun-orange">{managingPointsUser.points} XP</span></p>
+                    </div>
+                    <button onClick={() => setManagingPointsUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
+                    <h4 className="font-bold text-sm text-slate-700 mb-2">Añadir / Restar Puntos</h4>
+                    <form onSubmit={handleAddPointsSubmit} className="flex gap-2 items-end">
+                        <div className="flex-1">
+                             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo</label>
+                             <input className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900" placeholder="Ej: Ayudar en biblioteca" value={pointsReason} onChange={e => setPointsReason(e.target.value)} />
+                        </div>
+                        <div className="w-24">
+                             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cantidad</label>
+                             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900" placeholder="+10 / -5" value={pointsAmount || ''} onChange={e => setPointsAmount(parseInt(e.target.value))} />
+                        </div>
+                        <Button type="submit" disabled={!pointsReason || !pointsAmount}>
+                            <Plus size={18}/>
+                        </Button>
+                    </form>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <h4 className="font-bold text-sm text-slate-700 mb-2">Historial</h4>
+                    {pointHistory.filter(h => h.userId === managingPointsUser.id).length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-4">No hay historial de puntos.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {pointHistory.filter(h => h.userId === managingPointsUser.id).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(h => (
+                                <div key={h.id} className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white text-sm">
+                                    <div>
+                                        <div className="font-bold text-slate-700">{h.reason}</div>
+                                        <div className="text-xs text-slate-400">{new Date(h.date).toLocaleDateString()}</div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`font-bold ${h.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                            {h.amount > 0 ? '+' : ''}{h.amount}
+                                        </span>
+                                        <button onClick={() => onDeletePointEntry(h.id)} className="text-slate-300 hover:text-red-500">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+      )}
+
       {/* Edit Book Modal */}
       {editingBook && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
