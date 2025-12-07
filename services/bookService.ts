@@ -190,12 +190,15 @@ export const searchBookMetadata = async (query: string): Promise<Partial<Book>> 
         recommendedAge: 'TP'
     };
 
-    // Augment with AI Age if valid match
-    if (candidates.length > 0) {
-        try {
-            const age = await getAIRecommendedAge(bestMatch.title || query, bestMatch.author || '');
-            bestMatch.recommendedAge = age;
-        } catch (e) { /* ignore */ }
+    // ALWAYS try to get AI age recommendation, even if we didn't find the book in Google Books
+    // (using the query as title if needed)
+    try {
+        const titleForAI = bestMatch.title || query;
+        const authorForAI = bestMatch.author || '';
+        const age = await getAIRecommendedAge(titleForAI, authorForAI);
+        bestMatch.recommendedAge = age;
+    } catch (e) {
+        console.error("Failed to get AI age in metadata search", e);
     }
 
     return bestMatch;

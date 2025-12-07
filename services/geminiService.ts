@@ -62,21 +62,27 @@ export const getAIRecommendedAge = async (title: string, author: string): Promis
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
-        Clasifica el libro "${title}" de "${author}" en UNO de los siguientes rangos de edad exactos.
+        Clasifica el libro "${title}" de "${author}" en UNO de los siguientes rangos de edad recomendada.
         
-        Rangos permitidos:
-        '0-5' (Infantil/Preescolar)
-        '6-8' (Primeros lectores)
-        '9-11' (Infantil consolidado)
-        '12-14' (Juvenil/Adolescente)
-        '+15' (Young Adult/Adulto)
+        Rangos permitidos (y sus significados):
+        '0-5'  (Infantil / Preescolar / 0 a 5 años)
+        '6-8'  (Primeros lectores / 6 a 8 años)
+        '9-11' (Infantil consolidado / 9 a 11 años)
+        '12-14' (Juvenil / Adolescente / 12 a 14 años)
+        '+15'  (Young Adult / Adulto / 15 años o más)
 
-        Responde ÚNICAMENTE con el rango (ejemplo: "9-11"). Si no conoces el libro, adivina por el título o devuelve "TP" (Todos los públicos).
+        Instrucciones:
+        - Responde ÚNICAMENTE con el rango exacto (ej: "9-11").
+        - No añadas texto adicional.
+        - Si el libro tiene un rango amplio, elige el más representativo.
+        - Si no conoces el libro, intenta deducirlo por el título.
+        - Si es imposible determinarlo, responde "TP" (Todos los públicos).
       `,
     });
     
     const text = response.text?.trim() || 'TP';
     const validRanges = ['0-5', '6-8', '9-11', '12-14', '+15'];
+    // Check for exact match or substring match if the AI is chatty
     const found = validRanges.find(r => text.includes(r));
     return found || 'TP';
 
