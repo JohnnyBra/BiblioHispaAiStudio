@@ -45,7 +45,7 @@ export const IDCard: React.FC<IDCardProps> = ({ user, schoolName, logoUrl, side 
         minHeight: '54mm',
         maxWidth: '85.6mm',
         maxHeight: '54mm',
-        backgroundImage: 'url(/card_bg.jpg)',
+        backgroundImage: 'url(/card_bg_v2.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
@@ -55,20 +55,20 @@ export const IDCard: React.FC<IDCardProps> = ({ user, schoolName, logoUrl, side 
           <img src={logoUrl} className="w-full h-full object-contain rounded-full" alt="Logo" />
        </div>
 
-       {/* User Info Box - White rounded rectangle at bottom left */}
-       <div className="absolute bottom-[4mm] left-[4mm] w-[52mm] h-[20mm] bg-white rounded-xl flex flex-col justify-center px-4 z-10 shadow-sm border border-slate-100">
-           <div className="text-[6px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Nombre de Usuario</div>
-           <div className="font-mono text-sm font-bold text-slate-800 mb-1 truncate tracking-tight">{user.username}</div>
-
-           <div className="w-full h-px bg-slate-100 mb-1"></div>
-
-           <div className="text-[6px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Nombre Completo</div>
-           <div className="font-display text-xs font-bold text-brand-600 truncate leading-tight">{user.firstName} {user.lastName}</div>
+       {/* User Info - Bottom Center (shifted left) */}
+       <div className="absolute bottom-[5mm] left-[15mm] w-[45mm] flex flex-col items-center justify-center z-10">
+           <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-white/50 flex flex-col items-center w-full">
+               <div className="font-display text-xs font-bold text-slate-900 leading-tight text-center w-full truncate">{user.firstName} {user.lastName}</div>
+               <div className="font-mono text-[10px] font-medium text-slate-600 mt-0.5">{user.username}</div>
+           </div>
        </div>
 
-       {/* QR Code - Bottom Right */}
-       <div className="absolute bottom-[4mm] right-[4mm] w-[20mm] h-[20mm] bg-white rounded-lg p-1.5 flex flex-col items-center justify-center z-10 shadow-sm border border-slate-100">
-           <div style={{ height: "auto", margin: "0 auto", maxWidth: "100%", width: "100%" }}>
+       {/* QR Code & Text - Bottom Right */}
+       <div className="absolute bottom-[4mm] right-[4mm] flex flex-row items-end space-x-1.5 z-10">
+           <div className="text-[5px] font-bold text-slate-800 leading-tight text-right mb-1 bg-white/80 px-1 rounded backdrop-blur-sm">
+               ACCESO<br/>BIBLIOTECA
+           </div>
+           <div className="w-[18mm] h-[18mm] bg-white rounded-lg p-1 flex items-center justify-center shadow-sm border border-slate-100">
                 <QRCode
                     size={256}
                     style={{ height: "auto", maxWidth: "100%", width: "100%" }}
@@ -76,8 +76,7 @@ export const IDCard: React.FC<IDCardProps> = ({ user, schoolName, logoUrl, side 
                     viewBox={`0 0 256 256`}
                     level="L"
                 />
-            </div>
-            <div className="text-[4px] font-bold text-slate-500 mt-1 text-center leading-none tracking-tighter">ACCESO<br/>BIBLIOTECA</div>
+           </div>
        </div>
 
     </div>
