@@ -91,6 +91,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [cardClassFilter, setCardClassFilter] = React.useState<string>('all');
   const [cardPrintMode, setCardPrintMode] = React.useState<'class' | 'individual'>('class');
   const [cardSearchTerm, setCardSearchTerm] = React.useState('');
+  const [showBackSide, setShowBackSide] = React.useState(false);
 
   // Books Filter State
   const [shelfFilter, setShelfFilter] = React.useState<string>('all');
@@ -1164,19 +1165,36 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </div>
                     <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
                         {/* Mode Selector */}
-                        <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
-                            <button
-                                className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'class' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-                                onClick={() => setCardPrintMode('class')}
-                            >
-                                Por Clase
-                            </button>
-                            <button
-                                className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'individual' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-                                onClick={() => setCardPrintMode('individual')}
-                            >
-                                Individual
-                            </button>
+                        <div className="flex gap-2">
+                            <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
+                                <button
+                                    className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'class' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                    onClick={() => setCardPrintMode('class')}
+                                >
+                                    Por Clase
+                                </button>
+                                <button
+                                    className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'individual' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                    onClick={() => setCardPrintMode('individual')}
+                                >
+                                    Individual
+                                </button>
+                            </div>
+
+                            <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
+                                <button
+                                    className={`px-3 py-1.5 rounded-md transition-all ${!showBackSide ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                    onClick={() => setShowBackSide(false)}
+                                >
+                                    Anverso
+                                </button>
+                                <button
+                                    className={`px-3 py-1.5 rounded-md transition-all ${showBackSide ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                    onClick={() => setShowBackSide(true)}
+                                >
+                                    Reverso
+                                </button>
+                            </div>
                         </div>
 
                         {cardPrintMode === 'class' ? (
@@ -1234,7 +1252,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     })
                     .map(user => (
                         <div key={user.id} className="flex justify-center">
-                            <IDCard user={user} schoolName={settings.schoolName} logoUrl={settings.logoUrl} />
+                            <IDCard
+                                user={user}
+                                schoolName={settings.schoolName}
+                                logoUrl={settings.logoUrl}
+                                side={showBackSide ? 'back' : 'front'}
+                            />
                         </div>
                     ))
                 }
