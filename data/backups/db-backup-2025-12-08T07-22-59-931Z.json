@@ -1,0 +1,34 @@
+{
+  "users": [
+    {
+      "id": "super-admin-1",
+      "firstName": "Director",
+      "lastName": "General",
+      "username": "superadmin",
+      "password": "admin123",
+      "className": "DIRECCIÓN",
+      "role": "SUPERADMIN",
+      "points": 0,
+      "booksRead": 0
+    },
+    {
+      "id": "student-test-1",
+      "firstName": "Juan",
+      "lastName": "Perez",
+      "username": "juanperez",
+      "password": "123",
+      "className": "5A",
+      "role": "STUDENT",
+      "points": 10,
+      "booksRead": 5
+    }
+  ],
+  "books": [],
+  "transactions": [],
+  "reviews": [],
+  "pointHistory": [],
+  "settings": {
+    "schoolName": "BiblioHispa",
+    "logoUrl": "https://cdn-icons-png.flaticon.com/512/3413/3413535.png"
+  }
+}

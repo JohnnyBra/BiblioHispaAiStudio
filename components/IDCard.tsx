@@ -51,23 +51,18 @@ export const IDCard: React.FC<IDCardProps> = ({ user, schoolName, logoUrl, side 
       }}
     >
        {/* Logo Overlay - Positioned based on the top-left circle in the design */}
-       <div className="absolute top-[5mm] left-[6mm] w-[17mm] h-[17mm] bg-white rounded-full flex items-center justify-center p-1 shadow-sm z-10">
+       <div className="absolute top-[5mm] left-[6mm] w-[17mm] h-[17mm] flex items-center justify-center z-10">
           <img src={logoUrl} className="w-full h-full object-contain rounded-full" alt="Logo" />
        </div>
 
-       {/* User Info Box - White rounded rectangle at bottom left */}
-       <div className="absolute bottom-[4mm] left-[4mm] w-[52mm] h-[20mm] bg-white rounded-xl flex flex-col justify-center px-4 z-10 shadow-sm border border-slate-100">
-           <div className="text-[6px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Nombre de Usuario</div>
-           <div className="font-mono text-sm font-bold text-slate-800 mb-1 truncate tracking-tight">{user.username}</div>
-
-           <div className="w-full h-px bg-slate-100 mb-1"></div>
-
-           <div className="text-[6px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Nombre Completo</div>
-           <div className="font-display text-xs font-bold text-brand-600 truncate leading-tight">{user.firstName} {user.lastName}</div>
+       {/* User Info Box - Transparent, Name Big, Username Small */}
+       <div className="absolute bottom-[4mm] left-[4mm] w-[52mm] h-[20mm] flex flex-col justify-center px-4 z-10">
+           <div className="font-display text-lg font-bold text-slate-900 truncate leading-tight mb-1">{user.firstName} {user.lastName}</div>
+           <div className="font-mono text-sm font-medium text-slate-700 truncate tracking-tight">{user.username}</div>
        </div>
 
        {/* QR Code - Bottom Right */}
-       <div className="absolute bottom-[4mm] right-[4mm] w-[20mm] h-[20mm] bg-white rounded-lg p-1.5 flex flex-col items-center justify-center z-10 shadow-sm border border-slate-100">
+       <div className="absolute bottom-[4mm] right-[4mm] w-[20mm] h-[20mm] bg-white rounded-lg p-1.5 flex flex-col items-center justify-center z-10">
            <div style={{ height: "auto", margin: "0 auto", maxWidth: "100%", width: "100%" }}>
                 <QRCode
                     size={256}

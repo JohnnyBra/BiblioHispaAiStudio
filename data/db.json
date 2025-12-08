@@ -10,6 +10,17 @@
       "role": "SUPERADMIN",
       "points": 0,
       "booksRead": 0
+    },
+    {
+      "id": "student-test-1",
+      "firstName": "Juan",
+      "lastName": "Perez",
+      "username": "juanperez",
+      "password": "123",
+      "className": "5A",
+      "role": "STUDENT",
+      "points": 10,
+      "booksRead": 5
     }
   ],
   "books": [],
