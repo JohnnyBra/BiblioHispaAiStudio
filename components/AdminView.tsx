@@ -1229,51 +1229,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
             <div id="printable-area" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print-area">
                 <style>{`
                     @media print {
-                        @page { margin: 10mm; size: A4; }
-                        body * { visibility: hidden; height: 0; }
-
-                        #printable-area {
-                            visibility: visible;
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 100%;
-                            height: auto;
-                            display: flex !important;
-                            flex-wrap: wrap;
-                            gap: 5mm;
-                            padding: 0 !important;
-                            margin: 0 !important;
-                            background: white;
-                        }
-
-                        #printable-area > div {
-                            visibility: visible;
-                            height: auto;
-                            width: auto;
-                            page-break-inside: avoid;
-                            break-inside: avoid;
-                            margin: 0;
-                            display: block;
-                        }
-
-                        .id-card-print {
-                            visibility: visible;
-                            position: relative !important;
-                            overflow: hidden !important;
-                            break-inside: avoid;
-                            page-break-inside: avoid;
-                            border: 1px solid #ddd !important;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                        }
-
-                        .id-card-print * {
-                            visibility: visible;
-                            height: auto;
-                        }
-
+                        @page { margin: 1cm; size: A4; }
+                        body * { visibility: hidden; height: 0; overflow: hidden; }
+                        #printable-area, #printable-area * { visibility: visible; height: auto; overflow: visible; }
+                        #printable-area { position: absolute; left: 0; top: 0; width: 100%; display: grid !important; grid-template-columns: 1fr 1fr; gap: 10mm; padding: 0 !important; margin: 0 !important; }
                         .no-print { display: none !important; }
+                        .id-card-print { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ddd !important; }
                     }
                 `}</style>
                 {users
