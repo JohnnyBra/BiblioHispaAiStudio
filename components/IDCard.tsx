@@ -44,16 +44,12 @@ export const IDCard: React.FC<IDCardProps> = ({ user, schoolName, logoUrl, side 
         minWidth: '85.6mm',
         minHeight: '54mm',
         maxWidth: '85.6mm',
-        maxHeight: '54mm'
+        maxHeight: '54mm',
+        backgroundImage: 'url(/card_bg_v2.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
       }}
     >
-       {/* Mobile print fix: use img tag instead of background-image for consistent scaling */}
-       <img
-         src="/card_bg_v2.jpg"
-         alt="Card Background"
-         className="absolute inset-0 w-full h-full object-fill z-0 pointer-events-none"
-       />
-
        {/* Logo Overlay - Positioned based on the top-left circle in the design */}
        <div className="absolute top-[5mm] left-[6mm] w-[17mm] h-[17mm] bg-white rounded-full flex items-center justify-center p-1 shadow-sm z-10">
           <img src={logoUrl} className="w-full h-full object-contain rounded-full" alt="Logo" />
