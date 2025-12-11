@@ -1232,6 +1232,13 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         @page { margin: 10mm; size: A4; }
                         body * { visibility: hidden; height: 0; }
 
+                        /* Force visible body/html to avoid collapse */
+                        html, body {
+                           height: auto !important;
+                           overflow: visible !important;
+                           min-height: 100vh !important;
+                        }
+
                         /* Force body to allow A4 width */
                         body { min-width: 210mm; }
 
@@ -1240,6 +1247,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             position: absolute;
                             left: 0;
                             top: 0;
+
+                            /* Fix height collapse */
+                            height: auto !important;
+                            overflow: visible !important;
 
                             /* Force A4 printable width (210mm - 20mm margins = 190mm) */
                             width: 190mm !important;
