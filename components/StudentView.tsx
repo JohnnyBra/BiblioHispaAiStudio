@@ -43,6 +43,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedGenre, setSelectedGenre] = React.useState<string>('Todos');
   const [selectedAge, setSelectedAge] = React.useState<string>('Todos');
+  const [selectedShelf, setSelectedShelf] = React.useState<string>('Todas');
   
   // View & Sort State
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
@@ -111,13 +112,15 @@ export const StudentView: React.FC<StudentViewProps> = ({
   // Filter & Sort books
   const genres = ['Todos', ...Array.from(new Set(books.map(b => b.genre)))];
   const ages = ['Todos', '0-5', '6-8', '9-11', '12-14', '+15']; // Standard age ranges
-  
+  const shelves = ['Todas', ...Array.from(new Set(books.map(b => b.shelf || 'Recepción'))).sort()];
+
   const filteredBooks = books
     .filter(b => {
       const matchesSearch = b.title.toLowerCase().includes(searchTerm.toLowerCase()) || b.author.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesGenre = selectedGenre === 'Todos' || b.genre === selectedGenre;
       const matchesAge = selectedAge === 'Todos' || (b.recommendedAge && b.recommendedAge.includes(selectedAge)) || !b.recommendedAge; // If no age set, show it to be safe
-      return matchesSearch && matchesGenre && matchesAge;
+      const matchesShelf = selectedShelf === 'Todas' || (b.shelf || 'Recepción') === selectedShelf;
+      return matchesSearch && matchesGenre && matchesAge && matchesShelf;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -372,6 +375,21 @@ export const StudentView: React.FC<StudentViewProps> = ({
                       >
                          {ages.map(age => (
                             <option key={age} value={age}>{age}</option>
+                         ))}
+                      </select>
+                   </div>
+
+                  {/* Shelf Filter */}
+                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex-shrink-0">
+                      <Archive size={16} className="text-brand-500"/>
+                      <span className="text-xs font-bold text-slate-400 uppercase mr-1">Estantería:</span>
+                      <select
+                        className="bg-transparent text-sm font-bold text-slate-600 outline-none max-w-[150px]"
+                        value={selectedShelf}
+                        onChange={(e) => setSelectedShelf(e.target.value)}
+                      >
+                         {shelves.map(shelf => (
+                            <option key={shelf} value={shelf}>{shelf}</option>
                          ))}
                       </select>
                    </div>
