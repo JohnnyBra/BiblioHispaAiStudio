@@ -1232,16 +1232,25 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         @page { margin: 10mm; size: A4; }
                         body * { visibility: hidden; height: 0; }
 
+                        /* Force body to allow A4 width */
+                        body { min-width: 210mm; }
+
                         #printable-area {
                             visibility: visible;
                             position: absolute;
                             left: 0;
                             top: 0;
-                            width: 100%;
-                            height: auto;
-                            display: flex !important;
-                            flex-wrap: wrap;
+
+                            /* Force A4 printable width (210mm - 20mm margins = 190mm) */
+                            width: 190mm !important;
+                            min-width: 190mm !important;
+                            max-width: 190mm !important;
+
+                            /* Use Grid for strict 2-column layout */
+                            display: grid !important;
+                            grid-template-columns: repeat(2, 1fr) !important;
                             gap: 5mm;
+
                             padding: 0 !important;
                             margin: 0 !important;
                             background: white;
@@ -1254,7 +1263,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             page-break-inside: avoid;
                             break-inside: avoid;
                             margin: 0;
-                            display: block;
+                            display: flex; /* Center the card in the grid cell */
+                            justify-content: center;
+                            align-items: flex-start;
                         }
 
                         .id-card-print {
