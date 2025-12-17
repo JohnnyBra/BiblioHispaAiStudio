@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { storageService } from './services/storageService';
+import * as bookService from './services/bookService';
+import * as userService from './services/userService';
 import { checkoutBook, returnBook, submitReview } from './services/gamificationService';
 import { User, Book, Transaction, UserRole, Review, AppSettings, PointHistory, BackupData } from './types';
 import { AdminView } from './components/AdminView';
@@ -73,10 +75,8 @@ const App: React.FC = () => {
 
   // --- Persistance Effects (Save to Server) ---
   // Solo guardamos si ya hemos cargado los datos iniciales (para evitar sobrescribir con arrays vacíos)
-  // Usamos un pequeño debounce implícito por React batching, pero idealmente sería mejor un debounce real.
+  // NOTA: Users y Books ya no se guardan automáticamente por useEffect para evitar sobrescrituras masivas.
   
-  React.useEffect(() => { if(isLoaded) storageService.setUsers(users).catch(() => setConnectionError(true)); }, [users, isLoaded]);
-  React.useEffect(() => { if(isLoaded) storageService.setBooks(books).catch(() => setConnectionError(true)); }, [books, isLoaded]);
   React.useEffect(() => { if(isLoaded) storageService.setTransactions(transactions).catch(() => setConnectionError(true)); }, [transactions, isLoaded]);
   React.useEffect(() => { if(isLoaded) storageService.setReviews(reviews).catch(() => setConnectionError(true)); }, [reviews, isLoaded]);
   React.useEffect(() => { if(isLoaded) storageService.setPointHistory(pointHistory).catch(() => setConnectionError(true)); }, [pointHistory, isLoaded]);
@@ -149,24 +149,135 @@ const App: React.FC = () => {
   };
 
   // Generic updaters
-  const addUsers = (newUsers: User[]) => setUsers(prev => [...prev, ...newUsers]);
-  const updateUser = (updatedUser: User) => {
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-    addToast('Usuario actualizado correctamente', 'success');
+  const addUsers = async (newUsers: User[]) => {
+      try {
+          if (newUsers.length === 1) {
+              await userService.addUser(newUsers[0]);
+          } else if (newUsers.length > 1) {
+              await userService.importUsers(newUsers);
+          }
+          setUsers(prev => [...prev, ...newUsers]);
+      } catch (e) {
+          console.error(e);
+          addToast('Error guardando usuarios en servidor', 'error');
+      }
   };
-  const deleteUser = (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-    setPointHistory(prev => prev.filter(h => h.userId !== id));
-    addToast('Usuario eliminado', 'info');
+
+  const updateUser = async (updatedUser: User) => {
+    try {
+        await userService.updateUser(updatedUser);
+        setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+        addToast('Usuario actualizado correctamente', 'success');
+    } catch (e) {
+        addToast('Error actualizando usuario', 'error');
+    }
   };
-  const addBooks = (newBooks: Book[]) => setBooks(prev => [...prev, ...newBooks]);
-  const handleUpdateBook = (updatedBook: Book) => {
-    setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
-    // The useEffect will handle saving to server automatically
+
+  const deleteUser = async (id: string) => {
+    try {
+        await userService.deleteUser(id);
+        setUsers(prev => prev.filter(u => u.id !== id));
+        setPointHistory(prev => prev.filter(h => h.userId !== id));
+        addToast('Usuario eliminado', 'info');
+    } catch (e) {
+        addToast('Error eliminando usuario', 'error');
+    }
   };
-  const deleteBook = (id: string) => {
-    setBooks(prev => prev.filter(b => b.id !== id));
-    addToast('Libro eliminado', 'info');
+
+  const addBooks = async (newBooks: Book[]) => {
+      // Logic for adding books. Single add is handled via AdminView calling addBook directly often,
+      // but CSV import calls this with multiple.
+      try {
+          if (newBooks.length > 1) {
+              // Batch import
+              await bookService.importBooks(newBooks);
+              setBooks(prev => [...prev, ...newBooks]);
+          } else if (newBooks.length === 1) {
+              // Single add might already be handled by AdminView calling API?
+              // AdminView's handleSaveBook calls addBook API then calls onAddBooks([book]) to update state.
+              // So here we might NOT want to call API again if it was already called.
+              // But handleBookCSV calls onAddBooks with array.
+              // Let's check AdminView usage.
+              // handleSaveBook calls addBook API, then onAddBooks.
+              // So for single book added via form, we SHOULD NOT call API here again to avoid duplication or error.
+              // BUT for CSV import (handleBookCSV), it calls onAddBooks with array, and DOES NOT call API in AdminView.
+
+              // We can distinguish: If AdminView already called API, we shouldn't.
+              // But `addBooks` is a prop.
+              // To be safe, we should probably let AdminView handle the API calls and just use this to update state?
+              // NO, the goal is to move logic here or ensure it's granular.
+
+              // Refactoring approach:
+              // Make `addBooks` ONLY update local state.
+              // Make `AdminView` responsible for API calls.
+              // Users: AdminView handleUserCSV calls onAddUsers. It does NOT call API. So `addUsers` here MUST call API for batch.
+              // AdminView handleAddSingleUser calls onAddUsers. It does NOT call API. So `addUsers` here MUST call API for single.
+              // So `addUsers` implementation above is correct.
+
+              // Books: AdminView handleBookCSV calls onAddBooks. It does NOT call API. So `addBooks` MUST call API for batch.
+              // AdminView handleSaveBook calls `addBook` (API) THEN `onAddBooks`.
+              // So if we make `addBooks` call API, `handleSaveBook` will double call.
+              // We should remove `addBook` API call from `AdminView`'s `handleSaveBook` and let `addBooks` handle it?
+              // OR modify `addBooks` to accept a flag?
+              // OR just change `addBooks` to be `syncBooksState` and let the caller handle API.
+
+              // Let's go with: `AdminView` handles API calls for specific actions, and we provide `refreshData` or `updateLocalState`.
+              // But `addUsers` handles API above. Consistency?
+              // Let's stick to: The Prop function handles logic.
+              // So `AdminView.tsx` `handleSaveBook` should NOT call API, it should just call `onAddBooks`.
+
+              // I will modify `AdminView.tsx` in the next step to remove direct API calls and rely on these props, OR keep API calls in AdminView and make these props just state updaters.
+              // The prompt says "When user adds book... Call API... If OK update local".
+              // Currently `AdminView` calls API.
+
+              // Strategy: `addBooks` here will be just a state updater (Local).
+              // `AdminView` is responsible for API calls for Books (Single).
+              // For Batch Books (CSV), `AdminView` currently does NOT call API.
+              // So I need to update `AdminView` to call API for batch books too.
+
+              // Wait, I should make `App.tsx` functions pure state updaters and move API logic to the triggering component?
+              // Or make `App.tsx` functions the "Controllers".
+              // Let's make `App.tsx` functions the controllers.
+
+              // For `addBooks`:
+              // If it's coming from `handleSaveBook` (single), it already called API.
+              // If it's coming from `import` (batch), it hasn't.
+
+              // Use `onAddBooks` for BATCH only or modify `handleSaveBook` to NOT call API.
+              // I will modify `handleSaveBook` in `AdminView` to NOT call API directly, but call `onAddBooks`.
+              // Then `onAddBooks` here will call API.
+
+              if (newBooks.length === 1) {
+                 await bookService.addBook(newBooks[0]);
+              } else {
+                 await bookService.importBooks(newBooks);
+              }
+              setBooks(prev => [...prev, ...newBooks]);
+          }
+      } catch (e) {
+          console.error(e);
+          addToast('Error guardando libros', 'error');
+      }
+  };
+
+  const handleUpdateBook = async (updatedBook: Book) => {
+    try {
+        await bookService.updateBook(updatedBook);
+        setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
+        addToast('Libro actualizado', 'success');
+    } catch (e) {
+        addToast('Error actualizando libro', 'error');
+    }
+  };
+
+  const deleteBook = async (id: string) => {
+    try {
+        await bookService.deleteBook(id);
+        setBooks(prev => prev.filter(b => b.id !== id));
+        addToast('Libro eliminado', 'info');
+    } catch (e) {
+        addToast('Error eliminando libro', 'error');
+    }
   };
   const updateSettings = (newSettings: AppSettings) => {
     setSettings(newSettings);

@@ -32,8 +32,11 @@ export const storageService = {
 
   // Guardado granular (se llama cuando React detecta cambios)
   // Nota: Estas funciones ahora son ASÍNCRONAS.
-  setUsers: async (users: User[]) => apiCall('/users', 'POST', users),
-  setBooks: async (books: Book[]) => apiCall('/books', 'POST', books),
+  // DEPRECATED: setUsers and setBooks should not be used for full array updates anymore.
+  // Using granular services instead.
+  // setUsers: async (users: User[]) => apiCall('/users', 'POST', users),
+  // setBooks: async (books: Book[]) => apiCall('/books', 'POST', books),
+
   setTransactions: async (txs: Transaction[]) => apiCall('/transactions', 'POST', txs),
   setReviews: async (reviews: Review[]) => apiCall('/reviews', 'POST', reviews),
   setPointHistory: async (history: PointHistory[]) => apiCall('/pointHistory', 'POST', history),
