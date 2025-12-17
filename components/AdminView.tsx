@@ -393,13 +393,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
           publishedDate: newBook.publishedDate
       };
 
-      // Call backend
-      try {
-          await addBook(book);
-      } catch (e) {
-          console.error(e); // Backend might be down, but local state update handles UI
-      }
-
+      // Call backend via App.tsx handler
       onAddBooks([book]);
       onShowToast(`Libro "${book.title}" añadido correctamente`, "success");
 
@@ -416,17 +410,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   const handleSaveEdit = async () => {
       if (!editingBook) return;
-      try {
-          // Llamamos al backend primero para asegurar que no hay errores (opcional, pero recomendado)
-          await updateBook(editingBook);
 
-          // En lugar de borrar y añadir, usamos la actualización directa:
-          onUpdateBook(editingBook);
+      // En lugar de borrar y añadir, usamos la actualización directa (App.tsx gestiona la API):
+      onUpdateBook(editingBook);
+      // onShowToast se llama en App.tsx ahora para confirmar éxito/error de API,
+      // pero aquí podemos cerrar el modal inmediatamente.
 
-          onShowToast("Libro actualizado", "success");
-      } catch (e) {
-          onShowToast("Error al actualizar", "error");
-      }
       setEditingBook(null);
   };
 
