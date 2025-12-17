@@ -178,8 +178,68 @@ app.post('/api/restore', async (req, res) => {
 
 // Endpoints granulares para guardar cambios
 app.post('/api/users', async (req, res) => {
-  await saveDB(req.body, 'users');
+  const user = req.body;
+  if (Array.isArray(user)) {
+      return res.status(400).json({ error: "Para guardar masivamente usa /api/users/batch o restore. No envíes la lista entera." });
+  }
+
+  const currentData = await readDB();
+  const users = currentData.users || [];
+  const index = users.findIndex(u => u.id === user.id);
+
+  if (index >= 0) {
+      users[index] = { ...users[index], ...user }; // Actualizar
+  } else {
+      // Asegurar ID
+      if (!user.id) user.id = `user-${Date.now()}`;
+      users.push(user); // Crear nuevo
+  }
+
+  await saveDB(users, 'users');
   res.json({ success: true });
+});
+
+// Update user granularly (Explicit PUT)
+app.put('/api/users/:id', async (req, res) => {
+  const currentData = await readDB();
+  let users = currentData.users || [];
+
+  const index = users.findIndex(u => u.id === req.params.id);
+  if (index !== -1) {
+      users[index] = { ...users[index], ...req.body };
+      await saveDB(users, 'users');
+      res.json({ success: true, user: users[index] });
+  } else {
+      res.status(404).json({ error: 'User not found' });
+  }
+});
+
+// Delete user granularly
+app.delete('/api/users/:id', async (req, res) => {
+  const currentData = await readDB();
+  let users = currentData.users || [];
+
+  const newUsers = users.filter(u => u.id !== req.params.id);
+  await saveDB(newUsers, 'users');
+  res.json({ success: true });
+});
+
+// Batch import users (append only)
+app.post('/api/users/batch', async (req, res) => {
+  const usersToAdd = req.body;
+  if (!Array.isArray(usersToAdd)) return res.status(400).json({ error: "Body must be an array" });
+
+  const currentData = await readDB();
+  const currentUsers = currentData.users || [];
+
+  // Assign IDs if missing
+  usersToAdd.forEach(u => {
+      if (!u.id) u.id = `user-${Date.now()}-${Math.random().toString(36).substr(2,4)}`;
+  });
+
+  const newUsers = [...currentUsers, ...usersToAdd];
+  await saveDB(newUsers, 'users');
+  res.json({ success: true, count: usersToAdd.length });
 });
 
 app.post('/api/books', async (req, res) => {
@@ -195,12 +255,13 @@ app.post('/api/books', async (req, res) => {
   }
 
   if (Array.isArray(payload)) {
-      // Caso A: El frontend nos envía la lista COMPLETA (desde App.tsx useEffect)
-      // Sobrescribimos todo
-      await saveDB(payload, 'books');
+      // PREVENCIÓN DE SOBRESCRITURA ACCIDENTAL
+      return res.status(400).json({ error: 'Para guardar masivamente usa /api/books/batch o restore. No se permite sobrescribir toda la lista.' });
   } else {
-      // Caso B: El frontend nos envía UN SOLO libro (desde addBook)
-      // Lo añadimos a la lista existente
+      // Caso B: Añadir UN SOLO libro
+      // Asigna ID si no tiene
+      if (!payload.id) payload.id = crypto.randomUUID ? crypto.randomUUID() : `book-${Date.now()}`;
+
       currentBooks.push(payload);
       await saveDB(currentBooks, 'books');
   }
