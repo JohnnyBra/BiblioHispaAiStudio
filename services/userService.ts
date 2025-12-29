@@ -35,3 +35,29 @@ export const importUsers = async (users: User[]): Promise<void> => {
     });
     if (!res.ok) throw new Error('Failed to import users');
 };
+
+export const teacherLogin = async (username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> => {
+    const res = await fetch('/api/auth/teacher-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+        return { success: false, error: data.error || 'Error de autenticación' };
+    }
+    return { success: true, user: data.user };
+};
+
+export const syncStudents = async (): Promise<{ success: boolean; updated?: number; created?: number; error?: string }> => {
+    const res = await fetch('/api/sync/students', {
+        method: 'POST'
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.error || 'Error en sincronización');
+    }
+    return data;
+};
