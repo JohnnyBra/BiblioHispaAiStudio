@@ -337,6 +337,146 @@ app.post('/api/books/batch', async (req, res) => {
   res.json({ success: true, count: booksToAdd.length });
 });
 
+// --- AUTH & SYNC ENDPOINTS (PHASE 2) ---
+
+// Login Profesor (Proxy to External Auth)
+app.post('/api/auth/teacher-login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    // Petición interna a PrismaEdu (External Service)
+    const response = await fetch('http://localhost:3020/api/auth/external-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      // Si es válido, generamos un objeto de sesión para el frontend
+      // Asumimos que la respuesta externa trae datos básicos del profesor
+      // Si no, lo construimos
+      const teacherUser = {
+         id: data.user?.id || `admin-${username}`,
+         firstName: data.user?.name || 'Profesor',
+         lastName: data.user?.surname || '(Externo)',
+         username: username,
+         role: 'ADMIN', // Force Admin role for teachers
+         className: 'PROFESORADO',
+         points: 0,
+         booksRead: 0,
+         isExternal: true
+      };
+
+      // PERSISTENCE: Upsert teacher to local DB so App.tsx can find it on refresh
+      const currentData = await readDB();
+      const users = currentData.users || [];
+      const index = users.findIndex(u => u.id === teacherUser.id);
+
+      if (index !== -1) {
+          // Update existing
+          users[index] = { ...users[index], ...teacherUser };
+      } else {
+          // Add new
+          users.push(teacherUser);
+      }
+      await saveDB(users, 'users');
+
+      res.json({ success: true, user: teacherUser });
+    } else {
+      res.status(401).json({ error: 'Credenciales inválidas en sistema centralizado.' });
+    }
+  } catch (error) {
+    console.error('Error connecting to auth service:', error);
+    res.status(500).json({ error: 'Error de conexión con el sistema de autenticación.' });
+  }
+});
+
+// Sincronización de Alumnos (Merge Logic)
+app.post('/api/sync/students', async (req, res) => {
+  try {
+    // 1. Obtener alumnos externos
+    const response = await fetch('http://localhost:3020/api/export/students');
+    if (!response.ok) throw new Error('Failed to fetch from external system');
+
+    const externalStudents = await response.json(); // Array of { id, dni, name, surname, course, ... }
+
+    // 2. Leer DB Local
+    const currentData = await readDB();
+    let currentUsers = currentData.users || [];
+    let updatedCount = 0;
+    let createdCount = 0;
+
+    // 3. Merge Logic
+    // Convert current users to map for faster lookup by ID and DNI (if exists)
+    // Note: Local users might not have DNI stored, usually ID or username.
+    // The prompt says "mismo ID o DNI".
+
+    for (const extStudent of externalStudents) {
+       // Intentar encontrar por ID o por DNI (si lo tuviéramos)
+       // Asumimos que el ID externo puede coincidir con el nuestro si se importó antes,
+       // o buscamos por username generado?
+       // Mejor estrategia: Buscar por ID directo si coinciden, o intentar coincidir por DNI si existe campo.
+       // Si no, intentar coincidir por Nombre+Apellido para evitar duplicados si el ID cambió?
+       // El prompt dice "Si el alumno ya existe (mismo ID o DNI)".
+
+       let localUserIndex = currentUsers.findIndex(u => u.id === extStudent.id || (u.dni && u.dni === extStudent.dni));
+
+       // Fallback: Check by username (normalization) if ID/DNI logic isn't enough?
+       // Let's stick to ID/DNI as requested to be safe.
+
+       if (localUserIndex !== -1) {
+          // UPDATE (Merge)
+          const localUser = currentUsers[localUserIndex];
+
+          currentUsers[localUserIndex] = {
+             ...localUser,
+             // Update academic data
+             firstName: extStudent.name || localUser.firstName,
+             lastName: extStudent.surname || localUser.lastName,
+             className: extStudent.course || localUser.className,
+             dni: extStudent.dni || localUser.dni, // Update/Set DNI
+             // Preserve Gamification & Local State (Points, Badges, etc are already in ...localUser)
+             // Ensure role is STUDENT
+             role: 'STUDENT'
+          };
+          updatedCount++;
+       } else {
+          // CREATE
+          const newUser = {
+             id: extStudent.id || `user-${Date.now()}-${Math.random().toString(36).substr(2,4)}`,
+             dni: extStudent.dni,
+             firstName: extStudent.name,
+             lastName: extStudent.surname,
+             className: extStudent.course,
+             username: `${normalizeString(extStudent.name)}.${normalizeString(extStudent.surname)}`.toLowerCase(),
+             role: 'STUDENT',
+             points: 0,
+             booksRead: 0,
+             badges: [],
+             currentStreak: 0
+          };
+          currentUsers.push(newUser);
+          createdCount++;
+       }
+    }
+
+    // 4. Save
+    await saveDB(currentUsers, 'users');
+    res.json({ success: true, updated: updatedCount, created: createdCount });
+
+  } catch (error) {
+    console.error('Sync Error:', error);
+    res.status(500).json({ error: 'Error durante la sincronización.' });
+  }
+});
+
+function normalizeString(str) {
+  if (!str) return '';
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '.');
+}
+
 // --- GAMIFICATION ACTION ENDPOINTS ---
 
 // Checkout Action
