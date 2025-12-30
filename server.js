@@ -182,7 +182,18 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   if (!response.ok) {
      const text = await response.text();
      console.error(`Prisma API Error (${response.status}): ${text}`);
-     throw new Error(`Prisma API responded with ${response.status}: ${text}`);
+
+     let errorData = {};
+     try {
+       errorData = JSON.parse(text);
+     } catch (e) {
+       // Ignore parse error, use text
+     }
+
+     const error = new Error(errorData.message || `Prisma API responded with ${response.status}: ${text}`);
+     error.status = response.status;
+     error.data = errorData;
+     throw error;
   }
   return response.json();
 }
@@ -399,7 +410,9 @@ app.post('/api/auth/google-verify', async (req, res) => {
 
   } catch (error) {
      console.error('Google Auth Error:', error);
-     res.status(500).json({ error: 'Error validando con PrismaEdu.' });
+     const status = error.status || 500;
+     const message = error.data?.message || error.message || 'Error validando con PrismaEdu.';
+     res.status(status).json({ error: message });
   }
 });
 
@@ -442,7 +455,9 @@ app.post('/api/auth/teacher-login', async (req, res) => {
     }
   } catch (error) {
     console.error('Error connecting to auth service:', error);
-    res.status(500).json({ error: 'Error de conexión con el sistema de autenticación.' });
+    const status = error.status || 500;
+    const message = error.data?.message || error.message || 'Error de conexión con el sistema de autenticación.';
+    res.status(status).json({ error: message });
   }
 });
 
@@ -566,7 +581,9 @@ app.post('/api/sync/students', async (req, res) => {
 
   } catch (error) {
     console.error('Sync Error:', error);
-    res.status(500).json({ error: 'Error durante la sincronización.' });
+    const status = error.status || 500;
+    const message = error.data?.message || error.message || 'Error durante la sincronización.';
+    res.status(status).json({ error: message });
   }
 });
 
