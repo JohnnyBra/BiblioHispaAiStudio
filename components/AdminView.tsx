@@ -105,6 +105,35 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [isSyncing, setIsSyncing] = React.useState(false);
 
   const isSuperAdmin = currentUser.role === UserRole.SUPERADMIN;
+  // NEW: Check if teacher (Admin) to filter visibility
+  const isTeacher = currentUser.role === UserRole.ADMIN;
+
+  // Filtered lists based on permissions
+  const visibleUsers = React.useMemo(() => {
+     if (isSuperAdmin) return users;
+     if (isTeacher) {
+        // Teachers only see students in their class (if assigned)
+        // If currentUser.classId or currentUser.className matches user.classId/className
+        // Mapping strategy:
+        // currentUser.classId matches user.classId
+        if (currentUser.classId) {
+             return users.filter(u => u.role === UserRole.STUDENT && u.classId == currentUser.classId);
+        } else {
+            // Fallback: If teacher has no classId assigned, maybe show all or none?
+            // "Si el usuario es TUTOR: Debe ver predeterminadamente su clase asignada y sus alumnos asociados."
+            // If no class assigned, show empty or maybe allow searching all?
+            // Let's assume strict: if classId is present, filter. If not, maybe show all?
+            // Safer to show all if no class assigned, or maybe none.
+            // Let's show all for now if no specific class is assigned to teacher, OR rely on 'className' string match if classId is missing.
+            if (currentUser.className && currentUser.className !== 'PROFESORADO' && currentUser.className !== 'STAFF') {
+                 return users.filter(u => u.role === UserRole.STUDENT && u.className === currentUser.className);
+            }
+            return users; // Default to all if no specific class link found
+        }
+     }
+     return [];
+  }, [users, currentUser, isSuperAdmin, isTeacher]);
+
 
   // References for file inputs
   const userFileInputRef = React.useRef<HTMLInputElement>(null);
@@ -556,7 +585,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     if (backupInputRef.current) backupInputRef.current.value = '';
   };
 
-  const availableClasses = Array.from(new Set(users.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort();
+  const availableClasses = Array.from(new Set(visibleUsers.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort();
   const availableShelves = Array.from(new Set(books.map(b => b.shelf || 'Recepción'))).sort();
 
   // --- Render ---
@@ -690,7 +719,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {users
+                    {visibleUsers
                       .filter(u => u.role === UserRole.STUDENT)
                       .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
                       .map(user => (

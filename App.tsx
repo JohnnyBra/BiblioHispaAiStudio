@@ -3,6 +3,7 @@ import React from 'react';
 import { storageService } from './services/storageService';
 import * as bookService from './services/bookService';
 import * as userService from './services/userService';
+import * as authService from './services/authService';
 import { checkoutBook, returnBook, submitReview } from './services/gamificationService';
 import { User, Book, Transaction, UserRole, Review, AppSettings, PointHistory, BackupData } from './types';
 import { AdminView } from './components/AdminView';
@@ -11,6 +12,8 @@ import { Button } from './components/Button';
 import { QRScanner } from './components/QRScanner';
 import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
 import { QrCode, WifiOff, Loader2 } from 'lucide-react';
+import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { jwtDecode } from "jwt-decode";
 
 const App: React.FC = () => {
   // --- Global State (Inicializado vacío) ---
@@ -29,7 +32,8 @@ const App: React.FC = () => {
   // --- Auth State ---
   const [loginInput, setLoginInput] = React.useState('');
   const [passwordInput, setPasswordInput] = React.useState('');
-  const [isAdminMode, setIsAdminMode] = React.useState(false);
+  const [isAdminMode, setIsAdminMode] = React.useState(false); // Mode selection tab
+  const [isManualLogin, setIsManualLogin] = React.useState(false); // Toggle between Google/Manual in Admin Mode
   const [authError, setAuthError] = React.useState('');
   const [showQRScanner, setShowQRScanner] = React.useState(false);
 
@@ -74,9 +78,6 @@ const App: React.FC = () => {
   }, [isLoaded, users]);
 
   // --- Persistance Effects (Save to Server) ---
-  // Solo guardamos si ya hemos cargado los datos iniciales (para evitar sobrescribir con arrays vacíos)
-  // NOTA: Users y Books ya no se guardan automáticamente por useEffect para evitar sobrescrituras masivas.
-  
   React.useEffect(() => { if(isLoaded) storageService.setTransactions(transactions).catch(() => setConnectionError(true)); }, [transactions, isLoaded]);
   React.useEffect(() => { if(isLoaded) storageService.setReviews(reviews).catch(() => setConnectionError(true)); }, [reviews, isLoaded]);
   React.useEffect(() => { if(isLoaded) storageService.setPointHistory(pointHistory).catch(() => setConnectionError(true)); }, [pointHistory, isLoaded]);
@@ -99,30 +100,28 @@ const App: React.FC = () => {
     setAuthError('');
 
     if (isAdminMode) {
-      // Check for Local SuperAdmin first (Fallback/Maintenance)
-      const localAdmin = users.find(u =>
-        u.username === loginInput &&
-        u.role === UserRole.SUPERADMIN &&
-        u.password === passwordInput
-      );
-
-      if (localAdmin) {
-          setCurrentUser(localAdmin);
-          localStorage.setItem('biblio_session_user', localAdmin.id);
-          addToast(`Bienvenido Admin Local`, 'info');
-          return;
-      }
-
-      // ACCESO PROFESORES (Remoto /api/auth/teacher-login)
+      // ACCESO PROFESORES MANUAL (PrismaEdu Check)
       try {
         const result = await userService.teacherLogin(loginInput, passwordInput);
         if (result.success && result.user) {
            setCurrentUser(result.user);
-           if (!users.find(u => u.id === result.user!.id)) {
-               setUsers(prev => [...prev, result.user!]);
-           }
+           // Update local user list with the new teacher if not present (or update details)
+           setUsers(prev => {
+              const idx = prev.findIndex(u => u.id === result.user!.id);
+              if (idx >= 0) {
+                  const copy = [...prev];
+                  copy[idx] = result.user!;
+                  return copy;
+              }
+              return [...prev, result.user!];
+           });
+
            localStorage.setItem('biblio_session_user', result.user.id);
            addToast(`Bienvenido, ${result.user.firstName}`, 'info');
+
+           // Trigger sync
+           syncPrismaData();
+
         } else {
            setAuthError(result.error || 'Credenciales incorrectas');
         }
@@ -140,6 +139,65 @@ const App: React.FC = () => {
         setAuthError('Usuario no encontrado. Usa nombre.apellido');
       }
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+     try {
+         if (credentialResponse.credential) {
+             const decoded: any = jwtDecode(credentialResponse.credential);
+             const email = decoded.email;
+
+             if (!email) {
+                 setAuthError('No se pudo obtener el email de Google.');
+                 return;
+             }
+
+             // Verify against Prisma
+             const result = await authService.verifyGoogleEmail(email);
+
+             if (result.success && result.user) {
+                setCurrentUser(result.user);
+
+                // Update local list
+                setUsers(prev => {
+                    const idx = prev.findIndex(u => u.id === result.user!.id);
+                    if (idx >= 0) {
+                        const copy = [...prev];
+                        copy[idx] = result.user!;
+                        return copy;
+                    }
+                    return [...prev, result.user!];
+                });
+
+                localStorage.setItem('biblio_session_user', result.user.id);
+                addToast(`Bienvenido, ${result.user.firstName}`, 'info');
+
+                // Trigger sync
+                syncPrismaData();
+             } else {
+                 setAuthError(result.error || 'No tienes permisos para acceder.');
+             }
+         }
+     } catch (e) {
+         console.error(e);
+         setAuthError('Error validando el inicio de sesión con Google.');
+     }
+  };
+
+  const syncPrismaData = async () => {
+      try {
+          addToast('Sincronizando con PrismaEdu...', 'info');
+          const result = await userService.syncStudents();
+          if (result.success) {
+              addToast(`Sincronización completada: ${result.updated} actualizados, ${result.created} nuevos.`, 'success');
+              // Reload local data?
+              const data = await storageService.fetchAllData();
+              if (data && data.users) setUsers(data.users);
+          }
+      } catch (e) {
+          console.error(e);
+          // Don't disturb user too much if sync fails in background
+      }
   };
 
   const handleQRLogin = (scannedText: string) => {
@@ -160,6 +218,8 @@ const App: React.FC = () => {
     setLoginInput('');
     setPasswordInput('');
     setAuthError('');
+    setIsAdminMode(false);
+    setIsManualLogin(false);
     addToast('Sesión cerrada correctamente', 'info');
   };
 
@@ -200,75 +260,13 @@ const App: React.FC = () => {
   };
 
   const addBooks = async (newBooks: Book[]) => {
-      // Logic for adding books. Single add is handled via AdminView calling addBook directly often,
-      // but CSV import calls this with multiple.
       try {
-          if (newBooks.length > 1) {
-              // Batch import
-              await bookService.importBooks(newBooks);
-              setBooks(prev => [...prev, ...newBooks]);
-          } else if (newBooks.length === 1) {
-              // Single add might already be handled by AdminView calling API?
-              // AdminView's handleSaveBook calls addBook API then calls onAddBooks([book]) to update state.
-              // So here we might NOT want to call API again if it was already called.
-              // But handleBookCSV calls onAddBooks with array.
-              // Let's check AdminView usage.
-              // handleSaveBook calls addBook API, then onAddBooks.
-              // So for single book added via form, we SHOULD NOT call API here again to avoid duplication or error.
-              // BUT for CSV import (handleBookCSV), it calls onAddBooks with array, and DOES NOT call API in AdminView.
-
-              // We can distinguish: If AdminView already called API, we shouldn't.
-              // But `addBooks` is a prop.
-              // To be safe, we should probably let AdminView handle the API calls and just use this to update state?
-              // NO, the goal is to move logic here or ensure it's granular.
-
-              // Refactoring approach:
-              // Make `addBooks` ONLY update local state.
-              // Make `AdminView` responsible for API calls.
-              // Users: AdminView handleUserCSV calls onAddUsers. It does NOT call API. So `addUsers` here MUST call API for batch.
-              // AdminView handleAddSingleUser calls onAddUsers. It does NOT call API. So `addUsers` here MUST call API for single.
-              // So `addUsers` implementation above is correct.
-
-              // Books: AdminView handleBookCSV calls onAddBooks. It does NOT call API. So `addBooks` MUST call API for batch.
-              // AdminView handleSaveBook calls `addBook` (API) THEN `onAddBooks`.
-              // So if we make `addBooks` call API, `handleSaveBook` will double call.
-              // We should remove `addBook` API call from `AdminView`'s `handleSaveBook` and let `addBooks` handle it?
-              // OR modify `addBooks` to accept a flag?
-              // OR just change `addBooks` to be `syncBooksState` and let the caller handle API.
-
-              // Let's go with: `AdminView` handles API calls for specific actions, and we provide `refreshData` or `updateLocalState`.
-              // But `addUsers` handles API above. Consistency?
-              // Let's stick to: The Prop function handles logic.
-              // So `AdminView.tsx` `handleSaveBook` should NOT call API, it should just call `onAddBooks`.
-
-              // I will modify `AdminView.tsx` in the next step to remove direct API calls and rely on these props, OR keep API calls in AdminView and make these props just state updaters.
-              // The prompt says "When user adds book... Call API... If OK update local".
-              // Currently `AdminView` calls API.
-
-              // Strategy: `addBooks` here will be just a state updater (Local).
-              // `AdminView` is responsible for API calls for Books (Single).
-              // For Batch Books (CSV), `AdminView` currently does NOT call API.
-              // So I need to update `AdminView` to call API for batch books too.
-
-              // Wait, I should make `App.tsx` functions pure state updaters and move API logic to the triggering component?
-              // Or make `App.tsx` functions the "Controllers".
-              // Let's make `App.tsx` functions the controllers.
-
-              // For `addBooks`:
-              // If it's coming from `handleSaveBook` (single), it already called API.
-              // If it's coming from `import` (batch), it hasn't.
-
-              // Use `onAddBooks` for BATCH only or modify `handleSaveBook` to NOT call API.
-              // I will modify `handleSaveBook` in `AdminView` to NOT call API directly, but call `onAddBooks`.
-              // Then `onAddBooks` here will call API.
-
-              if (newBooks.length === 1) {
-                 await bookService.addBook(newBooks[0]);
-              } else {
-                 await bookService.importBooks(newBooks);
-              }
-              setBooks(prev => [...prev, ...newBooks]);
+          if (newBooks.length === 1) {
+             await bookService.addBook(newBooks[0]);
+          } else {
+             await bookService.importBooks(newBooks);
           }
+          setBooks(prev => [...prev, ...newBooks]);
       } catch (e) {
           console.error(e);
           addToast('Error guardando libros', 'error');
@@ -354,7 +352,6 @@ const App: React.FC = () => {
     } catch (e) {
         console.error(e);
         addToast('Error al procesar el préstamo', 'error');
-        // Rollback would go here in a perfect world
     }
   };
 
@@ -456,6 +453,7 @@ const App: React.FC = () => {
 
   if (!currentUser) {
     return (
+     <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
       <div className="min-h-screen bg-brand-50 flex items-center justify-center p-4 relative overflow-hidden">
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-fun-yellow/20 rounded-full blur-3xl animate-pulse-slow"></div>
@@ -479,7 +477,7 @@ const App: React.FC = () => {
             </button>
             <button 
               className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${isAdminMode ? 'bg-white shadow text-brand-600' : 'text-slate-500'}`}
-              onClick={() => { setIsAdminMode(true); setAuthError(''); }}
+              onClick={() => { setIsAdminMode(true); setAuthError(''); setIsManualLogin(false); }}
             >
               ACCESO PROFESORES
             </button>
@@ -498,37 +496,89 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
-                {isAdminMode ? 'Usuario (Credenciales de Centro)' : 'Tu nombre (ej: juan.garcia)'}
-              </label>
-              <input 
-                type="text" 
-                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
-                value={loginInput}
-                onChange={(e) => setLoginInput(e.target.value)}
-                autoFocus={isAdminMode}
-                placeholder={isAdminMode ? 'Usuario del Centro' : 'juan.garcia'}
-              />
-            </div>
-            {isAdminMode && (
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Contraseña</label>
-                <input 
-                  type="password" 
-                  className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-            )}
-            {authError && <div className="text-red-500 text-sm font-medium text-center bg-red-50 p-2 rounded-lg">{authError}</div>}
-            <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-brand-500/20" size="lg">
-              {isAdminMode ? 'Entrar (Sistema Central)' : 'Entrar'}
-            </Button>
-          </form>
+          {/* LOGIN FORMS */}
+          {isAdminMode ? (
+             <div className="space-y-4">
+                 {!isManualLogin ? (
+                     <>
+                        <div className="flex flex-col gap-3">
+                           <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => setAuthError('Login Fallido')}
+                                useOneTap
+                                containerProps={{ className: 'w-full flex justify-center' }}
+                            />
+                            <div className="relative flex py-2 items-center">
+                                <div className="flex-grow border-t border-slate-100"></div>
+                                <span className="flex-shrink-0 mx-4 text-slate-300 text-xs font-bold uppercase">O</span>
+                                <div className="flex-grow border-t border-slate-100"></div>
+                            </div>
+                            <Button
+                                variant="secondary"
+                                className="w-full border border-slate-200"
+                                onClick={() => setIsManualLogin(true)}
+                            >
+                                Usar Contraseña Manual
+                            </Button>
+                        </div>
+                     </>
+                 ) : (
+                    <form onSubmit={handleLogin} className="space-y-4 animate-fadeIn">
+                         <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Usuario Prisma</label>
+                            <input
+                              type="text"
+                              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
+                              value={loginInput}
+                              onChange={(e) => setLoginInput(e.target.value)}
+                              autoFocus
+                              placeholder="Usuario"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Contraseña / PIN</label>
+                            <input
+                              type="password"
+                              className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
+                              value={passwordInput}
+                              onChange={(e) => setPasswordInput(e.target.value)}
+                              placeholder="••••••••"
+                            />
+                          </div>
+                          <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-brand-500/20" size="lg">
+                            Entrar
+                          </Button>
+                          <button
+                             type="button"
+                             className="text-xs text-brand-600 font-bold hover:underline w-full text-center"
+                             onClick={() => setIsManualLogin(false)}
+                          >
+                             Volver a Google Login
+                          </button>
+                    </form>
+                 )}
+             </div>
+          ) : (
+             /* STUDENT MANUAL LOGIN */
+             <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Tu nombre (ej: juan.garcia)</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none transition-all font-medium text-slate-900 bg-white"
+                    value={loginInput}
+                    onChange={(e) => setLoginInput(e.target.value)}
+                    placeholder="juan.garcia"
+                  />
+                </div>
+                <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-brand-500/20" size="lg">
+                  Entrar
+                </Button>
+             </form>
+          )}
+
+          {authError && <div className="mt-4 text-red-500 text-sm font-medium text-center bg-red-50 p-2 rounded-lg">{authError}</div>}
+
 
           <div className="mt-8 text-center border-t border-slate-100 pt-4">
              <p className="text-xs text-slate-400">Creado por <span className="font-bold text-brand-600">Javi Barrero</span></p>
@@ -539,8 +589,11 @@ const App: React.FC = () => {
            <QRScanner onScanSuccess={handleQRLogin} onClose={() => setShowQRScanner(false)} />
         )}
       </div>
+      </GoogleOAuthProvider>
     );
   }
+
+  // --- Authenticated Views ---
 
   if (currentUser.role === UserRole.SUPERADMIN || currentUser.role === UserRole.ADMIN) {
      return (
