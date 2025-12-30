@@ -159,8 +159,16 @@ async function checkAndAwardBadges(user, context, allData) {
 
 // --- PRISMA EDU INTEGRATION HELPER ---
 async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
-  const url = `${process.env.PRISMA_API_URL}${endpoint}`;
+  const baseUrl = process.env.PRISMA_API_URL || 'https://prisma.bibliohispa.es';
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const url = `${cleanBaseUrl}${endpoint}`;
+
   console.log(`Calling Prisma API: ${url}`);
+
+  if (!process.env.PRISMA_API_SECRET) {
+      console.warn('Warning: PRISMA_API_SECRET environment variable is not set.');
+  }
+
   const options = {
     method,
     headers: {
