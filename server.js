@@ -157,6 +157,28 @@ async function checkAndAwardBadges(user, context, allData) {
     return newBadges;
 }
 
+// --- PRISMA EDU INTEGRATION HELPER ---
+async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
+  const url = `${process.env.PRISMA_API_URL}${endpoint}`;
+  console.log(`Calling Prisma API: ${url}`);
+  const options = {
+    method,
+    headers: {
+      'api_secret': process.env.PRISMA_API_SECRET,
+      'Content-Type': 'application/json'
+    }
+  };
+  if (body) options.body = JSON.stringify(body);
+
+  const response = await fetch(url, options);
+  if (!response.ok) {
+     const text = await response.text();
+     console.error(`Prisma API Error (${response.status}): ${text}`);
+     throw new Error(`Prisma API responded with ${response.status}: ${text}`);
+  }
+  return response.json();
+}
+
 // --- API ENDPOINTS ---
 
 // GET BADGES METADATA
@@ -339,49 +361,72 @@ app.post('/api/books/batch', async (req, res) => {
 
 // --- AUTH & SYNC ENDPOINTS (PHASE 2) ---
 
-// Login Profesor (Proxy to External Auth)
+// Verify Google Login Email against Prisma Users
+app.post('/api/auth/google-verify', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+     // Fetch users from Prisma
+     const usersList = await fetchFromPrisma('/api/export/users'); // [{id, name, role, email, classId}, ...]
+
+     const prismaUser = usersList.find(u => u.email === email);
+
+     if (!prismaUser) {
+         return res.status(401).json({ error: 'Email no encontrado en el sistema escolar.' });
+     }
+
+     const allowedRoles = ['TUTOR', 'ADMIN', 'DIRECCION', 'TESORERIA'];
+     if (!allowedRoles.includes(prismaUser.role)) {
+         return res.status(403).json({ error: 'Tu rol no tiene acceso a esta aplicación.' });
+     }
+
+     // Map to Local User format
+     const localUser = mapPrismaUserToLocal(prismaUser);
+
+     // Upsert into local DB
+     await upsertUserToDB(localUser);
+
+     res.json({ success: true, user: localUser });
+
+  } catch (error) {
+     console.error('Google Auth Error:', error);
+     res.status(500).json({ error: 'Error validando con PrismaEdu.' });
+  }
+});
+
+
+// Login Profesor (Proxy to External Auth) - MANUAL LOGIN
 app.post('/api/auth/teacher-login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
     // Petición interna a PrismaEdu (External Service)
-    const response = await fetch('http://localhost:3020/api/auth/external-check', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
+    const data = await fetchFromPrisma('/api/auth/external-check', 'POST', { username, password });
 
-    if (response.ok) {
-      const data = await response.json();
+    if (data.success) {
+      // Map response to local user
+      // Assuming data from external-check looks like { success: true, user: { ... } } or similar based on prompt context
+      // Prompt says: Response: { success: true, role, ... }
 
-      // Si es válido, generamos un objeto de sesión para el frontend
-      // Asumimos que la respuesta externa trae datos básicos del profesor
-      // Si no, lo construimos
-      const teacherUser = {
-         id: data.user?.id || `admin-${username}`,
-         firstName: data.user?.name || 'Profesor',
-         lastName: data.user?.surname || '(Externo)',
-         username: username,
-         role: 'ADMIN', // Force Admin role for teachers
-         className: 'PROFESORADO',
-         points: 0,
-         booksRead: 0,
-         isExternal: true
-      };
+      // We might need to fetch the full user details if 'external-check' returns minimal info.
+      // But let's assume it returns enough or we match against the export list.
+      // To be safe, let's fetch the user list and find the user by username/id if possible,
+      // OR construct based on response.
+      // Let's assume the response has { id, name, role, classId } etc.
+
+      // Fallback: If response lacks details, fetch user list?
+      // "Devuelve: { success: true, role, ... }" - it implies it returns user info.
+
+      const teacherUser = mapPrismaUserToLocal(data.user || {
+          id: `manual-${username}`,
+          name: username,
+          role: data.role || 'ADMIN',
+          classId: data.classId
+      });
 
       // PERSISTENCE: Upsert teacher to local DB so App.tsx can find it on refresh
-      const currentData = await readDB();
-      const users = currentData.users || [];
-      const index = users.findIndex(u => u.id === teacherUser.id);
-
-      if (index !== -1) {
-          // Update existing
-          users[index] = { ...users[index], ...teacherUser };
-      } else {
-          // Add new
-          users.push(teacherUser);
-      }
-      await saveDB(users, 'users');
+      await upsertUserToDB(teacherUser);
 
       res.json({ success: true, user: teacherUser });
     } else {
@@ -393,14 +438,57 @@ app.post('/api/auth/teacher-login', async (req, res) => {
   }
 });
 
-// Sincronización de Alumnos (Merge Logic)
+// Helper to Upsert
+async function upsertUserToDB(user) {
+    const currentData = await readDB();
+    const users = currentData.users || [];
+    const index = users.findIndex(u => u.id === user.id);
+
+    if (index !== -1) {
+        // Update existing (preserve points/badges)
+        users[index] = { ...users[index], ...user, points: users[index].points, badges: users[index].badges };
+    } else {
+        // Add new
+        users.push(user);
+    }
+    await saveDB(users, 'users');
+}
+
+// Helper to Map Prisma User to Local User
+function mapPrismaUserToLocal(prismaUser) {
+    // Determine Role Mapping
+    let role = 'ADMIN'; // Default for teachers
+    if (prismaUser.role === 'DIRECCION' || prismaUser.role === 'TESORERIA') role = 'SUPERADMIN';
+    if (prismaUser.role === 'TUTOR') role = 'ADMIN';
+
+    return {
+         id: prismaUser.id.toString(), // Ensure string
+         firstName: prismaUser.name || 'Profesor',
+         lastName: prismaUser.surname || '',
+         username: prismaUser.email ? prismaUser.email.split('@')[0] : `user${prismaUser.id}`,
+         role: role,
+         className: prismaUser.classId || 'STAFF', // Store classId in className for mapping? Or add new field?
+         // We'll overload className or add a new property if TS allows.
+         // TS Definition has className. We can put classId there or look it up.
+         // Better: Keep className as the "Display Name" of the class, but we only have ID.
+         // We will need to fetch classes to map ID -> Name later.
+         // For now, store ID in className or a generic 'PROFESORADO'.
+         // Let's store 'classId: X' in className if it's a tutor, so frontend can parse it?
+         // Or better, just fetch classes and resolve it.
+         classId: prismaUser.classId, // Add this property (ignored by TS if not in interface but stored in JSON)
+         points: 0,
+         booksRead: 0,
+         isExternal: true
+    };
+}
+
+
+// Sincronización de Alumnos y Clases
 app.post('/api/sync/students', async (req, res) => {
   try {
-    // 1. Obtener alumnos externos
-    const response = await fetch('http://localhost:3020/api/export/students');
-    if (!response.ok) throw new Error('Failed to fetch from external system');
-
-    const externalStudents = await response.json(); // Array of { id, dni, name, surname, course, ... }
+    // 1. Obtener datos externos
+    const externalStudents = await fetchFromPrisma('/api/export/students');
+    const externalClasses = await fetchFromPrisma('/api/export/classes');
 
     // 2. Leer DB Local
     const currentData = await readDB();
@@ -408,49 +496,40 @@ app.post('/api/sync/students', async (req, res) => {
     let updatedCount = 0;
     let createdCount = 0;
 
-    // 3. Merge Logic
-    // Convert current users to map for faster lookup by ID and DNI (if exists)
-    // Note: Local users might not have DNI stored, usually ID or username.
-    // The prompt says "mismo ID o DNI".
+    // 3. Crear mapa de Clases (ID -> Name) para llenar "className" legible
+    const classMap = {};
+    externalClasses.forEach(c => {
+        classMap[c.id] = c.name; // e.g. "1A", "2B"
+    });
 
+    // 4. Merge Logic for Students
     for (const extStudent of externalStudents) {
-       // Intentar encontrar por ID o por DNI (si lo tuviéramos)
-       // Asumimos que el ID externo puede coincidir con el nuestro si se importó antes,
-       // o buscamos por username generado?
-       // Mejor estrategia: Buscar por ID directo si coinciden, o intentar coincidir por DNI si existe campo.
-       // Si no, intentar coincidir por Nombre+Apellido para evitar duplicados si el ID cambió?
-       // El prompt dice "Si el alumno ya existe (mismo ID o DNI)".
+       // Buscar por ID
+       let localUserIndex = currentUsers.findIndex(u => u.id === String(extStudent.id));
 
-       let localUserIndex = currentUsers.findIndex(u => u.id === extStudent.id || (u.dni && u.dni === extStudent.dni));
-
-       // Fallback: Check by username (normalization) if ID/DNI logic isn't enough?
-       // Let's stick to ID/DNI as requested to be safe.
+       const className = classMap[extStudent.classId] || 'Sin Asignar';
 
        if (localUserIndex !== -1) {
           // UPDATE (Merge)
           const localUser = currentUsers[localUserIndex];
-
           currentUsers[localUserIndex] = {
              ...localUser,
-             // Update academic data
              firstName: extStudent.name || localUser.firstName,
-             lastName: extStudent.surname || localUser.lastName,
-             className: extStudent.course || localUser.className,
-             dni: extStudent.dni || localUser.dni, // Update/Set DNI
-             // Preserve Gamification & Local State (Points, Badges, etc are already in ...localUser)
-             // Ensure role is STUDENT
+             lastName: extStudent.surname || localUser.lastName, // If provided
+             className: className,
+             classId: extStudent.classId, // Store ID for filtering
              role: 'STUDENT'
           };
           updatedCount++;
        } else {
           // CREATE
           const newUser = {
-             id: extStudent.id || `user-${Date.now()}-${Math.random().toString(36).substr(2,4)}`,
-             dni: extStudent.dni,
+             id: String(extStudent.id),
              firstName: extStudent.name,
-             lastName: extStudent.surname,
-             className: extStudent.course,
-             username: `${normalizeString(extStudent.name)}.${normalizeString(extStudent.surname)}`.toLowerCase(),
+             lastName: extStudent.surname || '',
+             className: className,
+             classId: extStudent.classId,
+             username: `${normalizeString(extStudent.name)}`.toLowerCase(), // Simple username
              role: 'STUDENT',
              points: 0,
              booksRead: 0,
@@ -462,9 +541,20 @@ app.post('/api/sync/students', async (req, res) => {
        }
     }
 
+    // Also store classes metadata in settings or separate file?
+    // The frontend might need the raw class list for filters.
+    // Let's store it in a 'classes.json' or inside 'settings' in db.json?
+    // Let's put it in settings for now or just trust the student properties.
+    // Ideally we expose an endpoint /api/classes that returns the cached classes.
+    // For now, we will cache the class list in a separate file or memory?
+    // Let's append it to the response so frontend can cache it if needed,
+    // but better to save to DB so we don't spam Prisma.
+    // currentData.classes = externalClasses; // Add if schema permits.
+    // We'll stick to just syncing students for now as per "Sync Students" endpoint name.
+
     // 4. Save
     await saveDB(currentUsers, 'users');
-    res.json({ success: true, updated: updatedCount, created: createdCount });
+    res.json({ success: true, updated: updatedCount, created: createdCount, classes: externalClasses });
 
   } catch (error) {
     console.error('Sync Error:', error);
