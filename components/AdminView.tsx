@@ -3,6 +3,7 @@ import * as React from 'react';
 import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
 import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
+import { syncStudents } from '../services/userService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
@@ -101,6 +102,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [isImportingBooks, setIsImportingBooks] = React.useState(false);
   const [loadingProgress, setLoadingProgress] = React.useState(0);
   const [loadingMessage, setLoadingMessage] = React.useState('');
+  const [isSyncing, setIsSyncing] = React.useState(false);
 
   const isSuperAdmin = currentUser.role === UserRole.SUPERADMIN;
 
@@ -110,6 +112,24 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const backupInputRef = React.useRef<HTMLInputElement>(null);
 
   // --- Handlers ---
+
+  const handleSyncStudents = async () => {
+    setIsSyncing(true);
+    try {
+        const result = await syncStudents();
+        if (result.success) {
+            onShowToast(`✅ Sincronización completada. Actualizados: ${result.updated}, Nuevos: ${result.created}`, "success");
+            // Reload page or re-fetch users ideally, but full reload ensures state sync
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            onShowToast("❌ Error al sincronizar: " + (result.error || 'Desconocido'), "error");
+        }
+    } catch (error) {
+        onShowToast("❌ Fallo de conexión con el sistema central.", "error");
+    } finally {
+        setIsSyncing(false);
+    }
+  };
 
   const handleUserCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -712,9 +732,27 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </form>
              </div>
 
+             {/* SYNC PANEL */}
+             <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
+               <h3 className="font-bold text-lg mb-2 text-indigo-900 flex items-center gap-2">
+                 <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
+                 Sincronización Central
+               </h3>
+               <p className="text-sm text-indigo-700 mb-4">
+                  Actualiza el listado de alumnos directamente desde la plataforma PrismaEdu del colegio.
+               </p>
+               <Button
+                 onClick={handleSyncStudents}
+                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                 disabled={isSyncing}
+               >
+                 {isSyncing ? 'Sincronizando...' : '🔄 Actualizar Alumnos desde Prisma'}
+               </Button>
+             </div>
+
              {/* CSV Import */}
              <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
-               <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV</h3>
+               <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
                <div className="mb-4">
                   <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
                   <input 

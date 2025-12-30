@@ -94,28 +94,43 @@ const App: React.FC = () => {
 
   // --- Actions ---
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
 
     if (isAdminMode) {
-      const adminUser = users.find(u => 
-        (u.username === loginInput || u.username === loginInput.toLowerCase()) && 
-        (u.role === UserRole.SUPERADMIN || u.role === UserRole.ADMIN)
+      // Check for Local SuperAdmin first (Fallback/Maintenance)
+      const localAdmin = users.find(u =>
+        u.username === loginInput &&
+        u.role === UserRole.SUPERADMIN &&
+        u.password === passwordInput
       );
 
-      if (adminUser) {
-        if (adminUser.password === passwordInput) {
-            setCurrentUser(adminUser);
-            localStorage.setItem('biblio_session_user', adminUser.id);
-            addToast(`Bienvenido, ${adminUser.firstName}`, 'info');
+      if (localAdmin) {
+          setCurrentUser(localAdmin);
+          localStorage.setItem('biblio_session_user', localAdmin.id);
+          addToast(`Bienvenido Admin Local`, 'info');
+          return;
+      }
+
+      // ACCESO PROFESORES (Remoto /api/auth/teacher-login)
+      try {
+        const result = await userService.teacherLogin(loginInput, passwordInput);
+        if (result.success && result.user) {
+           setCurrentUser(result.user);
+           if (!users.find(u => u.id === result.user!.id)) {
+               setUsers(prev => [...prev, result.user!]);
+           }
+           localStorage.setItem('biblio_session_user', result.user.id);
+           addToast(`Bienvenido, ${result.user.firstName}`, 'info');
         } else {
-            setAuthError('Contraseña incorrecta');
+           setAuthError(result.error || 'Credenciales incorrectas');
         }
-      } else {
-        setAuthError('Usuario administrador no encontrado.');
+      } catch (err) {
+        setAuthError('Error de conexión con el sistema de autenticación');
       }
     } else {
+      // ACCESO ALUMNOS (Local)
       const student = users.find(u => u.username === loginInput.toLowerCase() && u.role === UserRole.STUDENT);
       if (student) {
         setCurrentUser(student);
@@ -457,16 +472,16 @@ const App: React.FC = () => {
 
           <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
             <button 
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${!isAdminMode ? 'bg-white shadow text-brand-600' : 'text-slate-500'}`}
+              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${!isAdminMode ? 'bg-white shadow text-brand-600' : 'text-slate-500'}`}
               onClick={() => { setIsAdminMode(false); setAuthError(''); }}
             >
-              Alumno
+              ACCESO ALUMNOS
             </button>
             <button 
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${isAdminMode ? 'bg-white shadow text-brand-600' : 'text-slate-500'}`}
+              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${isAdminMode ? 'bg-white shadow text-brand-600' : 'text-slate-500'}`}
               onClick={() => { setIsAdminMode(true); setAuthError(''); }}
             >
-              Profe / Admin
+              ACCESO PROFESORES
             </button>
           </div>
 
@@ -486,7 +501,7 @@ const App: React.FC = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
-                {isAdminMode ? 'Usuario' : 'Tu nombre (ej: juan.garcia)'}
+                {isAdminMode ? 'Usuario (Credenciales de Centro)' : 'Tu nombre (ej: juan.garcia)'}
               </label>
               <input 
                 type="text" 
@@ -494,7 +509,7 @@ const App: React.FC = () => {
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 autoFocus={isAdminMode}
-                placeholder={isAdminMode ? 'superadmin' : 'juan.garcia'}
+                placeholder={isAdminMode ? 'Usuario del Centro' : 'juan.garcia'}
               />
             </div>
             {isAdminMode && (
@@ -511,7 +526,7 @@ const App: React.FC = () => {
             )}
             {authError && <div className="text-red-500 text-sm font-medium text-center bg-red-50 p-2 rounded-lg">{authError}</div>}
             <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-brand-500/20" size="lg">
-              {isAdminMode ? 'Entrar al Panel' : 'Entrar'}
+              {isAdminMode ? 'Entrar (Sistema Central)' : 'Entrar'}
             </Button>
           </form>
 
