@@ -453,7 +453,7 @@ const App: React.FC = () => {
 
   if (!currentUser) {
     return (
-     <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
       <div className="min-h-screen bg-brand-50 flex items-center justify-center p-4 relative overflow-hidden">
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-fun-yellow/20 rounded-full blur-3xl animate-pulse-slow"></div>
