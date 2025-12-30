@@ -42,6 +42,9 @@ const App: React.FC = () => {
 
   // --- Initialization (Load from Server) ---
   React.useEffect(() => {
+    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID") {
+      console.warn("⚠️ VITE_GOOGLE_CLIENT_ID is missing or invalid. Google Sign-In will not work.");
+    }
     const loadData = async () => {
       try {
         const data = await storageService.fetchAllData();
