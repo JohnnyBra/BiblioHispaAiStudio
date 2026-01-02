@@ -7,7 +7,7 @@ import { syncStudents } from '../services/userService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2 } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -594,6 +594,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
       <header className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
         <div className="flex items-center gap-4">
+          <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
+             <ArrowLeft size={24} />
+          </a>
           <div className="w-16 h-16 p-2 border border-slate-100 rounded-xl flex items-center justify-center bg-slate-50">
              <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </div>

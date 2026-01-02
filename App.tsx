@@ -11,7 +11,7 @@ import { StudentView } from './components/StudentView';
 import { Button } from './components/Button';
 import { QRScanner } from './components/QRScanner';
 import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
-import { QrCode, WifiOff, Loader2 } from 'lucide-react';
+import { QrCode, WifiOff, Loader2, ArrowLeft } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 
@@ -458,6 +458,9 @@ const App: React.FC = () => {
     return (
      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
       <div className="min-h-screen bg-brand-50 flex items-center justify-center p-4 relative overflow-hidden">
+        <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 bg-white/80 hover:bg-white p-3 rounded-full shadow-md text-slate-500 hover:text-brand-600 transition-all hover:scale-110 backdrop-blur-sm" title="Volver a Prisma">
+          <ArrowLeft size={24} />
+        </a>
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-fun-yellow/20 rounded-full blur-3xl animate-pulse-slow"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-3xl"></div>
