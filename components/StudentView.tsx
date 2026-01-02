@@ -3,7 +3,7 @@ import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 import { getBookDetails, BookDetails } from '../services/bookService';
 import { fetchBadges } from '../services/gamificationService';
@@ -210,6 +210,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="bg-white sticky top-0 z-20 shadow-sm border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
+             <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
+                <ArrowLeft size={20} />
+             </a>
              <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
              <div className="hidden sm:block">
                  <h1 className="font-display font-bold text-slate-800 text-lg leading-none">{settings.schoolName}</h1>
