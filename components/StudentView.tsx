@@ -849,6 +849,12 @@ export const StudentView: React.FC<StudentViewProps> = ({
                         <span className="text-sm font-bold text-slate-700 flex items-center gap-1"><Archive size={14}/> {viewingBook.shelf}</span>
                      </div>
                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Ejemplares</span>
+                        <span className={`text-sm font-bold flex items-center gap-1 ${viewingBook.unitsAvailable > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                           <BookOpen size={14}/> {viewingBook.unitsAvailable}/{viewingBook.unitsTotal}
+                        </span>
+                     </div>
+                     <div className="flex flex-col">
                         <span className="text-[10px] uppercase font-bold text-slate-400">Páginas</span>
                         <span className="text-sm font-bold text-slate-700 flex items-center gap-1">
                            <FileText size={14}/> {isLoadingDetails ? '...' : bookDetails?.pages || '?'}
