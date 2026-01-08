@@ -553,12 +553,16 @@ function mapPrismaUserToLocal(prismaUser) {
 }
 
 
-// Sincronización de Alumnos y Clases
+// Sincronización de Usuarios (Alumnos y Tutores) y Clases
 app.post('/api/sync/students', async (req, res) => {
   try {
     // 1. Obtener datos externos
-    const externalStudents = await fetchFromPrisma('/api/export/students');
+    // - Clases
     const externalClasses = await fetchFromPrisma('/api/export/classes');
+    // - Tutores (Users filtrados por 'TUTOR')
+    const externalTutors = await fetchFromPrisma('/api/export/users');
+    // - Alumnos (Students filtrados por 'STUDENT' - aunque la ruta ya lo hace, aseguramos)
+    const externalStudents = await fetchFromPrisma('/api/export/students');
 
     // 2. Leer DB Local
     const currentData = await readDB();
@@ -568,61 +572,80 @@ app.post('/api/sync/students', async (req, res) => {
 
     // 3. Crear mapa de Clases (ID -> Name) para llenar "className" legible
     const classMap = {};
-    externalClasses.forEach(c => {
-        classMap[c.id] = c.name; // e.g. "1A", "2B"
-    });
-
-    // 4. Merge Logic for Students
-    for (const extStudent of externalStudents) {
-       // Buscar por ID
-       let localUserIndex = currentUsers.findIndex(u => u.id === String(extStudent.id));
-
-       const className = classMap[extStudent.classId] || 'Sin Asignar';
-
-       if (localUserIndex !== -1) {
-          // UPDATE (Merge)
-          const localUser = currentUsers[localUserIndex];
-          currentUsers[localUserIndex] = {
-             ...localUser,
-             firstName: extStudent.name || localUser.firstName,
-             lastName: extStudent.surname || localUser.lastName, // If provided
-             className: className,
-             classId: extStudent.classId, // Store ID for filtering
-             role: 'STUDENT'
-          };
-          updatedCount++;
-       } else {
-          // CREATE
-          const newUser = {
-             id: String(extStudent.id),
-             firstName: extStudent.name,
-             lastName: extStudent.surname || '',
-             className: className,
-             classId: extStudent.classId,
-             username: `${normalizeString(extStudent.name)}`.toLowerCase(), // Simple username
-             role: 'STUDENT',
-             points: 0,
-             booksRead: 0,
-             badges: [],
-             currentStreak: 0
-          };
-          currentUsers.push(newUser);
-          createdCount++;
-       }
+    if (Array.isArray(externalClasses)) {
+        externalClasses.forEach(c => {
+            classMap[c.id] = c.name; // e.g. "1A", "2B"
+        });
     }
 
-    // Also store classes metadata in settings or separate file?
-    // The frontend might need the raw class list for filters.
-    // Let's store it in a 'classes.json' or inside 'settings' in db.json?
-    // Let's put it in settings for now or just trust the student properties.
-    // Ideally we expose an endpoint /api/classes that returns the cached classes.
-    // For now, we will cache the class list in a separate file or memory?
-    // Let's append it to the response so frontend can cache it if needed,
-    // but better to save to DB so we don't spam Prisma.
-    // currentData.classes = externalClasses; // Add if schema permits.
-    // We'll stick to just syncing students for now as per "Sync Students" endpoint name.
+    // Helper para procesar usuarios
+    const processUser = (extUser, role) => {
+        let localUserIndex = currentUsers.findIndex(u => u.id === String(extUser.id));
+        const className = classMap[extUser.classId] || (role === 'ADMIN' ? 'PROFESORADO' : 'Sin Asignar');
 
-    // 4. Save
+        // Determinar rol local
+        let localRole = role;
+        if (role === 'TUTOR') localRole = 'ADMIN';
+        // Si el usuario externo viene con rol explicito (ej: user endpoint), respetamos mapeo
+        if (extUser.role === 'DIRECCION' || extUser.role === 'TESORERIA') localRole = 'SUPERADMIN';
+
+        // Generar username si no existe
+        const generatedUsername = extUser.username ||
+                                  (extUser.email ? extUser.email.split('@')[0] : `${normalizeString(extUser.name)}`.toLowerCase());
+
+        if (localUserIndex !== -1) {
+            // UPDATE (Merge)
+            const localUser = currentUsers[localUserIndex];
+            currentUsers[localUserIndex] = {
+                ...localUser,
+                firstName: extUser.name || localUser.firstName,
+                lastName: extUser.surname || localUser.lastName,
+                className: className,
+                classId: extUser.classId,
+                role: localRole,
+                // No sobreescribimos password de admins a menos que sea necesario, pero aquí no viene password.
+                // Preservamos puntos y medallas
+                isExternal: true
+            };
+            updatedCount++;
+        } else {
+            // CREATE
+            const newUser = {
+                id: String(extUser.id),
+                firstName: extUser.name,
+                lastName: extUser.surname || '',
+                className: className,
+                classId: extUser.classId,
+                username: generatedUsername,
+                role: localRole,
+                points: 0,
+                booksRead: 0,
+                badges: [],
+                currentStreak: 0,
+                isExternal: true
+            };
+            // Default password for new teachers?
+            if (localRole === 'ADMIN' || localRole === 'SUPERADMIN') {
+                 newUser.password = '1234'; // Default password, should be changed
+            }
+            currentUsers.push(newUser);
+            createdCount++;
+        }
+    };
+
+    // 4. Procesar Tutores
+    // La ruta 'users' devuelve array. Filtramos por si acaso.
+    if (Array.isArray(externalTutors)) {
+        const tutors = externalTutors.filter(u => u.role === 'TUTOR' || u.role === 'ADMIN' || u.role === 'DIRECCION');
+        tutors.forEach(t => processUser(t, t.role || 'TUTOR'));
+    }
+
+    // 5. Procesar Alumnos
+    if (Array.isArray(externalStudents)) {
+        externalStudents.forEach(s => processUser(s, 'STUDENT'));
+    }
+
+    // 6. Save
     await saveDB(currentUsers, 'users');
     res.json({ success: true, updated: updatedCount, created: createdCount, classes: externalClasses });
 
