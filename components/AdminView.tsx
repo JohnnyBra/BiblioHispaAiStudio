@@ -771,14 +771,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
                  Sincronización Central
                </h3>
                <p className="text-sm text-indigo-700 mb-4">
-                  Actualiza el listado de alumnos directamente desde la plataforma PrismaEdu del colegio.
+                  Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
                </p>
                <Button
                  onClick={handleSyncStudents}
                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
                  disabled={isSyncing}
                >
-                 {isSyncing ? 'Sincronizando...' : '🔄 Actualizar Alumnos desde Prisma'}
+                 {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
                </Button>
              </div>
 
