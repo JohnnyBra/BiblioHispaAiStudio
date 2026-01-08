@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch'; // Ensure node-fetch is installed
 import dotenv from 'dotenv'; // Load env vars
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -198,6 +199,47 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   return response.json();
 }
 
+// --- NORMALIZATION HELPER ---
+function normalizeBook(book) {
+  const defaults = {
+    author: 'Desconocido',
+    genre: 'General',
+    shelf: 'Recepción',
+    recommendedAge: '6-8',
+    unitsTotal: 1
+  };
+
+  const validAges = ['0-5', '6-8', '9-11', '12-14', '+15'];
+
+  // Ensure numeric values
+  let total = parseInt(book.unitsTotal);
+  if (isNaN(total) || total < 1) total = defaults.unitsTotal;
+
+  let available = parseInt(book.unitsAvailable);
+  if (isNaN(available)) available = total; // Default to total if missing
+
+  return {
+    id: book.id || crypto.randomUUID(),
+    title: (book.title || '').trim(),
+    author: (book.author || defaults.author).trim(),
+    genre: (book.genre || defaults.genre).trim(),
+    unitsTotal: total,
+    unitsAvailable: available,
+    shelf: (book.shelf || defaults.shelf).trim(),
+    coverUrl: book.coverUrl || null,
+    recommendedAge: validAges.includes(book.recommendedAge) ? book.recommendedAge : defaults.recommendedAge,
+    description: book.description || '',
+    isbn: book.isbn || '',
+    pageCount: parseInt(book.pageCount) || 0,
+    publisher: book.publisher || '',
+    publishedDate: book.publishedDate || '',
+    // System fields
+    addedDate: book.addedDate || new Date().toISOString(),
+    available: true, // Always true implies "in system"
+    readCount: parseInt(book.readCount) || 0
+  };
+}
+
 // --- API ENDPOINTS ---
 
 // GET BADGES METADATA
@@ -299,11 +341,9 @@ app.post('/api/books', async (req, res) => {
       // PREVENCIÓN DE SOBRESCRITURA ACCIDENTAL
       return res.status(400).json({ error: 'Para guardar masivamente usa /api/books/batch o restore. No se permite sobrescribir toda la lista.' });
   } else {
-      // Caso B: Añadir UN SOLO libro
-      // Asigna ID si no tiene
-      if (!payload.id) payload.id = crypto.randomUUID ? crypto.randomUUID() : `book-${Date.now()}`;
-
-      currentBooks.push(payload);
+      // Normalizar y añadir
+      const newBook = normalizeBook(payload);
+      currentBooks.push(newBook);
       await saveDB(currentBooks, 'books');
   }
 
@@ -323,7 +363,14 @@ app.put('/api/books/:id', async (req, res) => {
     const index = books.findIndex(b => b.id === req.params.id);
 
     if (index !== -1) {
+        // We could/should strict normalize updates too, but that might overwrite intentional data?
+        // Let's at least keep the existing structure safe.
+        // Merging req.body into existing book.
         books[index] = { ...books[index], ...req.body };
+        // Ensure critical fields aren't deleted by accident if missing in body (spread operator handles this mostly)
+        // But let's apply partial normalization just in case?
+        // books[index] = normalizeBook(books[index]); // This would reset 'addedDate' to now() if missing! Bad idea for updates.
+
         await saveDB(books, 'books');
         res.json({ success: true, book: books[index] });
     } else {
@@ -350,9 +397,11 @@ app.post('/api/books/batch', async (req, res) => {
   const currentData = await readDB();
   const currentBooks = currentData.books || [];
 
+  const normalizedBooks = [];
+
   // Metadata fetching logic for batch items
   for (let book of booksToAdd) {
-      if (book.title && (!book.cover || !book.description || !book.genre)) {
+      if (book.title && (!book.coverUrl || !book.description || !book.genre)) {
           try {
              // Simple search to fill gaps
              const query = `${book.title} ${book.author || ''}`;
@@ -360,20 +409,18 @@ app.post('/api/books/batch', async (req, res) => {
              const data = await response.json();
              if (data.items && data.items.length > 0) {
                  const info = data.items[0].volumeInfo;
-                 if (!book.cover && info.imageLinks?.thumbnail) book.cover = info.imageLinks.thumbnail.replace('http:', 'https:');
+                 if (!book.coverUrl && info.imageLinks?.thumbnail) book.coverUrl = info.imageLinks.thumbnail.replace('http:', 'https:');
                  if (!book.description && info.description) book.description = info.description;
                  if (!book.genre && info.categories) book.genre = info.categories[0];
                  if (!book.recommendedAge) book.recommendedAge = '6-8';
              }
           } catch (e) { console.error(e); }
       }
-      // Assign ID if missing
-      if (!book.id) book.id = crypto.randomUUID();
-      book.addedDate = new Date().toISOString();
-      book.available = true;
+      // Apply normalization
+      normalizedBooks.push(normalizeBook(book));
   }
 
-  const newBooks = [...currentBooks, ...booksToAdd];
+  const newBooks = [...currentBooks, ...normalizedBooks];
   await saveDB(newBooks, 'books');
   res.json({ success: true, count: booksToAdd.length });
 });
