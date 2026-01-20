@@ -1,7 +1,7 @@
 # 📚 BiblioHispa - Guía de Despliegue
 
-Esta guía explica cómo instalar y desplegar la aplicación directamente desde GitHub en tu servidor Ubuntu.
-La aplicación incluye un backend (Node.js/Express) y una base de datos local (`data/db.json`), por lo que los datos se guardan en tu servidor y se sincronizan entre dispositivos.
+Esta guía explica cómo instalar, desplegar y mantener la aplicación BiblioHispa en tu servidor Ubuntu.
+La aplicación incluye un backend (Node.js/Express) y una base de datos local (`data/db.json`).
 
 ---
 
@@ -11,110 +11,80 @@ Necesaria para las funciones de IA (recomendaciones, chat).
 
 1.  Entra en **[Google AI Studio](https://aistudio.google.com/app/apikey)**.
 2.  Inicia sesión y pulsa **"Create API key"**.
-3.  Copia el código que empieza por `AIza...`. Lo usaremos más adelante.
+3.  Copia el código que empieza por `AIza...`. Lo necesitarás durante la instalación.
 
 ---
 
-## 🚀 PASO 1: Preparar el Servidor (Ubuntu)
+## 🚀 Instalación Automática (Recomendada)
 
-Conéctate a tu servidor y ejecuta los siguientes comandos para instalar las herramientas necesarias:
+Hemos incluido un script (`install.sh`) que automatiza todo el proceso: instalación de dependencias (Node.js, Nginx, PM2), configuración y despliegue.
+
+### 1. Clonar el repositorio
+Conéctate a tu servidor y clona el repositorio en la carpeta donde quieras instalarlo (o en una temporal).
 
 ```bash
-# 1. Actualizar sistema
-sudo apt update && sudo apt upgrade -y
-sudo apt install curl git nginx unzip -y
+# Clona el repositorio (sustituye la URL por la tuya si es un fork)
+git clone https://github.com/TU_USUARIO/bibliohispa.git
 
-# 2. Instalar Node.js (Versión 20 LTS recomendada)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# 3. Instalar PM2 (Gestor de procesos para mantener la app siempre encendida)
-sudo npm install -g pm2
+# Entra en la carpeta descargada
+cd bibliohispa
 ```
+
+### 2. Ejecutar el script de instalación
+Da permisos de ejecución y lanza el script. Este script puede ejecutarse de forma segura tanto para **instalaciones nuevas** como para **actualizaciones**.
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+**El script te guiará paso a paso:**
+1.  **Configuración:** Te preguntará dónde instalar la aplicación (por defecto `/var/www`) y el nombre de la carpeta (por defecto `BiblioHispaApp`).
+2.  **Dependencias:** Instalará automáticamente Node.js (v20), PM2, Nginx y otras herramientas necesarias si no están presentes.
+3.  **Clonado/Actualización:**
+    *   Si es una **instalación limpia**, clonará el repositorio en el directorio destino final.
+    *   Si detecta que **ya existe**, actualizará el código (`git pull`) conservando tus datos.
+4.  **Entorno:** Te pedirá la **API Key de Gemini** para generar el archivo `.env` automáticamente.
+5.  **Despliegue:** Instalará las dependencias npm, compilará el frontend y lanzará el servidor con PM2.
 
 ---
 
-## 📥 PASO 2: Descargar e Instalar la Aplicación
+## 🔄 Actualización
+
+Para actualizar la aplicación cuando haya nuevas versiones, simplemente vuelve a ejecutar el script `install.sh` desde la carpeta del repositorio:
 
 ```bash
-# 1. Ir a la carpeta web
-cd /var/www
-
-# 2. Clonar el repositorio (Usa la URL de TU repositorio o este mismo)
-# Si es este mismo repo:
-sudo git clone https://github.com/TU_USUARIO/bibliohispa.git BiblioHispaApp
-# (Si usas un repositorio privado, te pedirá usuario y token/contraseña)
-
-# 3. Entrar en la carpeta
-cd /var/www/BiblioHispaApp
-
-# 4. Asignar permisos a tu usuario actual (para no usar sudo en todo)
-sudo chown -R $USER:$USER .
-
-# 5. Instalar dependencias
-npm install
-
-# 6. Configurar variables de entorno
-nano .env
+./install.sh
 ```
 
-**Dentro del editor nano, pega lo siguiente (usando tu clave del Paso 0):**
-```env
-VITE_API_KEY=AIzaSyTuClaveDeGoogleGeminiAqui
-```
-*(Guarda con `Ctrl+O`, `Enter`, y sal con `Ctrl+X`)*
-
-```bash
-# 7. Construir la aplicación (Frontend)
-npm run build
-```
+El script detectará la instalación existente, descargará los últimos cambios, reinstalará dependencias y reconstruirá la aplicación automáticamente.
 
 ---
 
-## 🟢 PASO 3: Iniciar el Servidor
+## 🌐 Exponer a Internet (Nginx + Cloudflare)
 
-Usaremos PM2 para gestionar el proceso de Node.js.
+Una vez instalada la aplicación (corriendo en `localhost:3000`), necesitas hacerla accesible desde fuera.
 
-```bash
-# 1. Iniciar el servidor backend
-pm2 start server.js --name "biblioteca"
+### Opción A: Usar Cloudflare Tunnel (Más Seguro y Fácil)
+Recomendado para evitar abrir puertos en el router y obtener HTTPS automático.
 
-# 2. Configurar PM2 para que arranque automáticamente al reiniciar el servidor
-pm2 save
-pm2 startup
-# (Copia y pega el comando que te muestre 'pm2 startup' si te lo pide)
-```
-
-**Verificación:**
-Puedes probar si funciona ejecutando: `curl http://localhost:3000`. Debería responderte.
-
----
-
-## 🌐 PASO 4: Exponer a Internet (Nginx + Cloudflare)
-
-### Opción A: Usar Cloudflare Tunnel (Recomendado/Seguro)
-Esta es la opción más fácil para tener HTTPS (candado seguro) y acceso desde fuera sin abrir puertos en el router.
-
-1.  Instala `cloudflared` en tu servidor siguiendo las instrucciones de tu panel Cloudflare Zero Trust.
-2.  Crea un Túnel y configura el **Public Hostname**:
-    *   **Domain:** `biblioteca.tucolegio.com`
+1.  Instala `cloudflared` en tu servidor.
+2.  En el panel Zero Trust de Cloudflare, crea un túnel y apúntalo a:
     *   **Service:** `HTTP` -> `localhost:3000`
 
-¡Listo! No necesitas configurar Nginx si usas el Túnel apuntando directamente al puerto 3000.
-
-### Opción B: Usar Nginx como Proxy Inverso (Si no usas Tunnel)
-Si prefieres usar Nginx tradicional:
+### Opción B: Usar Nginx como Proxy Inverso
+El script de instalación ya deja instalado Nginx. Configúralo así:
 
 1.  Crea el archivo de configuración:
     ```bash
     sudo nano /etc/nginx/sites-available/bibliohispa
     ```
 
-2.  Pega el siguiente contenido:
+2.  Pega el siguiente contenido (ajusta `server_name` a tu dominio):
     ```nginx
     server {
         listen 80;
-        server_name tu-dominio.com; # O pon _ si no tienes dominio aún
+        server_name tu-dominio.com;
 
         location / {
             proxy_pass http://localhost:3000;
@@ -127,34 +97,25 @@ Si prefieres usar Nginx tradicional:
     }
     ```
 
-3.  Activa el sitio y reinicia Nginx:
+3.  Activa el sitio y reinicia:
     ```bash
     sudo ln -s /etc/nginx/sites-available/bibliohispa /etc/nginx/sites-enabled/
-    sudo rm /etc/nginx/sites-enabled/default  # (Opcional: borra el default si molesta)
     sudo systemctl restart nginx
     ```
 
 ---
 
-## 🛠️ Mantenimiento
+## 🛠️ Mantenimiento y Seguridad
 
-**Actualizar la aplicación:**
-```bash
-cd /var/www/BiblioHispaApp
-git pull
-npm install
-npm run build
-pm2 restart biblioteca
-```
-
-**Ver logs (si hay errores):**
+**Ver logs del servidor:**
 ```bash
 pm2 logs biblioteca
 ```
 
-**Copia de Seguridad de Datos:**
-El archivo importante es `/var/www/BiblioHispaApp/data/db.json`. Descárgalo regularmente para tener backup.
+**Copia de Seguridad:**
+Tus datos están en `data/db.json`.
+El sistema realiza backups automáticos diarios en `data/backups/`, pero te recomendamos descargar el archivo `db.json` regularmente desde el **Panel de Administración > Ajustes**.
 
-**⚠️ IMPORTANTE: SEGURIDAD**
-La aplicación viene con un usuario administrador por defecto (`superadmin` / `admin123`).
-**Cambia esta contraseña inmediatamente** después de instalar. Puedes hacerlo desde el panel de administración de la web o editando el archivo `data/db.json` (si detienes el servidor antes).
+**⚠️ IMPORTANTE: Cambiar Contraseña**
+La aplicación se instala con el usuario `superadmin` y contraseña `admin123`.
+**Cámbialo inmediatamente** entrando en el panel de administración tras la instalación.
