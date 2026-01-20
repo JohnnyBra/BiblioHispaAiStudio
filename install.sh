@@ -36,7 +36,11 @@ ask "Directorio base de instalación" "/var/www" "BASE_DIR"
 ask "Nombre de la carpeta del proyecto" "BiblioHispaApp" "PROJECT_DIR"
 
 # URL del repositorio Git
-ask "URL del repositorio Git" "https://github.com/TU_USUARIO/bibliohispa.git" "REPO_URL"
+# Intentar detectar URL del repositorio actual
+CURRENT_REMOTE=$(git config --get remote.origin.url 2>/dev/null)
+DEFAULT_REPO=${CURRENT_REMOTE:-"https://github.com/TU_USUARIO/bibliohispa.git"}
+
+ask "URL del repositorio Git" "$DEFAULT_REPO" "REPO_URL"
 
 # API Key de Google Gemini (Opcional en este momento, pero recomendada)
 echo ""
