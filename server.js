@@ -7,8 +7,16 @@ import { fileURLToPath } from 'url';
 import fetch from 'node-fetch'; // Ensure node-fetch is installed
 import dotenv from 'dotenv'; // Load env vars
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
+
+if (!process.env.GOOGLE_CLIENT_ID) {
+  console.error("❌ GOOGLE_CLIENT_ID missing in .env. Authentication will fail.");
+  // We could exit, but let's just warn to avoid crashing if user only wants to test other things
+}
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Configuración básica
 const app = express();
@@ -429,10 +437,20 @@ app.post('/api/books/batch', async (req, res) => {
 
 // Verify Google Login Email against Prisma Users
 app.post('/api/auth/google-verify', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email is required' });
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: 'Token is required' });
 
   try {
+     // Verify Google Token
+     const ticket = await client.verifyIdToken({
+         idToken: token,
+         audience: process.env.GOOGLE_CLIENT_ID,
+     });
+     const payload = ticket.getPayload();
+     const email = payload.email;
+
+     if (!email) return res.status(400).json({ error: 'Invalid token payload' });
+
      // Fetch users from Prisma
      const usersList = await fetchFromPrisma('/api/export/users'); // [{id, name, role, email, classId}, ...]
 
