@@ -10,7 +10,11 @@ import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { getAcademicData, API_SECRET } from './prismaImportService.js';
 
-dotenv.config();
+// Simular __dirname en módulos ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 if (!process.env.GOOGLE_CLIENT_ID) {
   console.error("❌ GOOGLE_CLIENT_ID missing in .env. Authentication will fail.");
@@ -23,10 +27,6 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(process.cwd(), 'data', 'db.json');
-
-// Simular __dirname en módulos ES
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors());

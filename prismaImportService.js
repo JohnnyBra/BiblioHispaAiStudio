@@ -1,7 +1,12 @@
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const PRISMA_BASE_URL = 'https://prisma.bibliohispa.es';
 export const API_SECRET = process.env.PRISMA_API_SECRET || 'ojosyculos';
