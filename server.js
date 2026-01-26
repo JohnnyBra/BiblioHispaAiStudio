@@ -8,7 +8,7 @@ import fetch from 'node-fetch'; // Ensure node-fetch is installed
 import dotenv from 'dotenv'; // Load env vars
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
-import { getAcademicData, API_SECRET } from './prismaImportService.js';
+import { getAcademicData } from './prismaImportService.js';
 
 // Simular __dirname en módulos ES
 const __filename = fileURLToPath(import.meta.url);
@@ -194,24 +194,29 @@ async function checkAndAwardBadges(user, context, allData) {
     return newBadges;
 }
 
-// --- PRISMA EDU INTEGRATION HELPER ---
+// --- PRISMA EDU INTEGRATION HELPER (EN SERVER.JS) ---
 async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   const baseUrl = process.env.PRISMA_API_URL || 'https://prisma.bibliohispa.es';
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const url = `${cleanBaseUrl}${endpoint}`;
 
   console.log(`Calling Prisma API: ${url}`);
+  
+  // CORRECCIÓN CLAVE: Leer directamente del proceso, NO usar variable importada
+  const currentSecret = process.env.PRISMA_API_SECRET;
 
-  if (!process.env.PRISMA_API_SECRET) {
-      console.warn('Warning: PRISMA_API_SECRET environment variable is not set. Using shared default.');
+  // Debug log para ver qué está pasando realmente
+  if (!currentSecret) {
+      console.error("❌ ERROR CRÍTICO: PRISMA_API_SECRET es undefined en fetchFromPrisma");
   } else {
-      console.log(`DEBUG: PRISMA_API_SECRET is set (starts with ${process.env.PRISMA_API_SECRET.substring(0, 3)}...)`);
+      // Mostrar solo los primeros 3 caracteres por seguridad
+      console.log(`ℹ️ Usando API Secret que empieza por: ${currentSecret.substring(0, 3)}...`);
   }
 
   const options = {
     method,
     headers: {
-      'api_secret': secret,
+      'api_secret': currentSecret, // Usar la variable leída AQUÍ
       'Content-Type': 'application/json'
     }
   };
@@ -221,13 +226,9 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   if (!response.ok) {
      const text = await response.text();
      console.error(`Prisma API Error (${response.status}): ${text}`);
-
+     
      let errorData = {};
-     try {
-       errorData = JSON.parse(text);
-     } catch (e) {
-       // Ignore parse error, use text
-     }
+     try { errorData = JSON.parse(text); } catch (e) {}
 
      const error = new Error(errorData.message || `Prisma API responded with ${response.status}: ${text}`);
      error.status = response.status;
