@@ -13,7 +13,6 @@ import { QRScanner } from './components/QRScanner';
 import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
 import { QrCode, WifiOff, Loader2, ArrowLeft } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
-import { jwtDecode } from "jwt-decode";
 
 const App: React.FC = () => {
   // --- Global State (Inicializado vacío) ---
@@ -147,16 +146,8 @@ const App: React.FC = () => {
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
      try {
          if (credentialResponse.credential) {
-             const decoded: any = jwtDecode(credentialResponse.credential);
-             const email = decoded.email;
-
-             if (!email) {
-                 setAuthError('No se pudo obtener el email de Google.');
-                 return;
-             }
-
              // Verify against Prisma
-             const result = await authService.verifyGoogleEmail(email);
+             const result = await authService.verifyGoogleToken(credentialResponse.credential);
 
              if (result.success && result.user) {
                 setCurrentUser(result.user);
