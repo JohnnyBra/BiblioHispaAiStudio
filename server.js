@@ -14,11 +14,33 @@ import { getAcademicData, API_SECRET } from './prismaImportService.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+const dotenvResult = dotenv.config({ path: path.join(__dirname, '.env') });
+
+if (dotenvResult.error) {
+    console.warn("⚠️  No se pudo cargar el archivo .env:", dotenvResult.error.message);
+} else {
+    console.log("✅ Configuración cargada desde .env. Variables encontradas:", Object.keys(dotenvResult.parsed || {}));
+}
+
+// Fallback para Google Client ID
+if (!process.env.GOOGLE_CLIENT_ID && process.env.VITE_GOOGLE_CLIENT_ID) {
+    console.log("ℹ️  GOOGLE_CLIENT_ID no definido, usando VITE_GOOGLE_CLIENT_ID.");
+    process.env.GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID;
+}
 
 if (!process.env.GOOGLE_CLIENT_ID) {
   console.error("❌ GOOGLE_CLIENT_ID missing in .env. Authentication will fail.");
-  // We could exit, but let's just warn to avoid crashing if user only wants to test other things
+}
+
+// Check Prisma Secret Explicitly
+if (!process.env.PRISMA_API_SECRET) {
+    console.error("\n========================================================");
+    console.error("⚠️  ATENCIÓN: PRISMA_API_SECRET no está configurado.");
+    console.error("   La sincronización fallará si el valor por defecto no es válido.");
+    console.error("   Por favor, añade PRISMA_API_SECRET=tu_secreto en .env");
+    console.error("========================================================\n");
+} else {
+    console.log(`✅ PRISMA_API_SECRET configurado (comienza con ${process.env.PRISMA_API_SECRET.substring(0,3)}...)`);
 }
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
