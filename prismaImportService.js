@@ -6,29 +6,41 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Intentar cargar .env, pero no depender de ello si ya está cargado por el server
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const PRISMA_BASE_URL = 'https://prisma.bibliohispa.es';
-export const API_SECRET = process.env.PRISMA_API_SECRET || 'ojosyculos';
+const PRISMA_BASE_URL = process.env.PRISMA_API_URL || 'https://prisma.bibliohispa.es';
+
+// NOTA: Eliminamos la exportación de API_SECRET para evitar el error de carga temprana
 
 async function fetchFromPrisma(endpoint) {
-    const url = `${PRISMA_BASE_URL}${endpoint}`;
+    // Limpiar URL base
+    const baseUrl = PRISMA_BASE_URL.endsWith('/') ? PRISMA_BASE_URL.slice(0, -1) : PRISMA_BASE_URL;
+    const url = `${baseUrl}${endpoint}`;
+
+    // LEER EL SECRETO AQUÍ (En tiempo de ejecución)
+    // Esto asegura que leemos el valor actual del proceso, no el inicial
+    const secret = process.env.PRISMA_API_SECRET;
+
+    if (!secret || secret === 'ojosyculos') {
+        console.warn(`[ImportService] ALERTA: PRISMA_API_SECRET parece incorrecto o por defecto: ${secret}`);
+    }
 
     try {
         const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'api_secret': API_SECRET,
+                'api_secret': secret, // Usamos la variable local
                 'Content-Type': 'application/json'
             }
         });
 
         if (!response.ok) {
             if (response.status === 403) {
-                throw new Error('403 Forbidden: Invalid API Key');
+                throw new Error(`403 Forbidden: El secreto enviado fue rechazado. (Secreto usado empieza por: ${secret ? secret.substring(0,3) : 'NULO'}...)`);
             }
             if (response.status === 500) {
-                throw new Error('500 Internal Server Error: Remote server error');
+                throw new Error('500 Internal Server Error: Error remoto en PrismaEdu');
             }
             const text = await response.text();
             throw new Error(`Error ${response.status}: ${text}`);
@@ -52,23 +64,21 @@ function splitName(fullName) {
     return { firstName, lastName };
 }
 
-/**
- * Fetches academic data from PrismaEdu and maps it to the local structure.
- * @returns {Promise<{classes: Array, students: Array, teachers: Array}>}
- */
 export async function getAcademicData() {
     try {
-        console.log('[ImportService] Starting data import...');
+        console.log('[ImportService] Iniciando importación de datos...');
+        
+        // Verificar entorno antes de empezar
+        if (!process.env.PRISMA_API_SECRET) {
+            throw new Error("PRISMA_API_SECRET no está definido en el entorno");
+        }
 
-        // 1. Fetch all data in parallel
         const [classesRaw, studentsRaw, teachersRaw] = await Promise.all([
             fetchFromPrisma('/api/export/classes'),
             fetchFromPrisma('/api/export/students'),
             fetchFromPrisma('/api/export/users')
         ]);
 
-        // 2. Process Classes
-        // Map: id, name, stage, cycle, level
         const classes = classesRaw.map(c => ({
             id: c.id,
             name: c.name,
@@ -77,8 +87,6 @@ export async function getAcademicData() {
             level: c.level
         }));
 
-        // 3. Process Students
-        // Map: id, name, email, classId, familyId
         const students = studentsRaw.map(s => {
             const { firstName, lastName } = splitName(s.name);
             return {
@@ -94,8 +102,6 @@ export async function getAcademicData() {
             };
         });
 
-        // 4. Process Teachers
-        // Map: id, name, email, classId, role (always 'TUTOR')
         const teachers = teachersRaw.map(t => {
             const { firstName, lastName } = splitName(t.name);
             return {
@@ -110,16 +116,12 @@ export async function getAcademicData() {
             };
         });
 
-        console.log(`[ImportService] Imported: ${classes.length} classes, ${students.length} students, ${teachers.length} teachers.`);
+        console.log(`[ImportService] Importado: ${classes.length} clases, ${students.length} alumnos, ${teachers.length} profesores.`);
 
-        return {
-            classes,
-            students,
-            teachers
-        };
+        return { classes, students, teachers };
 
     } catch (error) {
-        console.error('[ImportService] Import failed:', error);
+        console.error('[ImportService] Falló la importación:', error);
         throw error;
     }
 }
