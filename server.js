@@ -176,6 +176,8 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
 
   if (!process.env.PRISMA_API_SECRET) {
       console.warn('Warning: PRISMA_API_SECRET environment variable is not set.');
+  } else {
+      console.log(`DEBUG: PRISMA_API_SECRET is set (starts with ${process.env.PRISMA_API_SECRET.substring(0, 3)}...)`);
   }
 
   const options = {
@@ -582,6 +584,11 @@ app.post('/api/sync/students', async (req, res) => {
     // - Alumnos (Students filtrados por 'STUDENT' - aunque la ruta ya lo hace, aseguramos)
     const externalStudents = await fetchFromPrisma('/api/export/students');
 
+    // DEBUG: Log data structures to help user debug mismatches
+    if (Array.isArray(externalClasses) && externalClasses.length > 0) console.log('DEBUG Class Structure:', Object.keys(externalClasses[0]));
+    if (Array.isArray(externalTutors) && externalTutors.length > 0) console.log('DEBUG Tutor Structure:', Object.keys(externalTutors[0]));
+    if (Array.isArray(externalStudents) && externalStudents.length > 0) console.log('DEBUG Student Structure:', Object.keys(externalStudents[0]));
+
     // 2. Leer DB Local
     const currentData = await readDB();
     let currentUsers = currentData.users || [];
@@ -611,13 +618,24 @@ app.post('/api/sync/students', async (req, res) => {
         const generatedUsername = extUser.username ||
                                   (extUser.email ? extUser.email.split('@')[0] : `${normalizeString(extUser.name)}`.toLowerCase());
 
+        // Parse Names (Split name if surname is missing)
+        let firstName = extUser.name || '';
+        let lastName = extUser.surname || '';
+        if (!lastName && firstName.includes(' ')) {
+             // Heuristic: If name has spaces and no surname, split it.
+             // "Juan Perez Garcia" -> First: Juan, Last: Perez Garcia
+             const parts = firstName.split(' ');
+             firstName = parts[0];
+             lastName = parts.slice(1).join(' ');
+        }
+
         if (localUserIndex !== -1) {
             // UPDATE (Merge)
             const localUser = currentUsers[localUserIndex];
             currentUsers[localUserIndex] = {
                 ...localUser,
-                firstName: extUser.name || localUser.firstName,
-                lastName: extUser.surname || localUser.lastName,
+                firstName: firstName || localUser.firstName,
+                lastName: lastName || localUser.lastName,
                 className: className,
                 classId: extUser.classId,
                 role: localRole,
@@ -630,8 +648,8 @@ app.post('/api/sync/students', async (req, res) => {
             // CREATE
             const newUser = {
                 id: String(extUser.id),
-                firstName: extUser.name,
-                lastName: extUser.surname || '',
+                firstName: firstName,
+                lastName: lastName,
                 className: className,
                 classId: extUser.classId,
                 username: generatedUsername,
