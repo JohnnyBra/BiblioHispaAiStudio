@@ -211,7 +211,7 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   const options = {
     method,
     headers: {
-      'api_secret': API_SECRET,
+      'api_secret': secret,
       'Content-Type': 'application/json'
     }
   };
