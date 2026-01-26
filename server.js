@@ -8,7 +8,7 @@ import fetch from 'node-fetch'; // Ensure node-fetch is installed
 import dotenv from 'dotenv'; // Load env vars
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
-import { getAcademicData } from './prismaImportService.js';
+import { getAcademicData, API_SECRET } from './prismaImportService.js';
 
 dotenv.config();
 
@@ -181,7 +181,7 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   console.log(`Calling Prisma API: ${url}`);
 
   if (!process.env.PRISMA_API_SECRET) {
-      console.warn('Warning: PRISMA_API_SECRET environment variable is not set.');
+      console.warn('Warning: PRISMA_API_SECRET environment variable is not set. Using shared default.');
   } else {
       console.log(`DEBUG: PRISMA_API_SECRET is set (starts with ${process.env.PRISMA_API_SECRET.substring(0, 3)}...)`);
   }
@@ -189,7 +189,7 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   const options = {
     method,
     headers: {
-      'api_secret': process.env.PRISMA_API_SECRET,
+      'api_secret': API_SECRET,
       'Content-Type': 'application/json'
     }
   };
