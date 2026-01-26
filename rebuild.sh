@@ -35,7 +35,18 @@ ask() {
 
 ask "Google Client ID (Backend)" "" "GOOGLE_CLIENT_ID"
 ask "VITE Google Client ID (Frontend)" "$GOOGLE_CLIENT_ID" "VITE_GOOGLE_CLIENT_ID"
+
+# Check specifically for PRISMA_API_SECRET
+if [ -z "$PRISMA_API_SECRET" ]; then
+    echo ""
+    echo "🔴 IMPORTANTE: La clave secreta de API es necesaria para sincronizar con PrismaEdu."
+    echo "   Si no la tienes, solicítala al administrador del sistema."
+fi
 ask "Prisma API Secret" "" "PRISMA_API_SECRET"
+if [ -z "$PRISMA_API_SECRET" ]; then
+    echo "⚠️  Advertencia: Dejaste la clave secreta vacía. La sincronización podría fallar (error 403)."
+fi
+
 ask "Google Gemini API Key" "" "VITE_API_KEY"
 
 echo ""
