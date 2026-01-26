@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const PRISMA_BASE_URL = 'https://prisma.bibliohispa.es';
-const API_SECRET = process.env.PRISMA_API_SECRET || 'YOUR_API_SECRET';
+export const API_SECRET = process.env.PRISMA_API_SECRET || 'YOUR_API_SECRET';
 
 async function fetchFromPrisma(endpoint) {
     const url = `${PRISMA_BASE_URL}${endpoint}`;
