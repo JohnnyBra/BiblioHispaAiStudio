@@ -38,10 +38,11 @@ const App: React.FC = () => {
 
   // --- Toast State ---
   const [toasts, setToasts] = React.useState<ToastMessage[]>([]);
+  const isGoogleConfigured = import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID";
 
   // --- Initialization (Load from Server) ---
   React.useEffect(() => {
-    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID") {
+    if (!isGoogleConfigured) {
       console.warn("⚠️ VITE_GOOGLE_CLIENT_ID is missing or invalid. Google Sign-In will not work.");
     }
     const loadData = async () => {
@@ -496,6 +497,11 @@ const App: React.FC = () => {
           {/* LOGIN FORMS */}
           {isAdminMode ? (
              <div className="space-y-4">
+                 {!isGoogleConfigured && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-bold mb-2">
+                        ⚠️ Error: Google Client ID no configurado o inválido. Revisa .env y ejecuta 'npm run build'.
+                    </div>
+                 )}
                  {!isManualLogin ? (
                      <>
                         <div className="flex flex-col gap-3">
