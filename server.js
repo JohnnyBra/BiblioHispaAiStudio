@@ -100,7 +100,11 @@ async function readDB() {
     const data = await fs.readFile(DB_FILE, 'utf-8');
     return JSON.parse(data);
   } catch (err) {
-    return INITIAL_DATA;
+    if (err.code === 'ENOENT') {
+      return INITIAL_DATA;
+    }
+    console.error('❌ Error crítico leyendo DB:', err);
+    throw err; // No devolver datos vacíos si hay error de lectura/parseo para evitar sobrescribir con vacíos
   }
 }
 
@@ -128,6 +132,7 @@ async function saveDB(data, key = null) {
     }
 
     await fs.writeFile(DB_FILE, JSON.stringify(newData, null, 2));
+    console.log(`✅ DB guardada (${key || 'completa'})`);
     return newData;
   });
 }
@@ -596,6 +601,9 @@ app.post('/api/sync/students', async (req, res) => {
 
     // Helper para procesar usuarios (Simplificado ya que el servicio formatea los datos)
     const processUser = (preMappedUser) => {
+        if (preMappedUser.role === 'TUTOR') {
+             console.log(`[SYNC] Procesando Tutor: ${preMappedUser.firstName}, ClassID: ${preMappedUser.classId}`);
+        }
         let localUserIndex = currentUsers.findIndex(u => u.id === String(preMappedUser.id));
         const className = classMap[preMappedUser.classId] || (preMappedUser.role === 'TUTOR' ? 'PROFESORADO' : 'Sin Asignar');
 
