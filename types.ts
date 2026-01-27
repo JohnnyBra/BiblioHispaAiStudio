@@ -12,6 +12,7 @@ export interface User {
   username: string; // generated: firstname.lastname
   password?: string; // Only for ADMIN/SUPERADMIN
   className: string; // e.g., "1A", "2B", "STAFF"
+  classId?: string; // ID from external system
   role: UserRole;
   points: number;
   booksRead: number;
