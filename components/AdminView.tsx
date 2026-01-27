@@ -892,7 +892,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           value={shelfFilter}
                           onChange={(e) => setShelfFilter(e.target.value)}
                       >
-                          <option value="all">Todas las estanterías</option>
+                          <option value="all">Todos los espacios</option>
                           {availableShelves.map(shelf => (
                               <option key={shelf} value={shelf}>{shelf}</option>
                           ))}
@@ -987,11 +987,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Género</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">
+                                {newBook.shelf === 'BIBLIOTECA' ? 'Categoría / Subcategoría' : 'Género'}
+                            </label>
                             <input
                                 className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.genre || ''}
                                 onChange={e => setNewBook({...newBook, genre: e.target.value})}
+                                placeholder={newBook.shelf === 'BIBLIOTECA' ? 'Ej: Aventura, Poesía...' : 'Ej: Fantasía'}
                             />
                         </div>
                         <div>
@@ -1020,12 +1023,18 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Estantería</label>
-                            <input
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Espacio</label>
+                            <select
                                 className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.shelf || ''}
                                 onChange={e => setNewBook({...newBook, shelf: e.target.value})}
-                            />
+                            >
+                                <option value="Recepción">Recepción</option>
+                                <option value="BIBLIOTECA">BIBLIOTECA</option>
+                                {availableClasses.map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
@@ -1054,7 +1063,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
              {/* CSV Import */}
              <div className="bg-fun-purple/10 p-6 rounded-3xl border border-fun-purple/20">
                <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
-               <p className="text-xs text-purple-600 mb-3">Formato: Título, Autor, Género, Unidades, Estantería, Edad Rec.</p>
+               <p className="text-xs text-purple-600 mb-3">Formato: Título, Autor, Género, Unidades, Espacio, Edad Rec.</p>
                <div className="mb-4">
                   <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación del Archivo</label>
                   <select 
@@ -1783,7 +1792,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                        <input className="p-2 border rounded" value={editingBook.genre} onChange={e => setEditingBook({...editingBook, genre: e.target.value})} placeholder="Género" />
+                        <input
+                            className="p-2 border rounded"
+                            value={editingBook.genre}
+                            onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
+                            placeholder={editingBook.shelf === 'BIBLIOTECA' ? 'Subcategoría' : 'Género'}
+                        />
                         <select
                             className="p-2 border rounded bg-white text-slate-900"
                             value={editingBook.recommendedAge || ''}
@@ -1795,7 +1809,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             ))}
                         </select>
                         <input type="number" className="p-2 border rounded" value={editingBook.unitsTotal} onChange={e => setEditingBook({...editingBook, unitsTotal: parseInt(e.target.value)})} placeholder="Unidades" />
-                        <input className="p-2 border rounded" value={editingBook.shelf} onChange={e => setEditingBook({...editingBook, shelf: e.target.value})} placeholder="Estantería" />
+                        <select
+                            className="p-2 border rounded bg-white text-slate-900"
+                            value={editingBook.shelf || ''}
+                            onChange={e => setEditingBook({...editingBook, shelf: e.target.value})}
+                        >
+                            <option value="Recepción">Recepción</option>
+                            <option value="BIBLIOTECA">BIBLIOTECA</option>
+                            {availableClasses.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <textarea className="w-full p-2 border rounded h-24 text-sm" value={editingBook.description || ''} onChange={e => setEditingBook({...editingBook, description: e.target.value})} placeholder="Sinopsis" />
