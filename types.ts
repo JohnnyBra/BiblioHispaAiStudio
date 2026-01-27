@@ -53,6 +53,7 @@ export interface Transaction {
   bookId: string;
   dateBorrowed: string; // ISO date string
   dateReturned?: string; // ISO date string
+  dueDate?: string; // ISO date string
   active: boolean;
 }
 
