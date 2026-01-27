@@ -627,7 +627,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap justify-center">
+        <div className="flex gap-2 flex-wrap justify-center items-center">
+          {isTechnical && (
+              <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
+                  <button
+                      onClick={() => setViewScope('global')}
+                      className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                      Global
+                  </button>
+                  <button
+                      onClick={() => setViewScope('class')}
+                      className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                      Mi Clase
+                  </button>
+              </div>
+          )}
           {isSuperAdmin && (
              <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')}>
                <Shield size={18} /> Profesores
@@ -652,7 +668,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             <CreditCard size={18} /> Carnets
           </Button>
           
-          {isTechnical && (
+          {isTechnical && viewScope === 'global' && (
           <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
             <Settings size={18} />
           </Button>
@@ -1141,22 +1157,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
            <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                <h2 className="text-xl font-bold font-display text-slate-700">Historial de Préstamos</h2>
                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                   {isTechnical && (
-                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                            <button
-                                onClick={() => setViewScope('global')}
-                                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Global
-                            </button>
-                            <button
-                                onClick={() => setViewScope('class')}
-                                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Mi Clase
-                            </button>
-                        </div>
-                   )}
                    <div className="relative w-full md:w-64">
                       <input
                         type="text"
@@ -1223,24 +1223,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* Stats Tab */}
       {activeTab === 'stats' && (
         <div className="space-y-6">
-            {isTechnical && (
-                <div className="flex justify-end">
-                    <div className="flex bg-slate-100 p-1 rounded-lg">
-                        <button
-                            onClick={() => setViewScope('global')}
-                            className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            Global
-                        </button>
-                        <button
-                            onClick={() => setViewScope('class')}
-                            className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            Mi Clase
-                        </button>
-                    </div>
-                </div>
-            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
