@@ -216,7 +216,12 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   const options = {
     method,
     headers: {
-      'api_secret': currentSecret, // Usar la variable leída AQUÍ
+      'User-Agent': 'BiblioHispa-Server/1.0',
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache',
+      'api_secret': currentSecret,
+      'x-api-secret': currentSecret,
+      'Authorization': `Bearer ${currentSecret}`,
       'Content-Type': 'application/json'
     }
   };
