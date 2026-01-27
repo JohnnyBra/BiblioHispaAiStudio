@@ -54,6 +54,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards' | 'teachers' | 'history'>('users');
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [viewScope, setViewScope] = React.useState<'global' | 'class'>('global');
+  const [historySearchTerm, setHistorySearchTerm] = React.useState('');
   
   // Single Entry States
   const [newUser, setNewUser] = React.useState({ name: '', lastname: '', className: '' });
@@ -111,8 +113,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   // Filtered lists based on permissions
   const visibleUsers = React.useMemo(() => {
-     if (isTechnical) return users;
-     if (isTeacher) {
+     if (isTechnical && viewScope === 'global') return users;
+
+     if (isTeacher || (isTechnical && viewScope === 'class')) {
         // Teachers only see students in their class (if assigned)
         // If currentUser.classId or currentUser.className matches user.classId/className
         // Mapping strategy:
@@ -133,19 +136,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
         }
      }
      return [];
-  }, [users, currentUser, isSuperAdmin, isTeacher, isTechnical]);
+  }, [users, currentUser, isSuperAdmin, isTeacher, isTechnical, viewScope]);
 
   const visibleReviews = React.useMemo(() => {
-      if (isTechnical) return reviews;
+      if (isTechnical && viewScope === 'global') return reviews;
       const visibleUserIds = new Set(visibleUsers.map(u => u.id));
       return reviews.filter(r => visibleUserIds.has(r.userId));
-  }, [reviews, visibleUsers, isTechnical]);
+  }, [reviews, visibleUsers, isTechnical, viewScope]);
 
   const visibleTransactions = React.useMemo(() => {
-      if (isTechnical) return transactions;
+      if (isTechnical && viewScope === 'global') return transactions;
       const visibleUserIds = new Set(visibleUsers.map(u => u.id));
       return transactions.filter(t => visibleUserIds.has(t.userId));
-  }, [transactions, visibleUsers, isTechnical]);
+  }, [transactions, visibleUsers, isTechnical, viewScope]);
 
 
   // References for file inputs
@@ -1128,7 +1131,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* History Tab */}
       {activeTab === 'history' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-           <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Historial de Préstamos</h2>
+           <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+               <h2 className="text-xl font-bold font-display text-slate-700">Historial de Préstamos</h2>
+               <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                   {isTechnical && (
+                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setViewScope('global')}
+                                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Global
+                            </button>
+                            <button
+                                onClick={() => setViewScope('class')}
+                                className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Mi Clase
+                            </button>
+                        </div>
+                   )}
+                   <div className="relative w-full md:w-64">
+                      <input
+                        type="text"
+                        placeholder="Buscar por libro o alumno..."
+                        className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-full"
+                        value={historySearchTerm}
+                        onChange={(e) => setHistorySearchTerm(e.target.value)}
+                      />
+                      <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                   </div>
+               </div>
+           </div>
            <div className="overflow-x-auto">
              <table className="w-full text-left border-collapse">
                <thead>
@@ -1144,7 +1177,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
                  {visibleTransactions.length === 0 ? (
                     <tr><td colSpan={5} className="p-4 text-center text-slate-400">No hay historial de préstamos.</td></tr>
                  ) : (
-                    [...visibleTransactions].sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
+                    [...visibleTransactions]
+                    .filter(tx => {
+                        if (!historySearchTerm) return true;
+                        const term = historySearchTerm.toLowerCase();
+                        const book = books.find(b => b.id === tx.bookId);
+                        const user = users.find(u => u.id === tx.userId);
+                        const bookTitle = book?.title.toLowerCase() || '';
+                        const userName = user ? `${user.firstName} ${user.lastName}`.toLowerCase() : '';
+                        return bookTitle.includes(term) || userName.includes(term);
+                    })
+                    .sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
                         const book = books.find(b => b.id === tx.bookId);
                         const user = users.find(u => u.id === tx.userId);
                         return (
@@ -1173,6 +1216,24 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* Stats Tab */}
       {activeTab === 'stats' && (
         <div className="space-y-6">
+            {isTechnical && (
+                <div className="flex justify-end">
+                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                        <button
+                            onClick={() => setViewScope('global')}
+                            className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Global
+                        </button>
+                        <button
+                            onClick={() => setViewScope('class')}
+                            className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Mi Clase
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
@@ -1220,7 +1281,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             .map(b => {
                                 // If technical/superadmin, use global readCount.
                                 // If tutor, calculate based on visibleTransactions (filtered by class)
-                                if (isTechnical) return b;
+                                if (isTechnical && viewScope === 'global') return b;
                                 const classReads = visibleTransactions.filter(t => t.bookId === b.id && !t.active).length;
                                 return { ...b, readCount: classReads };
                             })
