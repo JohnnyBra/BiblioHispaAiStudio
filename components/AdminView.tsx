@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
+import { compareClassNames, compareStudents } from '../services/utils';
 import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
 import { syncStudents } from '../services/userService';
 import { generateStudentLoanReport } from '../services/reportService';
@@ -132,29 +133,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   // Filtered lists based on permissions
   const visibleUsers = React.useMemo(() => {
-     if (isTechnical && viewScope === 'global') return users;
-
-     if (isTeacher || (isTechnical && viewScope === 'class')) {
+     let result: User[] = [];
+     if (isTechnical && viewScope === 'global') {
+        result = users;
+     } else if (isTeacher || (isTechnical && viewScope === 'class')) {
         // Teachers only see students in their class (if assigned)
-        // If currentUser.classId or currentUser.className matches user.classId/className
-        // Mapping strategy:
-        // currentUser.classId matches user.classId
         if (currentUser.classId) {
-             return users.filter(u => u.role === UserRole.STUDENT && u.classId == currentUser.classId);
+             result = users.filter(u => u.role === UserRole.STUDENT && u.classId == currentUser.classId);
         } else {
-            // Fallback: If teacher has no classId assigned, maybe show all or none?
-            // "Si el usuario es TUTOR: Debe ver predeterminadamente su clase asignada y sus alumnos asociados."
-            // If no class assigned, show empty or maybe allow searching all?
-            // Let's assume strict: if classId is present, filter. If not, maybe show all?
-            // Safer to show all if no class assigned, or maybe none.
-            // Let's show all for now if no specific class is assigned to teacher, OR rely on 'className' string match if classId is missing.
             if (currentUser.className && currentUser.className !== 'PROFESORADO' && currentUser.className !== 'STAFF') {
-                 return users.filter(u => u.role === UserRole.STUDENT && u.className === currentUser.className);
+                 result = users.filter(u => u.role === UserRole.STUDENT && u.className === currentUser.className);
+            } else {
+                result = users; // Default to all if no specific class link found
             }
-            return users; // Default to all if no specific class link found
         }
      }
-     return [];
+     return [...result].sort(compareStudents);
   }, [users, currentUser, isSuperAdmin, isTeacher, isTechnical, viewScope]);
 
   const visibleReviews = React.useMemo(() => {
@@ -620,8 +614,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
     if (backupInputRef.current) backupInputRef.current.value = '';
   };
 
-  const availableClasses = Array.from(new Set(visibleUsers.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort();
+  const availableClasses = Array.from(new Set(visibleUsers.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort(compareClassNames);
   const availableShelves = Array.from(new Set(books.map(b => b.shelf || 'Recepción'))).sort();
+
+  const LIBRARY_SUBCATEGORIES = [
+    "Narrativa",
+    "Poesía",
+    "Teatro",
+    "Cómic",
+    "Álbum Ilustrado",
+    "Conocimiento",
+    "Biografía",
+    "Idiomas",
+    "Otros"
+  ];
 
   // --- Render ---
 
@@ -1014,14 +1020,27 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase">
-                                {newBook.shelf === 'BIBLIOTECA' ? 'Categoría / Subcategoría' : 'Género'}
+                                {newBook.shelf === 'BIBLIOTECA' ? 'Subcategoría' : 'Género'}
                             </label>
-                            <input
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                value={newBook.genre || ''}
-                                onChange={e => setNewBook({...newBook, genre: e.target.value})}
-                                placeholder={newBook.shelf === 'BIBLIOTECA' ? 'Ej: Aventura, Poesía...' : 'Ej: Fantasía'}
-                            />
+                            {newBook.shelf === 'BIBLIOTECA' ? (
+                                <select
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={newBook.genre || ''}
+                                    onChange={e => setNewBook({...newBook, genre: e.target.value})}
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {LIBRARY_SUBCATEGORIES.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={newBook.genre || ''}
+                                    onChange={e => setNewBook({...newBook, genre: e.target.value})}
+                                    placeholder="Ej: Fantasía"
+                                />
+                            )}
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
@@ -1819,12 +1838,25 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                        <input
-                            className="p-2 border rounded"
-                            value={editingBook.genre}
-                            onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
-                            placeholder={editingBook.shelf === 'BIBLIOTECA' ? 'Subcategoría' : 'Género'}
-                        />
+                        {editingBook.shelf === 'BIBLIOTECA' ? (
+                            <select
+                                className="p-2 border rounded bg-white text-slate-900"
+                                value={editingBook.genre || ''}
+                                onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
+                            >
+                                <option value="">Seleccionar...</option>
+                                {LIBRARY_SUBCATEGORIES.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <input
+                                className="p-2 border rounded"
+                                value={editingBook.genre}
+                                onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
+                                placeholder="Género"
+                            />
+                        )}
                         <select
                             className="p-2 border rounded bg-white text-slate-900"
                             value={editingBook.recommendedAge || ''}
