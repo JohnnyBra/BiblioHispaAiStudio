@@ -508,6 +508,9 @@ app.post('/api/auth/google-verify', async (req, res) => {
      // Map to Local User format
      const localUser = mapPrismaUserToLocal(prismaUser);
 
+     // Resolve Class Name if possible
+     await resolveClassName(localUser);
+
      // Upsert into local DB
      const savedUser = await upsertUserToDB(localUser);
 
@@ -551,6 +554,9 @@ app.post('/api/auth/teacher-login', async (req, res) => {
           classId: data.classId
       });
 
+      // Resolve Class Name if possible
+      await resolveClassName(teacherUser);
+
       // PERSISTENCE: Upsert teacher to local DB so App.tsx can find it on refresh
       const savedUser = await upsertUserToDB(teacherUser);
 
@@ -565,6 +571,31 @@ app.post('/api/auth/teacher-login', async (req, res) => {
     res.status(status).json({ error: message });
   }
 });
+
+// Helper to resolve className from classId using existing DB data
+async function resolveClassName(user) {
+    if (!user.classId) return user;
+
+    try {
+        const dbData = await readDB();
+        // 1. Check if any other user has the same classId and a valid name
+        // We look for a student (or anyone) who has this classId but NOT this same ID as name
+        const reference = dbData.users.find(u => u.classId == user.classId && u.className && u.className !== String(user.classId) && u.className !== 'PROFESORADO');
+
+        if (reference) {
+            user.className = reference.className;
+        } else {
+             // 2. Check if we ourselves have a valid name in DB (to avoid overwriting with ID on re-login if sync gave us a name)
+             const existingSelf = dbData.users.find(u => u.id === user.id);
+             if (existingSelf && existingSelf.className && existingSelf.className !== String(user.classId) && existingSelf.className !== 'PROFESORADO') {
+                 user.className = existingSelf.className;
+             }
+        }
+    } catch (e) {
+        console.error("Error resolving class name:", e);
+    }
+    return user;
+}
 
 // Helper to Upsert
 async function upsertUserToDB(user) {
