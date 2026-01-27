@@ -623,7 +623,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
           <div>
             <h1 className="text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
             <p className="text-slate-500">
-               {settings.schoolName} • <span className="text-brand-600 font-bold">{isSuperAdmin ? 'SuperAdmin' : 'Profesor'}</span>
+               {settings.schoolName} • <span className="text-brand-600 font-bold">
+                   {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
+                   {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
+               </span>
             </p>
           </div>
         </div>
@@ -679,7 +682,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* Teachers Tab (SuperAdmin Only) */}
       {activeTab === 'teachers' && isSuperAdmin && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           <div className="lg:col-span-2 space-y-6">
+           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Profesores Administradores</h2>
                 <div className="overflow-x-auto">
@@ -724,7 +727,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
              </div>
            </div>
            
-           <div className="space-y-6">
+           <div className="space-y-6 order-1 lg:order-2">
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                  <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
                  <form onSubmit={handleAddTeacher} className="space-y-3">
@@ -743,7 +746,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold font-display text-slate-700">Listado de Alumnos</h2>
@@ -801,7 +804,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 order-1 lg:order-2">
              {/* Add Single User */}
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
@@ -881,7 +884,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* Books Tab */}
       {activeTab === 'books' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           <div className="lg:col-span-2 space-y-6">
+           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
               {/* Books Grid Preview */}
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                  <div className="flex justify-between items-center mb-6 gap-4">
@@ -942,7 +945,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </div>
            </div>
            
-           <div className="space-y-6">
+           <div className="space-y-6 order-1 lg:order-2">
              {/* Add Book Panel */}
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
