@@ -18,6 +18,7 @@ export interface User {
   badges?: string[]; // IDs of earned badges
   currentStreak?: number; // Days in a row
   lastActivityDate?: string; // ISO Date for streak calculation
+  isTechnical?: boolean; // Can access global settings/stats
 }
 
 export interface Badge {
