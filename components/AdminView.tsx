@@ -107,10 +107,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const isSuperAdmin = currentUser.role === UserRole.SUPERADMIN;
   // NEW: Check if teacher (Admin) to filter visibility
   const isTeacher = currentUser.role === UserRole.ADMIN;
+  const isTechnical = isSuperAdmin || !!currentUser.isTechnical;
 
   // Filtered lists based on permissions
   const visibleUsers = React.useMemo(() => {
-     if (isSuperAdmin) return users;
+     if (isTechnical) return users;
      if (isTeacher) {
         // Teachers only see students in their class (if assigned)
         // If currentUser.classId or currentUser.className matches user.classId/className
@@ -132,7 +133,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
         }
      }
      return [];
-  }, [users, currentUser, isSuperAdmin, isTeacher]);
+  }, [users, currentUser, isSuperAdmin, isTeacher, isTechnical]);
+
+  const visibleReviews = React.useMemo(() => {
+      if (isTechnical) return reviews;
+      const visibleUserIds = new Set(visibleUsers.map(u => u.id));
+      return reviews.filter(r => visibleUserIds.has(r.userId));
+  }, [reviews, visibleUsers, isTechnical]);
+
+  const visibleTransactions = React.useMemo(() => {
+      if (isTechnical) return transactions;
+      const visibleUserIds = new Set(visibleUsers.map(u => u.id));
+      return transactions.filter(t => visibleUserIds.has(t.userId));
+  }, [transactions, visibleUsers, isTechnical]);
 
 
   // References for file inputs
@@ -632,9 +645,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
             <CreditCard size={18} /> Carnets
           </Button>
           
+          {isTechnical && (
           <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
             <Settings size={18} />
           </Button>
+          )}
         </div>
       </header>
 
@@ -651,6 +666,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 <th className="p-3">Nombre</th>
                                 <th className="p-3">Usuario</th>
                                 <th className="p-3">Contraseña</th>
+                                <th className="p-3">Rol Técnico</th>
                                 <th className="p-3 text-right">Acciones</th>
                             </tr>
                         </thead>
@@ -660,6 +676,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                     <td className="p-3 font-medium">{teacher.firstName}</td>
                                     <td className="p-3 font-mono text-brand-600">{teacher.username}</td>
                                     <td className="p-3 font-mono text-slate-400">••••••</td>
+                                    <td className="p-3">
+                                        <button
+                                            onClick={() => onUpdateUser && onUpdateUser({ ...teacher, isTechnical: !teacher.isTechnical })}
+                                            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${teacher.isTechnical ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}
+                                            title="Click para cambiar rol"
+                                        >
+                                            {teacher.isTechnical ? 'Técnico' : 'Estándar'}
+                                        </button>
+                                    </td>
                                     <td className="p-3 flex justify-end">
                                         <button onClick={() => onDeleteUser(teacher.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg">
                                             <Trash2 size={16} />
@@ -1072,10 +1097,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                  </tr>
                </thead>
                <tbody className="text-sm">
-                 {reviews.length === 0 ? (
+                 {visibleReviews.length === 0 ? (
                     <tr><td colSpan={6} className="p-4 text-center text-slate-400">No hay opiniones todavía.</td></tr>
                  ) : (
-                    reviews.map(review => {
+                    visibleReviews.map(review => {
                         const book = books.find(b => b.id === review.bookId);
                         const user = users.find(u => u.id === review.userId);
                         return (
@@ -1116,10 +1141,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                  </tr>
                </thead>
                <tbody className="text-sm">
-                 {transactions.length === 0 ? (
+                 {visibleTransactions.length === 0 ? (
                     <tr><td colSpan={5} className="p-4 text-center text-slate-400">No hay historial de préstamos.</td></tr>
                  ) : (
-                    [...transactions].sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
+                    [...visibleTransactions].sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
                         const book = books.find(b => b.id === tx.bookId);
                         const user = users.find(u => u.id === tx.userId);
                         return (
@@ -1151,7 +1176,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
-                    <div className="text-3xl font-display font-bold text-slate-800">{users.filter(u => u.role === UserRole.STUDENT).length}</div>
+                    <div className="text-3xl font-display font-bold text-slate-800">{visibleUsers.filter(u => u.role === UserRole.STUDENT).length}</div>
                 </div>
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div className="text-slate-400 text-xs font-bold uppercase mb-1">Libros en Catálogo</div>
@@ -1159,11 +1184,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </div>
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div className="text-slate-400 text-xs font-bold uppercase mb-1">Préstamos Activos</div>
-                    <div className="text-3xl font-display font-bold text-brand-500">{transactions.filter(t => t.active).length}</div>
+                    <div className="text-3xl font-display font-bold text-brand-500">{visibleTransactions.filter(t => t.active).length}</div>
                 </div>
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div className="text-slate-400 text-xs font-bold uppercase mb-1">Opiniones</div>
-                    <div className="text-3xl font-display font-bold text-fun-orange">{reviews.length}</div>
+                    <div className="text-3xl font-display font-bold text-fun-orange">{visibleReviews.length}</div>
                 </div>
             </div>
 
@@ -1171,7 +1196,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h3 className="font-bold text-lg mb-4 text-slate-700">Lectores Top 🏆</h3>
                     <ul className="space-y-3">
-                        {users
+                        {visibleUsers
                             .filter(u => u.role === UserRole.STUDENT)
                             .sort((a, b) => b.booksRead - a.booksRead)
                             .slice(0, 5)
@@ -1192,7 +1217,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <h3 className="font-bold text-lg mb-4 text-slate-700">Libros Más Leídos 📖</h3>
                     <ul className="space-y-3">
                          {books
+                            .map(b => {
+                                // If technical/superadmin, use global readCount.
+                                // If tutor, calculate based on visibleTransactions (filtered by class)
+                                if (isTechnical) return b;
+                                const classReads = visibleTransactions.filter(t => t.bookId === b.id && !t.active).length;
+                                return { ...b, readCount: classReads };
+                            })
                             .sort((a, b) => b.readCount - a.readCount)
+                            .filter(b => b.readCount > 0)
                             .slice(0, 5)
                             .map((b, i) => (
                                 <li key={b.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg">
@@ -1392,7 +1425,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       )}
 
       {/* Settings Tab */}
-      {activeTab === 'settings' && (
+      {activeTab === 'settings' && isTechnical && (
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
