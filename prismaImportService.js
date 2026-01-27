@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Intentar cargar .env, pero no depender de ello si ya está cargado por el server
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config();
 
 const PRISMA_BASE_URL = process.env.PRISMA_API_URL || 'https://prisma.bibliohispa.es';
 
@@ -19,11 +19,11 @@ async function fetchFromPrisma(endpoint) {
     const url = `${baseUrl}${endpoint}`;
 
     // LEER EL SECRETO AQUÍ (En tiempo de ejecución)
-    // Esto asegura que leemos el valor actual del proceso, no el inicial
-    const secret = process.env.PRISMA_API_SECRET;
+    // Buscamos ambas variables para máxima compatibilidad
+    const secret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
 
     if (!secret || secret === 'YOUR_API_SECRET') {
-        console.warn(`[ImportService] ALERTA: PRISMA_API_SECRET parece incorrecto o por defecto: ${secret}`);
+        console.warn(`[ImportService] ALERTA: PRISMA_API_SECRET (o API_SECRET) parece incorrecto o por defecto: ${secret}`);
     }
 
     try {
@@ -74,8 +74,9 @@ export async function getAcademicData() {
         console.log('[ImportService] Iniciando importación de datos...');
         
         // Verificar entorno antes de empezar
-        if (!process.env.PRISMA_API_SECRET) {
-            throw new Error("PRISMA_API_SECRET no está definido en el entorno");
+        const secret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
+        if (!secret) {
+            throw new Error("PRISMA_API_SECRET (o API_SECRET) no está definido en el entorno");
         }
 
         const [classesRaw, studentsRaw, teachersRaw] = await Promise.all([
