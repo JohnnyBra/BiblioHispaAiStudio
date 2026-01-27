@@ -4,10 +4,11 @@ import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings
 import { normalizeString } from '../services/storageService';
 import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
 import { syncStudents } from '../services/userService';
+import { generateStudentLoanReport } from '../services/reportService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft, FileText } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -77,6 +78,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   
   // Edit User State
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
+
+  // Report State
+  const [reportUser, setReportUser] = React.useState<User | null>(null);
 
   // Points Management State
   const [managingPointsUser, setManagingPointsUser] = React.useState<User | null>(null);
@@ -760,6 +764,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <td className="p-3"><span className="font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-xs">{user.username}</span></td>
                         <td className="p-3 text-fun-orange font-bold">{user.points} XP</td>
                         <td className="p-3 flex justify-end gap-2">
+                          <button onClick={() => setReportUser(user)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Informe PDF">
+                            <FileText size={16} />
+                          </button>
                           <button onClick={() => setManagingPointsUser(user)} className="text-fun-orange hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors" title="Gestionar Puntos">
                             <Trophy size={16} />
                           </button>
@@ -1815,6 +1822,33 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <Button variant="outline" onClick={() => { setEditingBook(null); setShowCandidates(false); setIsCoverSelectionMode(false); }}>Cancelar</Button>
                         <Button onClick={handleSaveEdit}><Save size={16} className="mr-2"/> Guardar Cambios</Button>
                     </div>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Report Selection Modal */}
+      {reportUser && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold font-display text-slate-800">Informe de Préstamos</h3>
+                    <button onClick={() => setReportUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
+                </div>
+                <p className="text-sm text-slate-500 mb-4">
+                    Selecciona el periodo para el informe de <strong>{reportUser.firstName} {reportUser.lastName}</strong>.
+                </p>
+
+                <div className="space-y-3">
+                    <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'monthly', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
+                        <span>Último Mes</span> <FileText size={16}/>
+                    </Button>
+                    <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'quarterly', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
+                        <span>Último Trimestre</span> <FileText size={16}/>
+                    </Button>
+                    <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'annual', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
+                        <span>Último Año (Anual)</span> <FileText size={16}/>
+                    </Button>
                 </div>
             </div>
         </div>
