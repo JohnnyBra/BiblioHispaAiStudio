@@ -724,6 +724,33 @@ app.post('/api/actions/checkout', async (req, res) => {
 
         const user = currentData.users[userIndex];
 
+        // --- REGLAS DE PRÉSTAMO ---
+        const className = (user.className || '').toUpperCase();
+        let maxBooks = 3; // Default (e.g. Teachers or others)
+        let daysToReturn = 15; // Default
+
+        if (className.includes('AÑOS')) {
+            maxBooks = 1;
+            daysToReturn = 7;
+        } else if (className.includes('PRIMARIA')) {
+            maxBooks = 2;
+            daysToReturn = 15;
+        } else if (className.includes('SECUNDARIA')) {
+            maxBooks = 3;
+            daysToReturn = 20;
+        }
+
+        // Verificar límite de préstamos activos
+        const activeLoans = currentData.transactions.filter(t => t.userId === userId && t.active).length;
+
+        if (activeLoans >= maxBooks) {
+             return res.status(400).json({ error: `Has alcanzado el límite de ${maxBooks} libros prestados. Devuelve uno para sacar otro.` });
+        }
+
+        // Calcular fecha de devolución
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + daysToReturn);
+
         // 2. Logic: Decrease stock
         currentData.books[bookIndex].unitsAvailable -= 1;
 
@@ -733,6 +760,7 @@ app.post('/api/actions/checkout', async (req, res) => {
             userId,
             bookId,
             dateBorrowed: new Date().toISOString(),
+            dueDate: dueDate.toISOString(),
             active: true
         };
         currentData.transactions.push(transaction);
