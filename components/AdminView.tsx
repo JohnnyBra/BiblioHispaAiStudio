@@ -8,7 +8,7 @@ import { generateStudentLoanReport } from '../services/reportService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft, FileText } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -109,6 +109,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [loadingProgress, setLoadingProgress] = React.useState(0);
   const [loadingMessage, setLoadingMessage] = React.useState('');
   const [isSyncing, setIsSyncing] = React.useState(false);
+  const [isMobileActionsOpen, setIsMobileActionsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMobileActionsOpen(false);
+  }, [activeTab]);
+
+  const MobileActionsToggle = ({ label }: { label: string }) => (
+      <button
+          onClick={() => setIsMobileActionsOpen(!isMobileActionsOpen)}
+          className="lg:hidden w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center text-slate-700 font-bold mb-4"
+      >
+          <span>{label}</span>
+          {isMobileActionsOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </button>
+  );
 
   const isSuperAdmin = currentUser.role === UserRole.SUPERADMIN;
   // NEW: Check if teacher (Admin) to filter visibility
@@ -727,17 +742,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
              </div>
            </div>
            
-           <div className="space-y-6 order-1 lg:order-2">
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                 <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
-                 <form onSubmit={handleAddTeacher} className="space-y-3">
-                    <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
-                    <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Usuario (ej: profe.juan)" value={newTeacher.username} onChange={e => setNewTeacher({...newTeacher, username: e.target.value})} />
-                    <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" type="password" placeholder="Contraseña" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} />
-                    <Button type="submit" className="w-full">
-                        <UserPlus size={18}/> Crear Profesor
-                    </Button>
-                 </form>
+           <div className="order-1 lg:order-2">
+              <MobileActionsToggle label="Añadir Profesor" />
+              <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
+                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                     <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
+                     <form onSubmit={handleAddTeacher} className="space-y-3">
+                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Usuario (ej: profe.juan)" value={newTeacher.username} onChange={e => setNewTeacher({...newTeacher, username: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" type="password" placeholder="Contraseña" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} />
+                        <Button type="submit" className="w-full">
+                            <UserPlus size={18}/> Crear Profesor
+                        </Button>
+                     </form>
+                  </div>
               </div>
            </div>
         </div>
@@ -804,10 +822,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
             </div>
           </div>
 
-          <div className="space-y-6 order-1 lg:order-2">
-             {/* Add Single User */}
-             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
+          <div className="order-1 lg:order-2">
+             <MobileActionsToggle label="Añadir / Importar Alumnos" />
+             <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
+                 {/* Add Single User */}
+                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
                 <form onSubmit={handleAddSingleUser} className="space-y-3">
                   <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
                   <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
@@ -836,9 +856,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                </Button>
              </div>
 
-             {/* CSV Import */}
-             <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
-               <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
+                 {/* CSV Import */}
+                 <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
+                   <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
                <div className="mb-4">
                   <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
                   <input 
@@ -873,9 +893,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                <label htmlFor="user-csv-upload">
                  <div className={`w-full bg-white border-2 border-dashed border-brand-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-brand-600 ${!importClassName ? 'opacity-50' : 'hover:border-brand-500 hover:bg-brand-50'}`}>
                     <Upload size={24} className="mb-2"/>
-                    <span className="font-semibold">Subir lista</span>
+                        <span className="font-semibold">Subir lista</span>
+                     </div>
+                   </label>
                  </div>
-               </label>
              </div>
           </div>
         </div>
@@ -945,10 +966,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </div>
            </div>
            
-           <div className="space-y-6 order-1 lg:order-2">
-             {/* Add Book Panel */}
-             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
+           <div className="order-1 lg:order-2">
+             <MobileActionsToggle label="Añadir / Importar Libros" />
+             <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
+                 {/* Add Book Panel */}
+                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
 
                 <form onSubmit={handleSaveBook} className="space-y-3">
                     <div className="flex gap-2 mb-2">
@@ -1063,9 +1086,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </form>
              </div>
 
-             {/* CSV Import */}
-             <div className="bg-fun-purple/10 p-6 rounded-3xl border border-fun-purple/20">
-               <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
+                 {/* CSV Import */}
+                 <div className="bg-fun-purple/10 p-6 rounded-3xl border border-fun-purple/20">
+                   <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
                <p className="text-xs text-purple-600 mb-3">Formato: Título, Autor, Género, Unidades, Espacio, Edad Rec.</p>
                <div className="mb-4">
                   <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación del Archivo</label>
@@ -1110,9 +1133,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     ) : (
                        <Upload size={24} className="mb-2"/>
                     )}
-                    <span className="font-semibold">{isImportingBooks ? 'Importando...' : 'Subir catálogo'}</span>
+                        <span className="font-semibold">{isImportingBooks ? 'Importando...' : 'Subir catálogo'}</span>
+                     </div>
+                   </label>
                  </div>
-               </label>
              </div>
           </div>
         </div>
