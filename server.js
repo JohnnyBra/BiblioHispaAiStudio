@@ -509,9 +509,9 @@ app.post('/api/auth/google-verify', async (req, res) => {
      const localUser = mapPrismaUserToLocal(prismaUser);
 
      // Upsert into local DB
-     await upsertUserToDB(localUser);
+     const savedUser = await upsertUserToDB(localUser);
 
-     res.json({ success: true, user: localUser });
+     res.json({ success: true, user: savedUser });
 
   } catch (error) {
      console.error('Google Auth Error:', error);
@@ -552,9 +552,9 @@ app.post('/api/auth/teacher-login', async (req, res) => {
       });
 
       // PERSISTENCE: Upsert teacher to local DB so App.tsx can find it on refresh
-      await upsertUserToDB(teacherUser);
+      const savedUser = await upsertUserToDB(teacherUser);
 
-      res.json({ success: true, user: teacherUser });
+      res.json({ success: true, user: savedUser });
     } else {
       res.status(401).json({ error: 'Credenciales inválidas en sistema centralizado.' });
     }
@@ -571,15 +571,19 @@ async function upsertUserToDB(user) {
     const currentData = await readDB();
     const users = currentData.users || [];
     const index = users.findIndex(u => u.id === user.id);
+    let savedUser;
 
     if (index !== -1) {
         // Update existing (preserve points/badges)
         users[index] = { ...users[index], ...user, points: users[index].points, badges: users[index].badges };
+        savedUser = users[index];
     } else {
         // Add new
         users.push(user);
+        savedUser = user;
     }
     await saveDB(users, 'users');
+    return savedUser;
 }
 
 // Helper to Map Prisma User to Local User
