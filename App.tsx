@@ -326,6 +326,23 @@ const App: React.FC = () => {
       return;
     }
 
+    // Check Limits (Frontend Validation)
+    const activeLoans = transactions.filter(t => t.userId === currentUser.id && t.active).length;
+    const className = (currentUser.className || '').toUpperCase();
+    let maxBooks = 3;
+    if (className.includes('AÑOS')) {
+        maxBooks = 1;
+    } else if (className.includes('PRIMARIA')) {
+        maxBooks = 2;
+    } else if (className.includes('SECUNDARIA')) {
+        maxBooks = 3;
+    }
+
+    if (activeLoans >= maxBooks) {
+         addToast(`Has alcanzado el límite de ${maxBooks} libros prestados. Devuelve uno para sacar otro.`, 'error');
+         return;
+    }
+
     // Optimistic Update
     setBooks(prev => prev.map(b => b.id === book.id ? { ...b, unitsAvailable: b.unitsAvailable - 1 } : b));
 
@@ -344,9 +361,23 @@ const App: React.FC = () => {
             }));
             addToast(`Has sacado "${book.title}". ¡Disfruta la lectura! 📖`, 'success');
         }
-    } catch (e) {
+    } catch (e: any) {
         console.error(e);
-        addToast('Error al procesar el préstamo', 'error');
+
+        // Revert Optimistic Update
+        setBooks(prev => prev.map(b => b.id === book.id ? { ...b, unitsAvailable: b.unitsAvailable + 1 } : b));
+
+        // Parse Error Message
+        let errorMessage = 'Error al procesar el préstamo';
+        try {
+            if (e.message) {
+                 const parsed = JSON.parse(e.message);
+                 if (parsed.error) errorMessage = parsed.error;
+            }
+        } catch (parseError) {
+             // Fallback to generic or raw message if needed
+        }
+        addToast(errorMessage, 'error');
     }
   };
 
