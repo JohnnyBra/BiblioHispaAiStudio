@@ -14,10 +14,10 @@ import { getAcademicData } from './prismaImportService.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dotenvResult = dotenv.config({ path: path.join(__dirname, '.env') });
+const dotenvResult = dotenv.config(); // Load .env from cwd (Standard behavior)
 
 if (dotenvResult.error) {
-    console.warn("⚠️  No se pudo cargar el archivo .env:", dotenvResult.error.message);
+    console.warn("⚠️  No se pudo cargar el archivo .env (cwd):", dotenvResult.error.message);
 } else {
     console.log("✅ Configuración cargada desde .env. Variables encontradas:", Object.keys(dotenvResult.parsed || {}));
 }
@@ -33,14 +33,18 @@ if (!process.env.GOOGLE_CLIENT_ID) {
 }
 
 // Check Prisma Secret Explicitly
-if (!process.env.PRISMA_API_SECRET) {
+const apiSecret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
+
+if (!apiSecret) {
     console.error("\n========================================================");
-    console.error("⚠️  ATENCIÓN: PRISMA_API_SECRET no está configurado.");
+    console.error("⚠️  ATENCIÓN: PRISMA_API_SECRET (o API_SECRET) no está configurado.");
     console.error("   La sincronización fallará si el valor por defecto no es válido.");
     console.error("   Por favor, añade PRISMA_API_SECRET=tu_secreto en .env");
     console.error("========================================================\n");
 } else {
-    console.log(`✅ PRISMA_API_SECRET configurado (comienza con ${process.env.PRISMA_API_SECRET.substring(0,3)}...)`);
+    console.log(`✅ API Secret configurado (comienza con ${apiSecret.substring(0,3)}...)`);
+    // Ensure both are set for consistency
+    if (!process.env.PRISMA_API_SECRET) process.env.PRISMA_API_SECRET = apiSecret;
 }
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -216,7 +220,12 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   const options = {
     method,
     headers: {
-      'api_secret': currentSecret, // Usar la variable leída AQUÍ
+      'User-Agent': 'BiblioHispa-Server/1.0',
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache',
+      'api_secret': currentSecret,
+      'x-api-secret': currentSecret,
+      'Authorization': `Bearer ${currentSecret}`,
       'Content-Type': 'application/json'
     }
   };
