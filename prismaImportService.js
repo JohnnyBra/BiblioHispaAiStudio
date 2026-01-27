@@ -30,7 +30,12 @@ async function fetchFromPrisma(endpoint) {
         const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'api_secret': secret, // Usamos la variable local
+                'User-Agent': 'BiblioHispa-Server/1.0',
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache',
+                'api_secret': secret,
+                'x-api-secret': secret,
+                'Authorization': `Bearer ${secret}`,
                 'Content-Type': 'application/json'
             }
         });
