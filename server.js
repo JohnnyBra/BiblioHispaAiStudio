@@ -252,7 +252,7 @@ function normalizeBook(book) {
   const defaults = {
     author: 'Desconocido',
     genre: 'General',
-    shelf: 'Recepción',
+    shelf: 'BIBLIOTECA',
     recommendedAge: '6-8',
     unitsTotal: 1
   };
