@@ -1850,7 +1850,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* CANDIDATES SELECTION MODAL */}
       {showCandidates && (
-        <div className={modalOverlayClass}>
+        <div className={modalOverlayClass.replace('z-[60]', 'z-[70]')}>
           <div className={modalContentClass}>
             <div className="flex-none flex justify-between items-center p-6 pb-2">
                <div>
