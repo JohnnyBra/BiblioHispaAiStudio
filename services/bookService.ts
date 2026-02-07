@@ -118,69 +118,76 @@ export const searchBookCandidates = async (query: string): Promise<Partial<Book>
 
     try {
         // Fetch up to 10 candidates
-        const apiKey = process.env.API_KEY;
+        // Use import.meta.env for Vite compatibility, fallback to process.env if available (Node)
+        const apiKey = import.meta.env.VITE_API_KEY || (typeof process !== 'undefined' && process.env ? process.env.API_KEY : '');
         const url = `https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=10&printType=books${apiKey ? `&key=${apiKey}` : ''}`;
 
         const res = await fetch(url);
-        if (res.ok) {
-            const data = await res.json();
-            if (!data.items) return [];
 
-            return data.items.map((item: any) => {
-                const info = item.volumeInfo;
-
-                // Extract best image
-                let coverUrl: string | undefined = undefined;
-                if (info.imageLinks) {
-                     const bestImage = info.imageLinks.extraLarge || info.imageLinks.large || info.imageLinks.medium || info.imageLinks.thumbnail || info.imageLinks.smallThumbnail;
-                     if (bestImage) {
-                         const url = bestImage.replace('http://', 'https://').replace('&zoom=1', '');
-                         if (!url.includes('gbs_preview_button')) {
-                             coverUrl = url;
-                         }
-                     }
-                }
-
-                // Extract ISBN
-                let isbn = undefined;
-                if (info.industryIdentifiers) {
-                    const isbnObj = info.industryIdentifiers.find((id: any) => id.type === 'ISBN_13') ||
-                                    info.industryIdentifiers.find((id: any) => id.type === 'ISBN_10');
-                    if (isbnObj) isbn = isbnObj.identifier;
-                }
-
-                // Map Genre (Categories)
-                let genre = 'General';
-                if (info.categories && info.categories.length > 0) {
-                    const cat = info.categories[0].toLowerCase();
-                    if (cat.includes('fiction') || cat.includes('ficción')) genre = 'Ficción';
-                    else if (cat.includes('fantasy') || cat.includes('fantasía')) genre = 'Fantasía';
-                    else if (cat.includes('adventure') || cat.includes('aventura')) genre = 'Aventuras';
-                    else if (cat.includes('science') || cat.includes('ciencia')) genre = 'Ciencia';
-                    else if (cat.includes('biography') || cat.includes('biografía')) genre = 'Biografía';
-                    else if (cat.includes('history') || cat.includes('historia')) genre = 'Historia';
-                    else if (cat.includes('horror') || cat.includes('miedo')) genre = 'Miedo';
-                    else genre = info.categories[0];
-                }
-
-                return {
-                    title: info.title || query,
-                    author: info.authors ? info.authors.join(', ') : 'Desconocido',
-                    description: cleanSynopsisText(info.description),
-                    coverUrl: coverUrl,
-                    genre: genre,
-                    pageCount: info.pageCount,
-                    publisher: info.publisher,
-                    publishedDate: info.publishedDate,
-                    isbn: isbn,
-                    recommendedAge: '6-8' // Will be augmented by AI later if selected
-                };
-            });
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error(`Google Books API Error ${res.status}: ${errorText}`);
+            throw new Error(`Google Books API Error: ${res.status}`);
         }
+
+        const data = await res.json();
+        if (!data.items) return [];
+
+        return data.items.map((item: any) => {
+            const info = item.volumeInfo;
+
+            // Extract best image
+            let coverUrl: string | undefined = undefined;
+            if (info.imageLinks) {
+                    const bestImage = info.imageLinks.extraLarge || info.imageLinks.large || info.imageLinks.medium || info.imageLinks.thumbnail || info.imageLinks.smallThumbnail;
+                    if (bestImage) {
+                        const url = bestImage.replace('http://', 'https://').replace('&zoom=1', '');
+                        if (!url.includes('gbs_preview_button')) {
+                            coverUrl = url;
+                        }
+                    }
+            }
+
+            // Extract ISBN
+            let isbn = undefined;
+            if (info.industryIdentifiers) {
+                const isbnObj = info.industryIdentifiers.find((id: any) => id.type === 'ISBN_13') ||
+                                info.industryIdentifiers.find((id: any) => id.type === 'ISBN_10');
+                if (isbnObj) isbn = isbnObj.identifier;
+            }
+
+            // Map Genre (Categories)
+            let genre = 'General';
+            if (info.categories && info.categories.length > 0) {
+                const cat = info.categories[0].toLowerCase();
+                if (cat.includes('fiction') || cat.includes('ficción')) genre = 'Ficción';
+                else if (cat.includes('fantasy') || cat.includes('fantasía')) genre = 'Fantasía';
+                else if (cat.includes('adventure') || cat.includes('aventura')) genre = 'Aventuras';
+                else if (cat.includes('science') || cat.includes('ciencia')) genre = 'Ciencia';
+                else if (cat.includes('biography') || cat.includes('biografía')) genre = 'Biografía';
+                else if (cat.includes('history') || cat.includes('historia')) genre = 'Historia';
+                else if (cat.includes('horror') || cat.includes('miedo')) genre = 'Miedo';
+                else genre = info.categories[0];
+            }
+
+            return {
+                title: info.title || query,
+                author: info.authors ? info.authors.join(', ') : 'Desconocido',
+                description: cleanSynopsisText(info.description),
+                coverUrl: coverUrl,
+                genre: genre,
+                pageCount: info.pageCount,
+                publisher: info.publisher,
+                publishedDate: info.publishedDate,
+                isbn: isbn,
+                recommendedAge: '6-8' // Will be augmented by AI later if selected
+            };
+        });
+
     } catch (e) {
         console.error("Error searching Google Books:", e);
+        throw e;
     }
-    return [];
 }
 
 // Kept for backward compatibility and simple usage (returns top result)
