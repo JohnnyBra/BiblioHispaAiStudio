@@ -648,31 +648,34 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
-                <p className="text-slate-600 text-xs md:text-sm">
-                  {settings.schoolName} • <span className="text-brand-600 font-bold">
-                      {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
-                      {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
-                  </span>
-                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <p className="text-slate-600 text-xs md:text-sm">
+                    {settings.schoolName} • <span className="text-brand-600 font-bold">
+                        {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
+                        {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
+                    </span>
+                  </p>
+
+                  {isTechnical && (
+                      <div className="flex bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
+                          <button
+                              onClick={() => setViewScope('global')}
+                              className={`px-2 py-1 rounded-md text-xs transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                              Global
+                          </button>
+                          <button
+                              onClick={() => setViewScope('class')}
+                              className={`px-2 py-1 rounded-md text-xs transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                              Mi Clase
+                          </button>
+                      </div>
+                  )}
+                </div>
               </div>
             </div>
             <div className="hidden md:flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar mask-gradient-right">
-              {isTechnical && (
-                  <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
-                      <button
-                          onClick={() => setViewScope('global')}
-                          className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                          Global
-                      </button>
-                      <button
-                          onClick={() => setViewScope('class')}
-                          className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                          Mi Clase
-                      </button>
-                  </div>
-              )}
               {isSuperAdmin && (
                 <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')}>
                   <Shield size={18} /> Profesores
