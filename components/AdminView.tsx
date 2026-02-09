@@ -9,7 +9,7 @@ import { generateStudentLoanReport } from '../services/reportService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft, FileText, ChevronDown, ChevronUp, Menu, LogOut } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User; // The currently logged in admin/superadmin
@@ -31,6 +31,7 @@ interface AdminViewProps {
   onAddPoints: (userId: string, amount: number, reason: string) => void;
   onDeletePointEntry: (entryId: string) => void;
   onRestoreBackup: (data: BackupData) => void;
+  onLogout: () => void;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -52,9 +53,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onShowToast,
   onAddPoints,
   onDeletePointEntry,
-  onRestoreBackup
+  onRestoreBackup,
+  onLogout
 }) => {
-  const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards' | 'teachers' | 'history'>('users');
+  const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards' | 'teachers' | 'history' | 'menu'>('users');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [viewScope, setViewScope] = React.useState<'global' | 'class'>('global');
   const [historySearchTerm, setHistorySearchTerm] = React.useState('');
@@ -651,7 +653,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar mask-gradient-right">
+        <div className="hidden md:flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar mask-gradient-right">
           {isTechnical && (
               <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
                   <button
@@ -2005,6 +2007,88 @@ export const AdminView: React.FC<AdminViewProps> = ({
             </div>
         </div>
       )}
+
+      {/* Mobile Menu Overlay */}
+      {activeTab === 'menu' && (
+        <div className="md:hidden fixed inset-0 z-40 bg-slate-50/95 backdrop-blur-sm pt-20 px-6 animate-fade-in overflow-y-auto pb-24">
+            <h2 className="text-2xl font-bold font-display text-slate-800 mb-6">Más Opciones</h2>
+            <div className="grid grid-cols-2 gap-4">
+                {isSuperAdmin && (
+                    <button onClick={() => setActiveTab('teachers')} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                        <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
+                            <Shield size={24} />
+                        </div>
+                        <span className="font-bold text-slate-700 text-sm">Profesores</span>
+                    </button>
+                )}
+                <button onClick={() => setActiveTab('reviews')} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                    <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center text-orange-600">
+                        <MessageSquare size={24} />
+                    </div>
+                    <span className="font-bold text-slate-700 text-sm">Opiniones</span>
+                </button>
+                <button onClick={() => setActiveTab('cards')} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                    <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+                        <CreditCard size={24} />
+                    </div>
+                    <span className="font-bold text-slate-700 text-sm">Carnets</span>
+                </button>
+                {isTechnical && (
+                    <button onClick={() => { setActiveTab('settings'); setTempSettings(settings); }} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
+                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
+                            <Settings size={24} />
+                        </div>
+                        <span className="font-bold text-slate-700 text-sm">Ajustes</span>
+                    </button>
+                )}
+                <button onClick={onLogout} className="bg-red-50 p-4 rounded-2xl shadow-sm border border-red-100 flex flex-col items-center gap-2 active:scale-95 transition-transform col-span-2 mt-4">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                        <LogOut size={24} />
+                    </div>
+                    <span className="font-bold text-red-700 text-sm">Cerrar Sesión</span>
+                </button>
+            </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 p-2 pb-safe flex justify-around items-center z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'users' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <Users size={24} className={activeTab === 'users' ? 'fill-current' : ''} />
+          <span className="text-[10px] font-bold mt-1">Alumnos</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('books')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'books' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <BookOpen size={24} className={activeTab === 'books' ? 'fill-current' : ''} />
+          <span className="text-[10px] font-bold mt-1">Libros</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'history' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <Clock size={24} className={activeTab === 'history' ? 'fill-current' : ''} />
+          <span className="text-[10px] font-bold mt-1">Historial</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('stats')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'stats' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <BarChart3 size={24} className={activeTab === 'stats' ? 'fill-current' : ''} />
+          <span className="text-[10px] font-bold mt-1">Stats</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('menu')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'menu' || ['teachers', 'reviews', 'cards', 'settings'].includes(activeTab) ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <Menu size={24} />
+          <span className="text-[10px] font-bold mt-1">Menú</span>
+        </button>
+      </div>
 
     </div>
   );
