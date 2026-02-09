@@ -653,8 +653,9 @@ const App: React.FC = () => {
              onAddPoints={handleManualPointAdjustment}
              onDeletePointEntry={handleDeletePointEntry}
              onRestoreBackup={handleRestoreBackup}
+             onLogout={handleLogout}
            />
-           <div className="fixed bottom-6 right-6 z-50 no-print">
+           <div className="hidden md:block fixed bottom-6 right-6 z-50 no-print">
               <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-lg">Cerrar Sesión</Button>
            </div>
         </div>
