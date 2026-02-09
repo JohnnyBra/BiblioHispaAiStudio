@@ -121,7 +121,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const MobileActionsToggle = ({ label }: { label: string }) => (
       <button
           onClick={() => setIsMobileActionsOpen(!isMobileActionsOpen)}
-          className="lg:hidden w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center text-slate-700 font-bold mb-4"
+          className="lg:hidden w-full bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center text-slate-700 font-bold mb-4 flex-none"
       >
           <span>{label}</span>
           {isMobileActionsOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -634,1110 +634,1131 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // --- Render ---
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 pb-24">
-      <header className="glass-header flex flex-col md:flex-row justify-between items-center gap-4 p-4 md:p-6 rounded-b-3xl shadow-sm no-print -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
-             <ArrowLeft size={24} />
-          </a>
-          <div className="w-12 h-12 md:w-16 md:h-16 p-2 border border-slate-100/50 rounded-xl flex items-center justify-center bg-white/50 backdrop-blur-sm">
-             <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
-            <p className="text-slate-600 text-xs md:text-sm">
-               {settings.schoolName} • <span className="text-brand-600 font-bold">
-                   {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
-                   {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
-               </span>
-            </p>
-          </div>
-        </div>
-        <div className="hidden md:flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar mask-gradient-right">
-          {isTechnical && (
-              <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
-                  <button
-                      onClick={() => setViewScope('global')}
-                      className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                      Global
-                  </button>
-                  <button
-                      onClick={() => setViewScope('class')}
-                      className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                      Mi Clase
-                  </button>
-              </div>
-          )}
-          {isSuperAdmin && (
-             <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')}>
-               <Shield size={18} /> Profesores
-             </Button>
-          )}
-          <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')}>
-            <Users size={18} /> Alumnos
-          </Button>
-          <Button variant={activeTab === 'books' ? 'primary' : 'outline'} onClick={() => setActiveTab('books')}>
-            <BookOpen size={18} /> Libros
-          </Button>
-          <Button variant={activeTab === 'reviews' ? 'primary' : 'outline'} onClick={() => setActiveTab('reviews')}>
-            <MessageSquare size={18} /> Opiniones
-          </Button>
-          <Button variant={activeTab === 'history' ? 'primary' : 'outline'} onClick={() => setActiveTab('history')}>
-            <Clock size={18} /> Historial
-          </Button>
-           <Button variant={activeTab === 'stats' ? 'primary' : 'outline'} onClick={() => setActiveTab('stats')}>
-            <BarChart3 size={18} /> Estadísticas
-          </Button>
-          <Button variant={activeTab === 'cards' ? 'primary' : 'outline'} onClick={() => setActiveTab('cards')}>
-            <CreditCard size={18} /> Carnets
-          </Button>
-          
-          {isTechnical && viewScope === 'global' && (
-          <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
-            <Settings size={18} />
-          </Button>
-          )}
-        </div>
-      </header>
+    <div className="h-[100dvh] flex flex-col w-full max-w-7xl mx-auto overflow-hidden bg-slate-50">
 
-      {/* Teachers Tab (SuperAdmin Only) */}
-      {activeTab === 'teachers' && isSuperAdmin && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Profesores Administradores</h2>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                                <th className="p-3">Nombre</th>
-                                <th className="p-3">Usuario</th>
-                                <th className="p-3">Contraseña</th>
-                                <th className="p-3">Rol Técnico</th>
-                                <th className="p-3 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-sm">
-                            {users.filter(u => u.role === UserRole.ADMIN).map(teacher => (
-                                <tr key={teacher.id} className="border-b border-slate-50 hover:bg-slate-50">
-                                    <td className="p-3 font-medium">{teacher.firstName}</td>
-                                    <td className="p-3 font-mono text-brand-600">{teacher.username}</td>
-                                    <td className="p-3 font-mono text-slate-400">••••••</td>
-                                    <td className="p-3">
-                                        <button
-                                            onClick={() => onUpdateUser && onUpdateUser({ ...teacher, isTechnical: !teacher.isTechnical })}
-                                            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${teacher.isTechnical ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}
-                                            title="Click para cambiar rol"
-                                        >
-                                            {teacher.isTechnical ? 'Técnico' : 'Estándar'}
-                                        </button>
-                                    </td>
-                                    <td className="p-3 flex justify-end">
-                                        <button onClick={() => onDeleteUser(teacher.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {users.filter(u => u.role === UserRole.ADMIN).length === 0 && (
-                        <p className="p-4 text-center text-slate-400 text-sm">No hay profesores añadidos.</p>
-                    )}
-                </div>
-             </div>
-           </div>
-           
-           <div className="order-1 lg:order-2">
-              <MobileActionsToggle label="Añadir Profesor" />
-              <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
-                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                     <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
-                     <form onSubmit={handleAddTeacher} className="space-y-3">
-                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
-                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Usuario (ej: profe.juan)" value={newTeacher.username} onChange={e => setNewTeacher({...newTeacher, username: e.target.value})} />
-                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" type="password" placeholder="Contraseña" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} />
-                        <Button type="submit" className="w-full">
-                            <UserPlus size={18}/> Crear Profesor
-                        </Button>
-                     </form>
-                  </div>
+      {/* HEADER - Fixed */}
+      <div className="flex-none p-4 md:p-6 pb-0 z-30">
+          <header className="glass-header flex flex-col md:flex-row justify-between items-center gap-4 p-4 md:p-6 rounded-3xl shadow-sm no-print mb-4">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
+                <ArrowLeft size={24} />
+              </a>
+              <div className="w-12 h-12 md:w-16 md:h-16 p-2 border border-slate-100/50 rounded-xl flex items-center justify-center bg-white/50 backdrop-blur-sm">
+                <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
               </div>
-           </div>
-        </div>
-      )}
-
-      {/* Users Tab */}
-      {activeTab === 'users' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold font-display text-slate-700">Listado de Alumnos</h2>
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Buscar alumno..." 
-                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
-                </div>
-              </div>
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                      <th className="p-3">Nombre</th>
-                      <th className="p-3">Clase</th>
-                      <th className="p-3">Usuario (Login)</th>
-                      <th className="p-3">Puntos</th>
-                      <th className="p-3 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {visibleUsers
-                      .filter(u => u.role === UserRole.STUDENT)
-                      .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .map(user => (
-                      <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                        <td className="p-3 font-medium text-slate-700">{user.firstName} {user.lastName}</td>
-                        <td className="p-3 text-slate-500">{user.className}</td>
-                        <td className="p-3"><span className="font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-xs">{user.username}</span></td>
-                        <td className="p-3 text-fun-orange font-bold">{user.points} XP</td>
-                        <td className="p-3 flex justify-end gap-2">
-                          <button onClick={() => setReportUser(user)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Informe PDF">
-                            <FileText size={16} />
-                          </button>
-                          <button onClick={() => setManagingPointsUser(user)} className="text-fun-orange hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors" title="Gestionar Puntos">
-                            <Trophy size={16} />
-                          </button>
-                           <button onClick={() => setEditingUser(user)} className="text-brand-400 hover:text-brand-600 p-2 hover:bg-brand-50 rounded-lg transition-colors" title="Editar Clase/Datos">
-                            <Edit2 size={16} />
-                          </button>
-                          <button onClick={() => onDeleteUser(user.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-4">
-                 {visibleUsers
-                      .filter(u => u.role === UserRole.STUDENT)
-                      .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .map(user => (
-                      <div key={user.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
-                          <div className="flex justify-between items-start">
-                              <div>
-                                  <h4 className="font-bold text-slate-800">{user.firstName} {user.lastName}</h4>
-                                  <p className="text-xs text-slate-500">{user.className} • <span className="font-mono text-brand-600">{user.username}</span></p>
-                              </div>
-                              <span className="bg-fun-orange/10 text-fun-orange px-2 py-1 rounded-lg text-xs font-bold">{user.points} XP</span>
-                          </div>
-                          <div className="flex justify-end gap-2 border-t border-slate-100/50 pt-2 mt-1">
-                              <button onClick={() => setReportUser(user)} className="p-2 text-blue-500 bg-blue-50 rounded-lg"><FileText size={16}/></button>
-                              <button onClick={() => setManagingPointsUser(user)} className="p-2 text-fun-orange bg-orange-50 rounded-lg"><Trophy size={16}/></button>
-                              <button onClick={() => setEditingUser(user)} className="p-2 text-brand-500 bg-brand-50 rounded-lg"><Edit2 size={16}/></button>
-                              <button onClick={() => onDeleteUser(user.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={16}/></button>
-                          </div>
-                      </div>
-                 ))}
+              <div>
+                <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
+                <p className="text-slate-600 text-xs md:text-sm">
+                  {settings.schoolName} • <span className="text-brand-600 font-bold">
+                      {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
+                      {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
+                  </span>
+                </p>
               </div>
             </div>
-          </div>
-
-          <div className="order-1 lg:order-2">
-             <MobileActionsToggle label="Añadir / Importar Alumnos" />
-             <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
-                 {/* Add Single User */}
-                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
-                <form onSubmit={handleAddSingleUser} className="space-y-3">
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
-                  <Button type="submit" className="w-full">
-                    <Plus size={18}/> Crear Usuario
-                  </Button>
-                </form>
-             </div>
-
-             {/* SYNC PANEL */}
-             <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
-               <h3 className="font-bold text-lg mb-2 text-indigo-900 flex items-center gap-2">
-                 <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
-                 Sincronización Central
-               </h3>
-               <p className="text-sm text-indigo-700 mb-4">
-                  Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
-               </p>
-               <Button
-                 onClick={handleSyncStudents}
-                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
-                 disabled={isSyncing}
-               >
-                 {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
-               </Button>
-             </div>
-
-                 {/* CSV Import */}
-                 <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
-                   <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
-               <div className="mb-4">
-                  <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
-                  <input 
-                    type="text"
-                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                    placeholder="Ej: 5º A"
-                    value={importClassName}
-                    onChange={(e) => setImportClassName(e.target.value)}
-                  />
-               </div>
-
-               <div className="mb-4">
-                  <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Codificación del Archivo</label>
-                  <select 
-                    value={csvEncoding}
-                    onChange={(e) => setCsvEncoding(e.target.value)}
-                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                  >
-                    <option value="windows-1252">Excel / ANSI (Recomendado)</option>
-                    <option value="UTF-8">UTF-8 (Estándar)</option>
-                  </select>
-               </div>
-
-               <input 
-                  type="file" 
-                  accept=".csv, .txt" 
-                  ref={userFileInputRef}
-                  onChange={handleUserCSV}
-                  className="hidden"
-                  id="user-csv-upload"
-               />
-               <label htmlFor="user-csv-upload">
-                 <div className={`w-full bg-white border-2 border-dashed border-brand-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-brand-600 ${!importClassName ? 'opacity-50' : 'hover:border-brand-500 hover:bg-brand-50'}`}>
-                    <Upload size={24} className="mb-2"/>
-                        <span className="font-semibold">Subir lista</span>
-                     </div>
-                   </label>
-                 </div>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Books Tab */}
-      {activeTab === 'books' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-              {/* Books Grid Preview */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                 <div className="flex justify-between items-center mb-6 gap-4">
-                    <h2 className="text-xl font-bold font-display text-slate-700 whitespace-nowrap">Catálogo ({books.length})</h2>
-                    <div className="flex gap-2 w-full justify-end">
-                      <select
-                          className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm max-w-[150px]"
-                          value={shelfFilter}
-                          onChange={(e) => setShelfFilter(e.target.value)}
+            <div className="hidden md:flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar mask-gradient-right">
+              {isTechnical && (
+                  <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
+                      <button
+                          onClick={() => setViewScope('global')}
+                          className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                       >
-                          <option value="all">Todos los espacios</option>
-                          {availableShelves.map(shelf => (
-                              <option key={shelf} value={shelf}>{shelf}</option>
-                          ))}
-                      </select>
-                      <input
-                        type="text"
-                        placeholder="Buscar libro..."
-                        className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64 bg-white text-slate-900"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {books
-                    .filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .filter(b => shelfFilter === 'all' || (b.shelf || 'Recepción') === shelfFilter)
-                    .map(book => (
-                       <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
-                          {book.coverUrl ? (
-                             <img src={book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
-                          ) : (
-                             <div className="w-16 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded shadow-sm flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center">
-                                {book.title.substring(0, 10)}...
-                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                             <h4 className="font-bold text-slate-800 truncate text-sm" title={book.title}>{book.title}</h4>
-                             <p className="text-xs text-slate-500 mb-1">{book.author}</p>
-                             <div className="flex gap-2 text-xs text-slate-400 mb-2 flex-wrap">
-                               <span>{book.shelf}</span>
-                               <span className={book.unitsAvailable > 0 ? "text-green-600" : "text-red-500"}>{book.unitsAvailable}/{book.unitsTotal}</span>
-                               {book.recommendedAge && <span className="text-purple-500 font-bold">{book.recommendedAge}</span>}
-                             </div>
-                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleStartEditing(book)} className="text-xs text-brand-500 hover:text-brand-700 flex items-center gap-1">
-                                    <Edit2 size={12}/> Editar
-                                </button>
-                                <button onClick={() => onDeleteBook(book.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
-                                    <Trash2 size={12}/> Eliminar
-                                </button>
-                             </div>
-                          </div>
-                       </div>
-                    ))}
-                 </div>
-              </div>
-           </div>
-           
-           <div className="order-1 lg:order-2">
-             <MobileActionsToggle label="Añadir / Importar Libros" />
-             <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
-                 {/* Add Book Panel */}
-                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
+                          Global
+                      </button>
+                      <button
+                          onClick={() => setViewScope('class')}
+                          className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                          Mi Clase
+                      </button>
+                  </div>
+              )}
+              {isSuperAdmin && (
+                <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')}>
+                  <Shield size={18} /> Profesores
+                </Button>
+              )}
+              <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')}>
+                <Users size={18} /> Alumnos
+              </Button>
+              <Button variant={activeTab === 'books' ? 'primary' : 'outline'} onClick={() => setActiveTab('books')}>
+                <BookOpen size={18} /> Libros
+              </Button>
+              <Button variant={activeTab === 'reviews' ? 'primary' : 'outline'} onClick={() => setActiveTab('reviews')}>
+                <MessageSquare size={18} /> Opiniones
+              </Button>
+              <Button variant={activeTab === 'history' ? 'primary' : 'outline'} onClick={() => setActiveTab('history')}>
+                <Clock size={18} /> Historial
+              </Button>
+              <Button variant={activeTab === 'stats' ? 'primary' : 'outline'} onClick={() => setActiveTab('stats')}>
+                <BarChart3 size={18} /> Estadísticas
+              </Button>
+              <Button variant={activeTab === 'cards' ? 'primary' : 'outline'} onClick={() => setActiveTab('cards')}>
+                <CreditCard size={18} /> Carnets
+              </Button>
 
-                <form onSubmit={handleSaveBook} className="space-y-3">
-                    <div className="flex gap-2 mb-2">
-                        {newBook.coverUrl && (
-                            <img src={newBook.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="Cover"/>
-                        )}
-                        <div className="flex-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Título *</label>
-                            <div className="flex gap-2">
-                                <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 font-bold"
-                                    value={newBook.title || ''}
-                                    onChange={e => setNewBook({...newBook, title: e.target.value})}
-                                    onBlur={handleBlur}
-                                    placeholder="Ej: Harry Potter"
-                                />
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={handleSearchCandidates}
-                                    title="Buscar datos automáticos"
-                                    disabled={!newBook.title}
-                                >
-                                    <Wand2 size={16} />
-                                </Button>
-                            </div>
+              {isTechnical && viewScope === 'global' && (
+              <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
+                <Settings size={18} />
+              </Button>
+              )}
+            </div>
+          </header>
+      </div>
 
-                            <label className="text-[10px] font-bold text-slate-400 uppercase mt-1">Autor</label>
-                            <input
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                value={newBook.author || ''}
-                                onChange={e => setNewBook({...newBook, author: e.target.value})}
-                                onBlur={handleBlur}
-                                placeholder="Ej: J.K. Rowling"
-                            />
-                        </div>
-                    </div>
+      {/* CONTENT AREA - Scrollable except for Books tab special handling */}
+      <div className="flex-1 overflow-hidden relative w-full px-4 md:px-6 pb-20 md:pb-6">
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">
-                                {newBook.shelf === 'BIBLIOTECA' ? 'Subcategoría' : 'Género'}
-                            </label>
-                            {newBook.shelf === 'BIBLIOTECA' ? (
-                                <select
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                    value={newBook.genre || ''}
-                                    onChange={e => setNewBook({...newBook, genre: e.target.value})}
-                                >
-                                    <option value="">Seleccionar...</option>
-                                    {LIBRARY_SUBCATEGORIES.map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
+        {/* NON-BOOKS TABS (Standard Scrollable Layout) */}
+        {activeTab !== 'books' && (
+           <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-24">
+
+              {/* Teachers Tab (SuperAdmin Only) */}
+              {activeTab === 'teachers' && isSuperAdmin && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Profesores Administradores</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                                        <th className="p-3">Nombre</th>
+                                        <th className="p-3">Usuario</th>
+                                        <th className="p-3">Contraseña</th>
+                                        <th className="p-3">Rol Técnico</th>
+                                        <th className="p-3 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {users.filter(u => u.role === UserRole.ADMIN).map(teacher => (
+                                        <tr key={teacher.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                            <td className="p-3 font-medium">{teacher.firstName}</td>
+                                            <td className="p-3 font-mono text-brand-600">{teacher.username}</td>
+                                            <td className="p-3 font-mono text-slate-400">••••••</td>
+                                            <td className="p-3">
+                                                <button
+                                                    onClick={() => onUpdateUser && onUpdateUser({ ...teacher, isTechnical: !teacher.isTechnical })}
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${teacher.isTechnical ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}
+                                                    title="Click para cambiar rol"
+                                                >
+                                                    {teacher.isTechnical ? 'Técnico' : 'Estándar'}
+                                                </button>
+                                            </td>
+                                            <td className="p-3 flex justify-end">
+                                                <button onClick={() => onDeleteUser(teacher.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
                                     ))}
-                                </select>
-                            ) : (
-                                <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                    value={newBook.genre || ''}
-                                    onChange={e => setNewBook({...newBook, genre: e.target.value})}
-                                    placeholder="Ej: Fantasía"
-                                />
+                                </tbody>
+                            </table>
+                            {users.filter(u => u.role === UserRole.ADMIN).length === 0 && (
+                                <p className="p-4 text-center text-slate-400 text-sm">No hay profesores añadidos.</p>
                             )}
                         </div>
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
-                            <select
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                value={newBook.recommendedAge || ''}
-                                onChange={e => setNewBook({...newBook, recommendedAge: e.target.value})}
-                            >
-                                <option value="">Seleccionar</option>
-                                {['0-5', '6-8', '9-11', '12-14', '+15'].map(age => (
-                                    <option key={age} value={age}>{age}</option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
-                            <input
-                                type="number" min="1"
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                value={newBook.unitsTotal || 1}
-                                onChange={e => setNewBook({...newBook, unitsTotal: parseInt(e.target.value)})}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Espacio</label>
-                            <select
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                value={newBook.shelf || ''}
-                                onChange={e => setNewBook({...newBook, shelf: e.target.value})}
-                            >
-                                <option value="Recepción">Recepción</option>
-                                <option value="BIBLIOTECA">BIBLIOTECA</option>
-                                {availableClasses.map(c => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase">Sinopsis</label>
-                        <textarea
-                            className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 text-slate-700 h-20"
-                            value={newBook.description || ''}
-                            onChange={e => setNewBook({...newBook, description: e.target.value})}
-                        />
-                    </div>
-
-                    {isAddingBook && (
-                         <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded-lg flex items-center gap-2">
-                            <Loader2 size={14} className="animate-spin"/>
-                            {loadingMessage || "Buscando..."}
-                         </div>
-                    )}
-
-                    <Button type="submit" size="sm" className="w-full" disabled={!newBook.title}>
-                        <Check size={16} className="mr-1"/> Guardar Libro
-                    </Button>
-                </form>
-             </div>
-
-                 {/* CSV Import */}
-                 <div className="bg-fun-purple/10 p-6 rounded-3xl border border-fun-purple/20">
-                   <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
-               <p className="text-xs text-purple-600 mb-3">Formato: Título, Autor, Género, Unidades, Espacio, Edad Rec.</p>
-               <div className="mb-4">
-                  <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación del Archivo</label>
-                  <select 
-                    value={csvEncoding}
-                    onChange={(e) => setCsvEncoding(e.target.value)}
-                    className="w-full p-2 border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white text-slate-900"
-                  >
-                    <option value="windows-1252">Excel / ANSI (Recomendado)</option>
-                    <option value="UTF-8">UTF-8 (Estándar)</option>
-                  </select>
-               </div>
-
-               {/* PROGRESS BAR */}
-               {isImportingBooks && (
-                   <div className="mb-4 bg-white p-3 rounded-xl border border-purple-200">
-                        <div className="flex justify-between text-xs font-bold text-purple-700 mb-1">
-                             <span>{loadingMessage}</span>
-                             <span>{loadingProgress}%</span>
-                        </div>
-                        <div className="w-full bg-purple-100 rounded-full h-2.5 overflow-hidden">
-                             <div 
-                                className="bg-purple-600 h-2.5 rounded-full transition-all duration-300" 
-                                style={{ width: `${loadingProgress}%` }}
-                             ></div>
-                        </div>
-                   </div>
-               )}
-
-               <input 
-                  type="file" 
-                  accept=".csv, .txt" 
-                  ref={bookFileInputRef}
-                  onChange={handleBookCSV}
-                  className="hidden"
-                  id="book-csv-upload"
-               />
-               <label htmlFor="book-csv-upload">
-                 <div className={`w-full bg-white border-2 border-dashed border-purple-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition-colors text-purple-600 ${isImportingBooks ? 'opacity-50 pointer-events-none' : ''}`}>
-                    {isImportingBooks ? (
-                       <Loader2 size={24} className="mb-2 animate-spin"/>
-                    ) : (
-                       <Upload size={24} className="mb-2"/>
-                    )}
-                        <span className="font-semibold">{isImportingBooks ? 'Importando...' : 'Subir catálogo'}</span>
-                     </div>
-                   </label>
-                 </div>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reviews Tab */}
-      {activeTab === 'reviews' && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-           <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Opiniones de Lectores</h2>
-           <div className="hidden md:block overflow-x-auto">
-             <table className="w-full text-left border-collapse">
-               <thead>
-                 <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                   <th className="p-3">Fecha</th>
-                   <th className="p-3">Libro</th>
-                   <th className="p-3">Alumno</th>
-                   <th className="p-3">Valoración</th>
-                   <th className="p-3">Comentario</th>
-                   <th className="p-3 text-right">Acciones</th>
-                 </tr>
-               </thead>
-               <tbody className="text-sm">
-                 {visibleReviews.length === 0 ? (
-                    <tr><td colSpan={6} className="p-4 text-center text-slate-400">No hay opiniones todavía.</td></tr>
-                 ) : (
-                    visibleReviews.map(review => {
-                        const book = books.find(b => b.id === review.bookId);
-                        const user = users.find(u => u.id === review.userId);
-                        return (
-                           <tr key={review.id} className="border-b border-slate-50 hover:bg-slate-50">
-                             <td className="p-3 text-slate-500 text-xs">{new Date(review.date).toLocaleDateString()}</td>
-                             <td className="p-3 font-medium text-slate-700">{book?.title || 'Libro desconocido'}</td>
-                             <td className="p-3 text-slate-600">{user ? `${user.firstName} ${user.lastName}` : review.authorName}</td>
-                             <td className="p-3 text-fun-orange">{'★'.repeat(review.rating)}{'☆'.repeat(5-review.rating)}</td>
-                             <td className="p-3 text-slate-600 italic">"{review.comment}"</td>
-                             <td className="p-3 flex justify-end">
-                               <button onClick={() => onDeleteReview && onDeleteReview(review.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg">
-                                 <Trash2 size={16} />
-                               </button>
-                             </td>
-                           </tr>
-                        );
-                    })
-                 )}
-               </tbody>
-             </table>
-           </div>
-
-           {/* Mobile Reviews */}
-           <div className="md:hidden space-y-4">
-              {visibleReviews.map(review => {
-                  const book = books.find(b => b.id === review.bookId);
-                  const user = users.find(u => u.id === review.userId);
-                  return (
-                      <div key={review.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
-                          <div className="flex justify-between items-start">
-                              <h4 className="font-bold text-slate-800 text-sm">{book?.title}</h4>
-                              <div className="text-fun-orange text-xs">{'★'.repeat(review.rating)}</div>
-                          </div>
-                          <p className="text-xs text-slate-500 italic">"{review.comment}"</p>
-                          <div className="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100/50 pt-2">
-                              <span>{user ? `${user.firstName} ${user.lastName}` : review.authorName}</span>
-                              <div className="flex gap-2 items-center">
-                                  <span>{new Date(review.date).toLocaleDateString()}</span>
-                                  <button onClick={() => onDeleteReview && onDeleteReview(review.id)} className="text-red-400"><Trash2 size={14}/></button>
-                              </div>
+                  <div className="order-1 lg:order-2">
+                      <MobileActionsToggle label="Añadir Profesor" />
+                      <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
+                          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
+                            <form onSubmit={handleAddTeacher} className="space-y-3">
+                                <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
+                                <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Usuario (ej: profe.juan)" value={newTeacher.username} onChange={e => setNewTeacher({...newTeacher, username: e.target.value})} />
+                                <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" type="password" placeholder="Contraseña" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} />
+                                <Button type="submit" className="w-full">
+                                    <UserPlus size={18}/> Crear Profesor
+                                </Button>
+                            </form>
                           </div>
                       </div>
-                  );
-              })}
-           </div>
-        </div>
-      )}
-
-      {/* History Tab */}
-      {activeTab === 'history' && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-           <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-               <h2 className="text-xl font-bold font-display text-slate-700">Historial de Préstamos</h2>
-               <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                   <div className="relative w-full md:w-64">
-                      <input
-                        type="text"
-                        placeholder="Buscar por libro o alumno..."
-                        className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-full"
-                        value={historySearchTerm}
-                        onChange={(e) => setHistorySearchTerm(e.target.value)}
-                      />
-                      <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
-                   </div>
-               </div>
-           </div>
-
-           <div className="hidden md:block overflow-x-auto">
-             <table className="w-full text-left border-collapse">
-               <thead>
-                 <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                   <th className="p-3">Fecha Préstamo</th>
-                   <th className="p-3">Libro</th>
-                   <th className="p-3">Alumno</th>
-                   <th className="p-3">Estado</th>
-                   <th className="p-3">Fecha Devolución</th>
-                 </tr>
-               </thead>
-               <tbody className="text-sm">
-                 {visibleTransactions.length === 0 ? (
-                    <tr><td colSpan={5} className="p-4 text-center text-slate-400">No hay historial de préstamos.</td></tr>
-                 ) : (
-                    [...visibleTransactions]
-                    .filter(tx => {
-                        if (!historySearchTerm) return true;
-                        const term = historySearchTerm.toLowerCase();
-                        const book = books.find(b => b.id === tx.bookId);
-                        const user = users.find(u => u.id === tx.userId);
-                        const bookTitle = book?.title.toLowerCase() || '';
-                        const userName = user ? `${user.firstName} ${user.lastName}`.toLowerCase() : '';
-                        return bookTitle.includes(term) || userName.includes(term);
-                    })
-                    .sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
-                        const book = books.find(b => b.id === tx.bookId);
-                        const user = users.find(u => u.id === tx.userId);
-                        return (
-                           <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50">
-                             <td className="p-3 text-slate-500 text-xs">{new Date(tx.dateBorrowed).toLocaleDateString()}</td>
-                             <td className="p-3 font-medium text-slate-700">{book?.title || 'Libro desconocido'}</td>
-                             <td className="p-3 text-slate-600">{user ? `${user.firstName} ${user.lastName}` : 'Usuario desconocido'}</td>
-                             <td className="p-3">
-                                {tx.active ? (
-                                    <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Prestado</span>
-                                ) : (
-                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Devuelto</span>
-                                )}
-                             </td>
-                             <td className="p-3 text-slate-500 text-xs">{tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}</td>
-                           </tr>
-                        );
-                    })
-                 )}
-               </tbody>
-             </table>
-           </div>
-
-           {/* Mobile History */}
-           <div className="md:hidden space-y-4">
-              {[...visibleTransactions]
-                 .filter(tx => {
-                     if (!historySearchTerm) return true;
-                     const term = historySearchTerm.toLowerCase();
-                     const book = books.find(b => b.id === tx.bookId);
-                     const user = users.find(u => u.id === tx.userId);
-                     const bookTitle = book?.title.toLowerCase() || '';
-                     const userName = user ? `${user.firstName} ${user.lastName}`.toLowerCase() : '';
-                     return bookTitle.includes(term) || userName.includes(term);
-                 })
-                 .sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime())
-                 .map(tx => {
-                     const book = books.find(b => b.id === tx.bookId);
-                     const user = users.find(u => u.id === tx.userId);
-                     return (
-                         <div key={tx.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
-                             <div className="flex justify-between items-start">
-                                 <h4 className="font-bold text-slate-800 text-sm truncate max-w-[200px]">{book?.title}</h4>
-                                 {tx.active ? (
-                                    <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-[10px] font-bold">Prestado</span>
-                                 ) : (
-                                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">Devuelto</span>
-                                 )}
-                             </div>
-                             <p className="text-xs text-slate-500">{user ? `${user.firstName} ${user.lastName}` : 'Usuario desconocido'}</p>
-                             <div className="flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-100/50 pt-2">
-                                 <span>Prestado: {new Date(tx.dateBorrowed).toLocaleDateString()}</span>
-                                 {tx.dateReturned && <span>Devuelto: {new Date(tx.dateReturned).toLocaleDateString()}</span>}
-                             </div>
-                         </div>
-                     );
-                 })
-              }
-           </div>
-        </div>
-      )}
-
-      {/* Stats Tab */}
-      {activeTab === 'stats' && (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
-                    <div className="text-3xl font-display font-bold text-slate-800">{visibleUsers.filter(u => u.role === UserRole.STUDENT).length}</div>
+                  </div>
                 </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Libros en Catálogo</div>
-                    <div className="text-3xl font-display font-bold text-slate-800">{books.length}</div>
-                </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Préstamos Activos</div>
-                    <div className="text-3xl font-display font-bold text-brand-500">{visibleTransactions.filter(t => t.active).length}</div>
-                </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Opiniones</div>
-                    <div className="text-3xl font-display font-bold text-fun-orange">{visibleReviews.length}</div>
-                </div>
-            </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-lg mb-4 text-slate-700">Lectores Top 🏆</h3>
-                    <ul className="space-y-3">
+              {/* Users Tab */}
+              {activeTab === 'users' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold font-display text-slate-700">Listado de Alumnos</h2>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Buscar alumno..."
+                            className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                          <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                        </div>
+                      </div>
+                      {/* Desktop Table */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                              <th className="p-3">Nombre</th>
+                              <th className="p-3">Clase</th>
+                              <th className="p-3">Usuario (Login)</th>
+                              <th className="p-3">Puntos</th>
+                              <th className="p-3 text-right">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-sm">
+                            {visibleUsers
+                              .filter(u => u.role === UserRole.STUDENT)
+                              .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
+                              .map(user => (
+                              <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                <td className="p-3 font-medium text-slate-700">{user.firstName} {user.lastName}</td>
+                                <td className="p-3 text-slate-500">{user.className}</td>
+                                <td className="p-3"><span className="font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-xs">{user.username}</span></td>
+                                <td className="p-3 text-fun-orange font-bold">{user.points} XP</td>
+                                <td className="p-3 flex justify-end gap-2">
+                                  <button onClick={() => setReportUser(user)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Informe PDF">
+                                    <FileText size={16} />
+                                  </button>
+                                  <button onClick={() => setManagingPointsUser(user)} className="text-fun-orange hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors" title="Gestionar Puntos">
+                                    <Trophy size={16} />
+                                  </button>
+                                  <button onClick={() => setEditingUser(user)} className="text-brand-400 hover:text-brand-600 p-2 hover:bg-brand-50 rounded-lg transition-colors" title="Editar Clase/Datos">
+                                    <Edit2 size={16} />
+                                  </button>
+                                  <button onClick={() => onDeleteUser(user.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                                    <Trash2 size={16} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden space-y-4">
                         {visibleUsers
-                            .filter(u => u.role === UserRole.STUDENT)
-                            .sort((a, b) => b.booksRead - a.booksRead)
-                            .slice(0, 5)
-                            .map((u, i) => (
-                                <li key={u.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i===0 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-500'}`}>{i+1}</div>
-                                        <span className="font-medium text-slate-700">{u.firstName} {u.lastName}</span>
-                                    </div>
-                                    <div className="text-sm font-bold text-brand-600">{u.booksRead} libros</div>
-                                </li>
-                            ))
-                        }
-                    </ul>
-                 </div>
-
-                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h3 className="font-bold text-lg mb-4 text-slate-700">Libros Más Leídos 📖</h3>
-                    <ul className="space-y-3">
-                         {books
-                            .map(b => {
-                                // If technical/superadmin, use global readCount.
-                                // If tutor, calculate based on visibleTransactions (filtered by class)
-                                if (isTechnical && viewScope === 'global') return b;
-                                const classReads = visibleTransactions.filter(t => t.bookId === b.id && !t.active).length;
-                                return { ...b, readCount: classReads };
-                            })
-                            .sort((a, b) => b.readCount - a.readCount)
-                            .filter(b => b.readCount > 0)
-                            .slice(0, 5)
-                            .map((b, i) => (
-                                <li key={b.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500`}>{i+1}</div>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-slate-700 truncate max-w-[200px]">{b.title}</span>
-                                            <span className="text-[10px] text-slate-400">{b.author}</span>
-                                        </div>
-                                    </div>
-                                    <div className="text-sm font-bold text-brand-600">{b.readCount}</div>
-                                </li>
-                            ))
-                        }
-                    </ul>
-                 </div>
-            </div>
-        </div>
-      )}
-
-      {/* Cards Tab */}
-      {activeTab === 'cards' && (
-        <div className="space-y-6">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div>
-                        <h2 className="text-xl font-bold font-display text-slate-800">Generador de Carnets</h2>
-                        <p className="text-slate-500">Imprime los carnets por clase o individualmente.</p>
+                              .filter(u => u.role === UserRole.STUDENT)
+                              .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
+                              .map(user => (
+                              <div key={user.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
+                                  <div className="flex justify-between items-start">
+                                      <div>
+                                          <h4 className="font-bold text-slate-800">{user.firstName} {user.lastName}</h4>
+                                          <p className="text-xs text-slate-500">{user.className} • <span className="font-mono text-brand-600">{user.username}</span></p>
+                                      </div>
+                                      <span className="bg-fun-orange/10 text-fun-orange px-2 py-1 rounded-lg text-xs font-bold">{user.points} XP</span>
+                                  </div>
+                                  <div className="flex justify-end gap-2 border-t border-slate-100/50 pt-2 mt-1">
+                                      <button onClick={() => setReportUser(user)} className="p-2 text-blue-500 bg-blue-50 rounded-lg"><FileText size={16}/></button>
+                                      <button onClick={() => setManagingPointsUser(user)} className="p-2 text-fun-orange bg-orange-50 rounded-lg"><Trophy size={16}/></button>
+                                      <button onClick={() => setEditingUser(user)} className="p-2 text-brand-500 bg-brand-50 rounded-lg"><Edit2 size={16}/></button>
+                                      <button onClick={() => onDeleteUser(user.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                                  </div>
+                              </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
-                        {/* Mode Selector */}
-                        <div className="flex gap-2">
-                            <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
-                                <button
-                                    className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'class' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-                                    onClick={() => setCardPrintMode('class')}
-                                >
-                                    Por Clase
-                                </button>
-                                <button
-                                    className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'individual' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-                                    onClick={() => setCardPrintMode('individual')}
-                                >
-                                    Individual
-                                </button>
-                            </div>
+                  </div>
 
-                            <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
-                                <button
-                                    className={`px-3 py-1.5 rounded-md transition-all ${!showBackSide ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-                                    onClick={() => setShowBackSide(false)}
-                                >
-                                    Anverso
-                                </button>
-                                <button
-                                    className={`px-3 py-1.5 rounded-md transition-all ${showBackSide ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-                                    onClick={() => setShowBackSide(true)}
-                                >
-                                    Reverso
-                                </button>
+                  <div className="order-1 lg:order-2">
+                    <MobileActionsToggle label="Añadir / Importar Alumnos" />
+                    <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
+                        {/* Add Single User */}
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
+                        <form onSubmit={handleAddSingleUser} className="space-y-3">
+                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
+                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
+                          <Button type="submit" className="w-full">
+                            <Plus size={18}/> Crear Usuario
+                          </Button>
+                        </form>
+                    </div>
+
+                    {/* SYNC PANEL */}
+                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
+                      <h3 className="font-bold text-lg mb-2 text-indigo-900 flex items-center gap-2">
+                        <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
+                        Sincronización Central
+                      </h3>
+                      <p className="text-sm text-indigo-700 mb-4">
+                          Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
+                      </p>
+                      <Button
+                        onClick={handleSyncStudents}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                        disabled={isSyncing}
+                      >
+                        {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
+                      </Button>
+                    </div>
+
+                        {/* CSV Import */}
+                        <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
+                          <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
+                      <div className="mb-4">
+                          <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                            placeholder="Ej: 5º A"
+                            value={importClassName}
+                            onChange={(e) => setImportClassName(e.target.value)}
+                          />
+                      </div>
+
+                      <div className="mb-4">
+                          <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Codificación del Archivo</label>
+                          <select
+                            value={csvEncoding}
+                            onChange={(e) => setCsvEncoding(e.target.value)}
+                            className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                          >
+                            <option value="windows-1252">Excel / ANSI (Recomendado)</option>
+                            <option value="UTF-8">UTF-8 (Estándar)</option>
+                          </select>
+                      </div>
+
+                      <input
+                          type="file"
+                          accept=".csv, .txt"
+                          ref={userFileInputRef}
+                          onChange={handleUserCSV}
+                          className="hidden"
+                          id="user-csv-upload"
+                      />
+                      <label htmlFor="user-csv-upload">
+                        <div className={`w-full bg-white border-2 border-dashed border-brand-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-brand-600 ${!importClassName ? 'opacity-50' : 'hover:border-brand-500 hover:bg-brand-50'}`}>
+                            <Upload size={24} className="mb-2"/>
+                                <span className="font-semibold">Subir lista</span>
                             </div>
+                          </label>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews Tab */}
+              {activeTab === 'reviews' && (
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                  <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Opiniones de Lectores</h2>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                          <th className="p-3">Fecha</th>
+                          <th className="p-3">Libro</th>
+                          <th className="p-3">Alumno</th>
+                          <th className="p-3">Valoración</th>
+                          <th className="p-3">Comentario</th>
+                          <th className="p-3 text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {visibleReviews.length === 0 ? (
+                            <tr><td colSpan={6} className="p-4 text-center text-slate-400">No hay opiniones todavía.</td></tr>
+                        ) : (
+                            visibleReviews.map(review => {
+                                const book = books.find(b => b.id === review.bookId);
+                                const user = users.find(u => u.id === review.userId);
+                                return (
+                                  <tr key={review.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                    <td className="p-3 text-slate-500 text-xs">{new Date(review.date).toLocaleDateString()}</td>
+                                    <td className="p-3 font-medium text-slate-700">{book?.title || 'Libro desconocido'}</td>
+                                    <td className="p-3 text-slate-600">{user ? `${user.firstName} ${user.lastName}` : review.authorName}</td>
+                                    <td className="p-3 text-fun-orange">{'★'.repeat(review.rating)}{'☆'.repeat(5-review.rating)}</td>
+                                    <td className="p-3 text-slate-600 italic">"{review.comment}"</td>
+                                    <td className="p-3 flex justify-end">
+                                      <button onClick={() => onDeleteReview && onDeleteReview(review.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg">
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                            })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Reviews */}
+                  <div className="md:hidden space-y-4">
+                      {visibleReviews.map(review => {
+                          const book = books.find(b => b.id === review.bookId);
+                          const user = users.find(u => u.id === review.userId);
+                          return (
+                              <div key={review.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
+                                  <div className="flex justify-between items-start">
+                                      <h4 className="font-bold text-slate-800 text-sm">{book?.title}</h4>
+                                      <div className="text-fun-orange text-xs">{'★'.repeat(review.rating)}</div>
+                                  </div>
+                                  <p className="text-xs text-slate-500 italic">"{review.comment}"</p>
+                                  <div className="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100/50 pt-2">
+                                      <span>{user ? `${user.firstName} ${user.lastName}` : review.authorName}</span>
+                                      <div className="flex gap-2 items-center">
+                                          <span>{new Date(review.date).toLocaleDateString()}</span>
+                                          <button onClick={() => onDeleteReview && onDeleteReview(review.id)} className="text-red-400"><Trash2 size={14}/></button>
+                                      </div>
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* History Tab */}
+              {activeTab === 'history' && (
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                  <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                      <h2 className="text-xl font-bold font-display text-slate-700">Historial de Préstamos</h2>
+                      <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                          <div className="relative w-full md:w-64">
+                              <input
+                                type="text"
+                                placeholder="Buscar por libro o alumno..."
+                                className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-full"
+                                value={historySearchTerm}
+                                onChange={(e) => setHistorySearchTerm(e.target.value)}
+                              />
+                              <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                          <th className="p-3">Fecha Préstamo</th>
+                          <th className="p-3">Libro</th>
+                          <th className="p-3">Alumno</th>
+                          <th className="p-3">Estado</th>
+                          <th className="p-3">Fecha Devolución</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {visibleTransactions.length === 0 ? (
+                            <tr><td colSpan={5} className="p-4 text-center text-slate-400">No hay historial de préstamos.</td></tr>
+                        ) : (
+                            [...visibleTransactions]
+                            .filter(tx => {
+                                if (!historySearchTerm) return true;
+                                const term = historySearchTerm.toLowerCase();
+                                const book = books.find(b => b.id === tx.bookId);
+                                const user = users.find(u => u.id === tx.userId);
+                                const bookTitle = book?.title.toLowerCase() || '';
+                                const userName = user ? `${user.firstName} ${user.lastName}`.toLowerCase() : '';
+                                return bookTitle.includes(term) || userName.includes(term);
+                            })
+                            .sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
+                                const book = books.find(b => b.id === tx.bookId);
+                                const user = users.find(u => u.id === tx.userId);
+                                return (
+                                  <tr key={tx.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                    <td className="p-3 text-slate-500 text-xs">{new Date(tx.dateBorrowed).toLocaleDateString()}</td>
+                                    <td className="p-3 font-medium text-slate-700">{book?.title || 'Libro desconocido'}</td>
+                                    <td className="p-3 text-slate-600">{user ? `${user.firstName} ${user.lastName}` : 'Usuario desconocido'}</td>
+                                    <td className="p-3">
+                                        {tx.active ? (
+                                            <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Prestado</span>
+                                        ) : (
+                                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Devuelto</span>
+                                        )}
+                                    </td>
+                                    <td className="p-3 text-slate-500 text-xs">{tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}</td>
+                                  </tr>
+                                );
+                            })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile History */}
+                  <div className="md:hidden space-y-4">
+                      {[...visibleTransactions]
+                        .filter(tx => {
+                            if (!historySearchTerm) return true;
+                            const term = historySearchTerm.toLowerCase();
+                            const book = books.find(b => b.id === tx.bookId);
+                            const user = users.find(u => u.id === tx.userId);
+                            const bookTitle = book?.title.toLowerCase() || '';
+                            const userName = user ? `${user.firstName} ${user.lastName}`.toLowerCase() : '';
+                            return bookTitle.includes(term) || userName.includes(term);
+                        })
+                        .sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime())
+                        .map(tx => {
+                            const book = books.find(b => b.id === tx.bookId);
+                            const user = users.find(u => u.id === tx.userId);
+                            return (
+                                <div key={tx.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-bold text-slate-800 text-sm truncate max-w-[200px]">{book?.title}</h4>
+                                        {tx.active ? (
+                                            <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-[10px] font-bold">Prestado</span>
+                                        ) : (
+                                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">Devuelto</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-slate-500">{user ? `${user.firstName} ${user.lastName}` : 'Usuario desconocido'}</p>
+                                    <div className="flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-100/50 pt-2">
+                                        <span>Prestado: {new Date(tx.dateBorrowed).toLocaleDateString()}</span>
+                                        {tx.dateReturned && <span>Devuelto: {new Date(tx.dateReturned).toLocaleDateString()}</span>}
+                                    </div>
+                                </div>
+                            );
+                        })
+                      }
+                  </div>
+                </div>
+              )}
+
+              {/* Stats Tab */}
+              {activeTab === 'stats' && (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
+                            <div className="text-3xl font-display font-bold text-slate-800">{visibleUsers.filter(u => u.role === UserRole.STUDENT).length}</div>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <div className="text-slate-400 text-xs font-bold uppercase mb-1">Libros en Catálogo</div>
+                            <div className="text-3xl font-display font-bold text-slate-800">{books.length}</div>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <div className="text-slate-400 text-xs font-bold uppercase mb-1">Préstamos Activos</div>
+                            <div className="text-3xl font-display font-bold text-brand-500">{visibleTransactions.filter(t => t.active).length}</div>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <div className="text-slate-400 text-xs font-bold uppercase mb-1">Opiniones</div>
+                            <div className="text-3xl font-display font-bold text-fun-orange">{visibleReviews.length}</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <h3 className="font-bold text-lg mb-4 text-slate-700">Lectores Top 🏆</h3>
+                            <ul className="space-y-3">
+                                {visibleUsers
+                                    .filter(u => u.role === UserRole.STUDENT)
+                                    .sort((a, b) => b.booksRead - a.booksRead)
+                                    .slice(0, 5)
+                                    .map((u, i) => (
+                                        <li key={u.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i===0 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-500'}`}>{i+1}</div>
+                                                <span className="font-medium text-slate-700">{u.firstName} {u.lastName}</span>
+                                            </div>
+                                            <div className="text-sm font-bold text-brand-600">{u.booksRead} libros</div>
+                                        </li>
+                                    ))
+                                }
+                            </ul>
                         </div>
 
-                        {cardPrintMode === 'class' ? (
-                            <select
-                                className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
-                                value={cardClassFilter}
-                                onChange={(e) => setCardClassFilter(e.target.value)}
-                            >
-                                <option value="all">Todas las clases</option>
-                                {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                        ) : (
-                            <div className="relative">
-                                <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar alumno..."
-                                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-64"
-                                    value={cardSearchTerm}
-                                    onChange={(e) => setCardSearchTerm(e.target.value)}
-                                />
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <h3 className="font-bold text-lg mb-4 text-slate-700">Libros Más Leídos 📖</h3>
+                            <ul className="space-y-3">
+                                {books
+                                    .map(b => {
+                                        // If technical/superadmin, use global readCount.
+                                        // If tutor, calculate based on visibleTransactions (filtered by class)
+                                        if (isTechnical && viewScope === 'global') return b;
+                                        const classReads = visibleTransactions.filter(t => t.bookId === b.id && !t.active).length;
+                                        return { ...b, readCount: classReads };
+                                    })
+                                    .sort((a, b) => b.readCount - a.readCount)
+                                    .filter(b => b.readCount > 0)
+                                    .slice(0, 5)
+                                    .map((b, i) => (
+                                        <li key={b.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500`}>{i+1}</div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-slate-700 truncate max-w-[200px]">{b.title}</span>
+                                                    <span className="text-[10px] text-slate-400">{b.author}</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-sm font-bold text-brand-600">{b.readCount}</div>
+                                        </li>
+                                    ))
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+              )}
+
+              {/* Cards Tab */}
+              {activeTab === 'cards' && (
+                <div className="space-y-6">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h2 className="text-xl font-bold font-display text-slate-800">Generador de Carnets</h2>
+                                <p className="text-slate-500">Imprime los carnets por clase o individualmente.</p>
+                            </div>
+                            <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
+                                {/* Mode Selector */}
+                                <div className="flex gap-2">
+                                    <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
+                                        <button
+                                            className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'class' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                            onClick={() => setCardPrintMode('class')}
+                                        >
+                                            Por Clase
+                                        </button>
+                                        <button
+                                            className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'individual' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                            onClick={() => setCardPrintMode('individual')}
+                                        >
+                                            Individual
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
+                                        <button
+                                            className={`px-3 py-1.5 rounded-md transition-all ${!showBackSide ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                            onClick={() => setShowBackSide(false)}
+                                        >
+                                            Anverso
+                                        </button>
+                                        <button
+                                            className={`px-3 py-1.5 rounded-md transition-all ${showBackSide ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                            onClick={() => setShowBackSide(true)}
+                                        >
+                                            Reverso
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {cardPrintMode === 'class' ? (
+                                    <select
+                                        className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
+                                        value={cardClassFilter}
+                                        onChange={(e) => setCardClassFilter(e.target.value)}
+                                    >
+                                        <option value="all">Todas las clases</option>
+                                        {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                ) : (
+                                    <div className="relative">
+                                        <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar alumno..."
+                                            className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-64"
+                                            value={cardSearchTerm}
+                                            onChange={(e) => setCardSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+
+                                <Button onClick={handlePrintCards}>
+                                    <Printer size={18} className="mr-2"/> Imprimir
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="printable-area" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print-area">
+                        <style>{`
+                            @media print {
+                                @page { margin: 10mm; size: A4; }
+                                body * { visibility: hidden; height: 0; }
+
+                                /* Force visible body/html to avoid collapse */
+                                html, body {
+                                  height: auto !important;
+                                  overflow: visible !important;
+                                  min-height: 100vh !important;
+                                }
+
+                                /* Force body to allow A4 width */
+                                body { min-width: 210mm; }
+
+                                #printable-area {
+                                    visibility: visible;
+                                    position: absolute;
+                                    left: 0;
+                                    top: 0;
+
+                                    /* Fix height collapse */
+                                    height: auto !important;
+                                    overflow: visible !important;
+
+                                    /* Force A4 printable width (210mm - 20mm margins = 190mm) */
+                                    width: 190mm !important;
+                                    min-width: 190mm !important;
+                                    max-width: 190mm !important;
+
+                                    /* Use Grid for strict 2-column layout */
+                                    display: grid !important;
+                                    grid-template-columns: repeat(2, 1fr) !important;
+                                    gap: 5mm;
+
+                                    padding: 0 !important;
+                                    margin: 0 !important;
+                                    background: white;
+                                }
+
+                                #printable-area > div {
+                                    visibility: visible;
+                                    height: auto;
+                                    width: auto;
+                                    page-break-inside: avoid;
+                                    break-inside: avoid;
+                                    margin: 0;
+                                    display: flex; /* Center the card in the grid cell */
+                                    justify-content: center;
+                                    align-items: flex-start;
+                                }
+
+                                .id-card-print {
+                                    visibility: visible;
+                                    position: relative !important;
+                                    overflow: hidden !important;
+                                    break-inside: avoid;
+                                    page-break-inside: avoid;
+                                    border: 1px solid #ddd !important;
+                                    -webkit-print-color-adjust: exact;
+                                    print-color-adjust: exact;
+                                }
+
+                                .id-card-print * {
+                                    visibility: visible;
+                                    height: auto;
+                                }
+
+                                .no-print { display: none !important; }
+                            }
+                        `}</style>
+                        {users
+                            .filter(u => u.role === UserRole.STUDENT)
+                            .filter(u => {
+                                if (cardPrintMode === 'class') {
+                                    return cardClassFilter === 'all' || u.className === cardClassFilter;
+                                } else {
+                                    if (!cardSearchTerm) return false;
+                                    const search = cardSearchTerm.toLowerCase();
+                                    return u.firstName.toLowerCase().includes(search) ||
+                                          u.lastName.toLowerCase().includes(search) ||
+                                          u.username.toLowerCase().includes(search);
+                                }
+                            })
+                            .map(user => (
+                                <div key={user.id} className="flex justify-center">
+                                    <IDCard
+                                        user={user}
+                                        schoolName={settings.schoolName}
+                                        logoUrl={settings.logoUrl}
+                                        side={showBackSide ? 'back' : 'front'}
+                                    />
+                                </div>
+                            ))
+                        }
+                        {cardPrintMode === 'individual' && !cardSearchTerm && (
+                            <div className="col-span-full text-center py-12 text-slate-400 no-print">
+                                <Search size={48} className="mx-auto mb-4 opacity-20"/>
+                                <p>Busca un alumno para generar su carnet.</p>
                             </div>
                         )}
-
-                        <Button onClick={handlePrintCards}>
-                            <Printer size={18} className="mr-2"/> Imprimir
-                        </Button>
                     </div>
                 </div>
-            </div>
+              )}
 
-            <div id="printable-area" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print-area">
-                <style>{`
-                    @media print {
-                        @page { margin: 10mm; size: A4; }
-                        body * { visibility: hidden; height: 0; }
-
-                        /* Force visible body/html to avoid collapse */
-                        html, body {
-                           height: auto !important;
-                           overflow: visible !important;
-                           min-height: 100vh !important;
-                        }
-
-                        /* Force body to allow A4 width */
-                        body { min-width: 210mm; }
-
-                        #printable-area {
-                            visibility: visible;
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-
-                            /* Fix height collapse */
-                            height: auto !important;
-                            overflow: visible !important;
-
-                            /* Force A4 printable width (210mm - 20mm margins = 190mm) */
-                            width: 190mm !important;
-                            min-width: 190mm !important;
-                            max-width: 190mm !important;
-
-                            /* Use Grid for strict 2-column layout */
-                            display: grid !important;
-                            grid-template-columns: repeat(2, 1fr) !important;
-                            gap: 5mm;
-
-                            padding: 0 !important;
-                            margin: 0 !important;
-                            background: white;
-                        }
-
-                        #printable-area > div {
-                            visibility: visible;
-                            height: auto;
-                            width: auto;
-                            page-break-inside: avoid;
-                            break-inside: avoid;
-                            margin: 0;
-                            display: flex; /* Center the card in the grid cell */
-                            justify-content: center;
-                            align-items: flex-start;
-                        }
-
-                        .id-card-print {
-                            visibility: visible;
-                            position: relative !important;
-                            overflow: hidden !important;
-                            break-inside: avoid;
-                            page-break-inside: avoid;
-                            border: 1px solid #ddd !important;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                        }
-
-                        .id-card-print * {
-                            visibility: visible;
-                            height: auto;
-                        }
-
-                        .no-print { display: none !important; }
-                    }
-                `}</style>
-                {users
-                    .filter(u => u.role === UserRole.STUDENT)
-                    .filter(u => {
-                        if (cardPrintMode === 'class') {
-                            return cardClassFilter === 'all' || u.className === cardClassFilter;
-                        } else {
-                            if (!cardSearchTerm) return false;
-                            const search = cardSearchTerm.toLowerCase();
-                            return u.firstName.toLowerCase().includes(search) ||
-                                   u.lastName.toLowerCase().includes(search) ||
-                                   u.username.toLowerCase().includes(search);
-                        }
-                    })
-                    .map(user => (
-                        <div key={user.id} className="flex justify-center">
-                            <IDCard
-                                user={user}
-                                schoolName={settings.schoolName}
-                                logoUrl={settings.logoUrl}
-                                side={showBackSide ? 'back' : 'front'}
-                            />
-                        </div>
-                    ))
-                }
-                {cardPrintMode === 'individual' && !cardSearchTerm && (
-                    <div className="col-span-full text-center py-12 text-slate-400 no-print">
-                        <Search size={48} className="mx-auto mb-4 opacity-20"/>
-                        <p>Busca un alumno para generar su carnet.</p>
-                    </div>
-                )}
-            </div>
-        </div>
-      )}
-
-      {/* Settings Tab */}
-      {activeTab === 'settings' && isTechnical && (
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Configuración General</h2>
-                    <form onSubmit={handleSaveSettings} className="space-y-6">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Nombre del Colegio / Biblioteca</label>
-                            <input
-                                className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900 font-medium"
-                                value={tempSettings.schoolName}
-                                onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
-                                placeholder="Ej: Biblioteca Escolar Cervantes"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Logo (URL o Archivo)</label>
-                            <div className="flex items-center gap-4">
-                                <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center p-2">
-                                    {tempSettings.logoUrl ? (
-                                        <img src={tempSettings.logoUrl} className="w-full h-full object-contain" alt="Logo Preview" />
-                                    ) : (
-                                        <ImageIcon className="text-slate-300" size={32} />
-                                    )}
-                                </div>
-                                <div className="flex-1 space-y-2">
+              {/* Settings Tab */}
+              {activeTab === 'settings' && isTechnical && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Configuración General</h2>
+                            <form onSubmit={handleSaveSettings} className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Nombre del Colegio / Biblioteca</label>
                                     <input
-                                        className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
-                                        value={tempSettings.logoUrl}
-                                        onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
-                                        placeholder="https://..."
+                                        className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900 font-medium"
+                                        value={tempSettings.schoolName}
+                                        onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
+                                        placeholder="Ej: Biblioteca Escolar Cervantes"
                                     />
-                                    <div className="relative">
-                                        <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                        <Button type="button" variant="secondary" size="sm" className="w-full">
-                                            <Upload size={14} className="mr-2"/> Subir imagen local
-                                        </Button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Logo (URL o Archivo)</label>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center p-2">
+                                            {tempSettings.logoUrl ? (
+                                                <img src={tempSettings.logoUrl} className="w-full h-full object-contain" alt="Logo Preview" />
+                                            ) : (
+                                                <ImageIcon className="text-slate-300" size={32} />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <input
+                                                className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                                value={tempSettings.logoUrl}
+                                                onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
+                                                placeholder="https://..."
+                                            />
+                                            <div className="relative">
+                                                <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                                <Button type="button" variant="secondary" size="sm" className="w-full">
+                                                    <Upload size={14} className="mr-2"/> Subir imagen local
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+
+                                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                                    <Button type="submit" disabled={settingsSaved}>
+                                        {settingsSaved ? <Check size={18} className="mr-2"/> : <Save size={18} className="mr-2"/>}
+                                        {settingsSaved ? 'Guardado' : 'Guardar Configuración'}
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
 
-                        <div className="pt-4 border-t border-slate-100 flex justify-end">
-                            <Button type="submit" disabled={settingsSaved}>
-                                {settingsSaved ? <Check size={18} className="mr-2"/> : <Save size={18} className="mr-2"/>}
-                                {settingsSaved ? 'Guardado' : 'Guardar Configuración'}
-                            </Button>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Seguridad</h2>
+                            <form onSubmit={handlePasswordChange} className="space-y-4">
+                                <div className="flex gap-4 items-start bg-yellow-50 p-4 rounded-xl mb-4">
+                                    <Lock className="text-yellow-600 flex-shrink-0 mt-1" size={20} />
+                                    <div>
+                                        <h4 className="font-bold text-yellow-800 text-sm">Cambiar contraseña de Administrador</h4>
+                                        <p className="text-xs text-yellow-700">Esto cambiará la contraseña de tu usuario actual ({currentUser.username}).</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nueva Contraseña</label>
+                                        <input
+                                            type="password"
+                                            className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
+                                            value={newAdminPassword}
+                                            onChange={e => setNewAdminPassword(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Confirmar</label>
+                                        <input
+                                            type="password"
+                                            className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
+                                            value={confirmAdminPassword}
+                                            onChange={e => setConfirmAdminPassword(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <Button type="submit" disabled={!newAdminPassword || passwordSaved}>
+                                        {passwordSaved ? 'Contraseña Actualizada' : 'Actualizar Contraseña'}
+                                </Button>
+                            </form>
                         </div>
-                    </form>
-                </div>
+                    </div>
 
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Seguridad</h2>
-                    <form onSubmit={handlePasswordChange} className="space-y-4">
-                         <div className="flex gap-4 items-start bg-yellow-50 p-4 rounded-xl mb-4">
-                            <Lock className="text-yellow-600 flex-shrink-0 mt-1" size={20} />
-                            <div>
-                                <h4 className="font-bold text-yellow-800 text-sm">Cambiar contraseña de Administrador</h4>
-                                <p className="text-xs text-yellow-700">Esto cambiará la contraseña de tu usuario actual ({currentUser.username}).</p>
+                    <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                            <h2 className="text-xl font-bold font-display text-slate-700 mb-4 flex items-center gap-2">
+                                <RefreshCcw size={20} className="text-brand-500"/> Copias de Seguridad
+                            </h2>
+                            <p className="text-sm text-slate-500 mb-6">Descarga una copia de toda la base de datos o restaura una anterior.</p>
+
+                            <div className="space-y-3">
+                                <Button onClick={handleDownloadBackup} variant="outline" className="w-full justify-start">
+                                    <Download size={18} className="mr-2"/> Descargar Copia (JSON)
+                                </Button>
+
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        ref={backupInputRef}
+                                        onChange={handleUploadBackup}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <Button variant="danger" className="w-full justify-start">
+                                        <AlertTriangle size={18} className="mr-2"/> Restaurar Copia
+                                    </Button>
+                                </div>
                             </div>
-                         </div>
-
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nueva Contraseña</label>
-                                <input
-                                    type="password"
-                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
-                                    value={newAdminPassword}
-                                    onChange={e => setNewAdminPassword(e.target.value)}
-                                />
-                             </div>
-                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Confirmar</label>
-                                <input
-                                    type="password"
-                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
-                                    value={confirmAdminPassword}
-                                    onChange={e => setConfirmAdminPassword(e.target.value)}
-                                />
-                             </div>
-                         </div>
-                         <Button type="submit" disabled={!newAdminPassword || passwordSaved}>
-                                {passwordSaved ? 'Contraseña Actualizada' : 'Actualizar Contraseña'}
-                         </Button>
-                    </form>
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 className="text-xl font-bold font-display text-slate-700 mb-4 flex items-center gap-2">
-                        <RefreshCcw size={20} className="text-brand-500"/> Copias de Seguridad
-                    </h2>
-                    <p className="text-sm text-slate-500 mb-6">Descarga una copia de toda la base de datos o restaura una anterior.</p>
-
-                    <div className="space-y-3">
-                        <Button onClick={handleDownloadBackup} variant="outline" className="w-full justify-start">
-                            <Download size={18} className="mr-2"/> Descargar Copia (JSON)
-                        </Button>
-
-                        <div className="relative">
-                            <input
-                                type="file"
-                                accept=".json"
-                                ref={backupInputRef}
-                                onChange={handleUploadBackup}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <Button variant="danger" className="w-full justify-start">
-                                <AlertTriangle size={18} className="mr-2"/> Restaurar Copia
-                            </Button>
                         </div>
                     </div>
                 </div>
+              )}
+           </div>
+        )}
+
+        {/* BOOKS TAB - Special Layout for Fixed Headers */}
+        {activeTab === 'books' && (
+            <div className="h-full flex flex-col lg:grid lg:grid-cols-3 gap-6">
+               <div className="flex-1 lg:col-span-2 h-full flex flex-col order-2 lg:order-1 min-h-0">
+                  {/* Books Grid Preview - Flex Container */}
+                  <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full overflow-hidden">
+                     {/* FIXED HEADER FOR BOOK LIST */}
+                     <div className="flex-none p-6 pb-2 border-b border-slate-100">
+                         <div className="flex justify-between items-center mb-0 gap-4">
+                            <h2 className="text-xl font-bold font-display text-slate-700 whitespace-nowrap">Catálogo ({books.length})</h2>
+                            <div className="flex gap-2 w-full justify-end">
+                              <select
+                                  className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm max-w-[150px]"
+                                  value={shelfFilter}
+                                  onChange={(e) => setShelfFilter(e.target.value)}
+                              >
+                                  <option value="all">Todos los espacios</option>
+                                  {availableShelves.map(shelf => (
+                                      <option key={shelf} value={shelf}>{shelf}</option>
+                                  ))}
+                              </select>
+                              <input
+                                type="text"
+                                placeholder="Buscar libro..."
+                                className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64 bg-white text-slate-900"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                              />
+                            </div>
+                         </div>
+                     </div>
+
+                     {/* SCROLLABLE GRID */}
+                     <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {books
+                            .filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                            .filter(b => shelfFilter === 'all' || (b.shelf || 'Recepción') === shelfFilter)
+                            .map(book => (
+                               <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
+                                  {book.coverUrl ? (
+                                     <img src={book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                                  ) : (
+                                     <div className="w-16 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded shadow-sm flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center">
+                                        {book.title.substring(0, 10)}...
+                                     </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                     <h4 className="font-bold text-slate-800 truncate text-sm" title={book.title}>{book.title}</h4>
+                                     <p className="text-xs text-slate-500 mb-1">{book.author}</p>
+                                     <div className="flex gap-2 text-xs text-slate-400 mb-2 flex-wrap">
+                                       <span>{book.shelf}</span>
+                                       <span className={book.unitsAvailable > 0 ? "text-green-600" : "text-red-500"}>{book.unitsAvailable}/{book.unitsTotal}</span>
+                                       {book.recommendedAge && <span className="text-purple-500 font-bold">{book.recommendedAge}</span>}
+                                     </div>
+                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleStartEditing(book)} className="text-xs text-brand-500 hover:text-brand-700 flex items-center gap-1">
+                                            <Edit2 size={12}/> Editar
+                                        </button>
+                                        <button onClick={() => onDeleteBook(book.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
+                                            <Trash2 size={12}/> Eliminar
+                                        </button>
+                                     </div>
+                                  </div>
+                               </div>
+                            ))}
+                         </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="order-1 lg:order-2 flex-none lg:h-full lg:overflow-y-auto no-scrollbar pb-24 lg:pb-0">
+                 <MobileActionsToggle label="Añadir / Importar Libros" />
+                 <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
+                     {/* Add Book Panel */}
+                     <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
+
+                    <form onSubmit={handleSaveBook} className="space-y-3">
+                        <div className="flex gap-2 mb-2">
+                            {newBook.coverUrl && (
+                                <img src={newBook.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="Cover"/>
+                            )}
+                            <div className="flex-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Título *</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 font-bold"
+                                        value={newBook.title || ''}
+                                        onChange={e => setNewBook({...newBook, title: e.target.value})}
+                                        onBlur={handleBlur}
+                                        placeholder="Ej: Harry Potter"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={handleSearchCandidates}
+                                        title="Buscar datos automáticos"
+                                        disabled={!newBook.title}
+                                    >
+                                        <Wand2 size={16} />
+                                    </Button>
+                                </div>
+
+                                <label className="text-[10px] font-bold text-slate-400 uppercase mt-1">Autor</label>
+                                <input
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={newBook.author || ''}
+                                    onChange={e => setNewBook({...newBook, author: e.target.value})}
+                                    onBlur={handleBlur}
+                                    placeholder="Ej: J.K. Rowling"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">
+                                    {newBook.shelf === 'BIBLIOTECA' ? 'Subcategoría' : 'Género'}
+                                </label>
+                                {newBook.shelf === 'BIBLIOTECA' ? (
+                                    <select
+                                        className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                        value={newBook.genre || ''}
+                                        onChange={e => setNewBook({...newBook, genre: e.target.value})}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        {LIBRARY_SUBCATEGORIES.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input
+                                        className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                        value={newBook.genre || ''}
+                                        onChange={e => setNewBook({...newBook, genre: e.target.value})}
+                                        placeholder="Ej: Fantasía"
+                                    />
+                                )}
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
+                                <select
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={newBook.recommendedAge || ''}
+                                    onChange={e => setNewBook({...newBook, recommendedAge: e.target.value})}
+                                >
+                                    <option value="">Seleccionar</option>
+                                    {['0-5', '6-8', '9-11', '12-14', '+15'].map(age => (
+                                        <option key={age} value={age}>{age}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
+                                <input
+                                    type="number" min="1"
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={newBook.unitsTotal || 1}
+                                    onChange={e => setNewBook({...newBook, unitsTotal: parseInt(e.target.value)})}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Espacio</label>
+                                <select
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
+                                    value={newBook.shelf || ''}
+                                    onChange={e => setNewBook({...newBook, shelf: e.target.value})}
+                                >
+                                    <option value="Recepción">Recepción</option>
+                                    <option value="BIBLIOTECA">BIBLIOTECA</option>
+                                    {availableClasses.map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Sinopsis</label>
+                            <textarea
+                                className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 text-slate-700 h-20"
+                                value={newBook.description || ''}
+                                onChange={e => setNewBook({...newBook, description: e.target.value})}
+                            />
+                        </div>
+
+                        {isAddingBook && (
+                             <div className="bg-blue-50 text-blue-700 text-xs p-2 rounded-lg flex items-center gap-2">
+                                <Loader2 size={14} className="animate-spin"/>
+                                {loadingMessage || "Buscando..."}
+                             </div>
+                        )}
+
+                        <Button type="submit" size="sm" className="w-full" disabled={!newBook.title}>
+                            <Check size={16} className="mr-1"/> Guardar Libro
+                        </Button>
+                    </form>
+                 </div>
+
+                     {/* CSV Import */}
+                     <div className="bg-fun-purple/10 p-6 rounded-3xl border border-fun-purple/20">
+                       <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
+                   <p className="text-xs text-purple-600 mb-3">Formato: Título, Autor, Género, Unidades, Espacio, Edad Rec.</p>
+                   <div className="mb-4">
+                      <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación del Archivo</label>
+                      <select
+                        value={csvEncoding}
+                        onChange={(e) => setCsvEncoding(e.target.value)}
+                        className="w-full p-2 border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white text-slate-900"
+                      >
+                        <option value="windows-1252">Excel / ANSI (Recomendado)</option>
+                        <option value="UTF-8">UTF-8 (Estándar)</option>
+                      </select>
+                   </div>
+
+                   {/* PROGRESS BAR */}
+                   {isImportingBooks && (
+                       <div className="mb-4 bg-white p-3 rounded-xl border border-purple-200">
+                            <div className="flex justify-between text-xs font-bold text-purple-700 mb-1">
+                                 <span>{loadingMessage}</span>
+                                 <span>{loadingProgress}%</span>
+                            </div>
+                            <div className="w-full bg-purple-100 rounded-full h-2.5 overflow-hidden">
+                                 <div
+                                    className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
+                                    style={{ width: `${loadingProgress}%` }}
+                                 ></div>
+                            </div>
+                       </div>
+                   )}
+
+                   <input
+                      type="file"
+                      accept=".csv, .txt"
+                      ref={bookFileInputRef}
+                      onChange={handleBookCSV}
+                      className="hidden"
+                      id="book-csv-upload"
+                   />
+                   <label htmlFor="book-csv-upload">
+                     <div className={`w-full bg-white border-2 border-dashed border-purple-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition-colors text-purple-600 ${isImportingBooks ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {isImportingBooks ? (
+                           <Loader2 size={24} className="mb-2 animate-spin"/>
+                        ) : (
+                           <Upload size={24} className="mb-2"/>
+                        )}
+                            <span className="font-semibold">{isImportingBooks ? 'Importando...' : 'Subir catálogo'}</span>
+                         </div>
+                       </label>
+                     </div>
+                 </div>
+              </div>
             </div>
-         </div>
-      )}
+        )}
+      </div>
 
       {/* CANDIDATES SELECTION MODAL */}
       {showCandidates && (
