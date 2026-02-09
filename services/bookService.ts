@@ -118,10 +118,7 @@ export const searchBookCandidates = async (query: string): Promise<Partial<Book>
 
     try {
         // Fetch up to 10 candidates
-        const apiKey = process.env.API_KEY;
-        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=10&printType=books${apiKey ? `&key=${apiKey}` : ''}`;
-
-        const res = await fetch(url);
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=10&printType=books`);
         if (res.ok) {
             const data = await res.json();
             if (!data.items) return [];
