@@ -33,7 +33,7 @@ if (!process.env.GOOGLE_CLIENT_ID) {
 }
 
 // Check Prisma Secret Explicitly
-const apiSecret = process.env.PRISMA_API_SECRET || process.env.VITE_PRISMA_API_SECRET || process.env.API_SECRET || process.env.VITE_API_SECRET;
+const apiSecret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
 
 if (!apiSecret) {
     console.error("\n========================================================");
@@ -207,7 +207,7 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   console.log(`Calling Prisma API: ${url}`);
   
   // CORRECCIÓN CLAVE: Leer directamente del proceso, NO usar variable importada
-  const currentSecret = process.env.PRISMA_API_SECRET || process.env.VITE_PRISMA_API_SECRET || process.env.API_SECRET || process.env.VITE_API_SECRET;
+  const currentSecret = process.env.PRISMA_API_SECRET;
 
   // Debug log para ver qué está pasando realmente
   if (!currentSecret) {
@@ -453,7 +453,7 @@ app.post('/api/books/batch', async (req, res) => {
           try {
              // Simple search to fill gaps
              const query = `${book.title} ${book.author || ''}`;
-             const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&key=${process.env.VITE_API_KEY || process.env.API_KEY}`);
+             const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&key=${process.env.VITE_API_KEY}`);
              const data = await response.json();
              if (data.items && data.items.length > 0) {
                  const info = data.items[0].volumeInfo;
