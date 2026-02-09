@@ -20,7 +20,7 @@ async function fetchFromPrisma(endpoint) {
 
     // LEER EL SECRETO AQUÍ (En tiempo de ejecución)
     // Buscamos ambas variables para máxima compatibilidad
-    const secret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
+    const secret = process.env.PRISMA_API_SECRET || process.env.VITE_PRISMA_API_SECRET || process.env.API_SECRET || process.env.VITE_API_SECRET;
 
     if (!secret || secret === 'YOUR_API_SECRET') {
         console.warn(`[ImportService] ALERTA: PRISMA_API_SECRET (o API_SECRET) parece incorrecto o por defecto: ${secret}`);
@@ -74,7 +74,7 @@ export async function getAcademicData() {
         console.log('[ImportService] Iniciando importación de datos...');
         
         // Verificar entorno antes de empezar
-        const secret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
+        const secret = process.env.PRISMA_API_SECRET || process.env.VITE_PRISMA_API_SECRET || process.env.API_SECRET || process.env.VITE_API_SECRET;
         if (!secret) {
             throw new Error("PRISMA_API_SECRET (o API_SECRET) no está definido en el entorno");
         }
