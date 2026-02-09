@@ -709,8 +709,181 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* CONTENT AREA - Scrollable except for Books tab special handling */}
       <div className="flex-1 overflow-hidden relative w-full px-4 md:px-6 pb-20 md:pb-6">
 
-        {/* NON-BOOKS TABS (Standard Scrollable Layout) */}
-        {activeTab !== 'books' && (
+        {/* USERS TAB - Special Layout (Fixed Headers/Split Scroll) */}
+        {activeTab === 'users' && (
+           <div className="h-full flex flex-col lg:grid lg:grid-cols-3 gap-6">
+              {/* Left/Bottom: List */}
+              <div className="flex-1 lg:col-span-2 h-full flex flex-col order-2 lg:order-1 min-h-0">
+                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full overflow-hidden">
+                      {/* Fixed Header */}
+                      <div className="flex-none flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold font-display text-slate-700">Listado de Alumnos</h2>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Buscar alumno..."
+                            className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                          <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                        </div>
+                      </div>
+
+                      {/* Scrollable List */}
+                      <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 lg:pb-0">
+                          {/* Desktop Table */}
+                          <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                                  <th className="p-3">Nombre</th>
+                                  <th className="p-3">Clase</th>
+                                  <th className="p-3">Usuario (Login)</th>
+                                  <th className="p-3">Puntos</th>
+                                  <th className="p-3 text-right">Acciones</th>
+                                </tr>
+                              </thead>
+                              <tbody className="text-sm">
+                                {visibleUsers
+                                  .filter(u => u.role === UserRole.STUDENT)
+                                  .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
+                                  .map(user => (
+                                  <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                    <td className="p-3 font-medium text-slate-700">{user.firstName} {user.lastName}</td>
+                                    <td className="p-3 text-slate-500">{user.className}</td>
+                                    <td className="p-3"><span className="font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-xs">{user.username}</span></td>
+                                    <td className="p-3 text-fun-orange font-bold">{user.points} XP</td>
+                                    <td className="p-3 flex justify-end gap-2">
+                                      <button onClick={() => setReportUser(user)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Informe PDF">
+                                        <FileText size={16} />
+                                      </button>
+                                      <button onClick={() => setManagingPointsUser(user)} className="text-fun-orange hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors" title="Gestionar Puntos">
+                                        <Trophy size={16} />
+                                      </button>
+                                      <button onClick={() => setEditingUser(user)} className="text-brand-400 hover:text-brand-600 p-2 hover:bg-brand-50 rounded-lg transition-colors" title="Editar Clase/Datos">
+                                        <Edit2 size={16} />
+                                      </button>
+                                      <button onClick={() => onDeleteUser(user.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Mobile Card View */}
+                          <div className="md:hidden space-y-4">
+                            {visibleUsers
+                                  .filter(u => u.role === UserRole.STUDENT)
+                                  .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
+                                  .map(user => (
+                                  <div key={user.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
+                                      <div className="flex justify-between items-start">
+                                          <div>
+                                              <h4 className="font-bold text-slate-800">{user.firstName} {user.lastName}</h4>
+                                              <p className="text-xs text-slate-500">{user.className} • <span className="font-mono text-brand-600">{user.username}</span></p>
+                                          </div>
+                                          <span className="bg-fun-orange/10 text-fun-orange px-2 py-1 rounded-lg text-xs font-bold">{user.points} XP</span>
+                                      </div>
+                                      <div className="flex justify-end gap-2 border-t border-slate-100/50 pt-2 mt-1">
+                                          <button onClick={() => setReportUser(user)} className="p-2 text-blue-500 bg-blue-50 rounded-lg"><FileText size={16}/></button>
+                                          <button onClick={() => setManagingPointsUser(user)} className="p-2 text-fun-orange bg-orange-50 rounded-lg"><Trophy size={16}/></button>
+                                          <button onClick={() => setEditingUser(user)} className="p-2 text-brand-500 bg-brand-50 rounded-lg"><Edit2 size={16}/></button>
+                                          <button onClick={() => onDeleteUser(user.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                                      </div>
+                                  </div>
+                            ))}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Right/Top: Add Panel */}
+              <div className="order-1 lg:order-2 flex-none lg:h-full lg:overflow-y-auto no-scrollbar">
+                <MobileActionsToggle label="Añadir / Importar Alumnos" />
+                <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
+                    {/* Add Single User */}
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
+                        <form onSubmit={handleAddSingleUser} className="space-y-3">
+                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
+                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
+                          <Button type="submit" className="w-full">
+                            <Plus size={18}/> Crear Usuario
+                          </Button>
+                        </form>
+                    </div>
+
+                    {/* SYNC PANEL */}
+                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
+                      <h3 className="font-bold text-lg mb-2 text-indigo-900 flex items-center gap-2">
+                        <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
+                        Sincronización Central
+                      </h3>
+                      <p className="text-sm text-indigo-700 mb-4">
+                          Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
+                      </p>
+                      <Button
+                        onClick={handleSyncStudents}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                        disabled={isSyncing}
+                      >
+                        {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
+                      </Button>
+                    </div>
+
+                    {/* CSV Import */}
+                    <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
+                      <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
+                      <div className="mb-4">
+                          <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                            placeholder="Ej: 5º A"
+                            value={importClassName}
+                            onChange={(e) => setImportClassName(e.target.value)}
+                          />
+                      </div>
+
+                      <div className="mb-4">
+                          <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Codificación del Archivo</label>
+                          <select
+                            value={csvEncoding}
+                            onChange={(e) => setCsvEncoding(e.target.value)}
+                            className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                          >
+                            <option value="windows-1252">Excel / ANSI (Recomendado)</option>
+                            <option value="UTF-8">UTF-8 (Estándar)</option>
+                          </select>
+                      </div>
+
+                      <input
+                          type="file"
+                          accept=".csv, .txt"
+                          ref={userFileInputRef}
+                          onChange={handleUserCSV}
+                          className="hidden"
+                          id="user-csv-upload"
+                      />
+                      <label htmlFor="user-csv-upload">
+                        <div className={`w-full bg-white border-2 border-dashed border-brand-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-brand-600 ${!importClassName ? 'opacity-50' : 'hover:border-brand-500 hover:bg-brand-50'}`}>
+                            <Upload size={24} className="mb-2"/>
+                                <span className="font-semibold">Subir lista</span>
+                            </div>
+                          </label>
+                        </div>
+                    </div>
+                  </div>
+           </div>
+        )}
+
+        {/* NON-BOOKS & NON-USERS TABS (Standard Scrollable Layout) */}
+        {activeTab !== 'books' && activeTab !== 'users' && (
            <div className="h-full overflow-y-auto custom-scrollbar space-y-6 pb-24">
 
               {/* Teachers Tab (SuperAdmin Only) */}
@@ -776,172 +949,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             </form>
                           </div>
                       </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Users Tab */}
-              {activeTab === 'users' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                      <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold font-display text-slate-700">Listado de Alumnos</h2>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Buscar alumno..."
-                            className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                          />
-                          <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
-                        </div>
-                      </div>
-                      {/* Desktop Table */}
-                      <div className="hidden md:block overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                              <th className="p-3">Nombre</th>
-                              <th className="p-3">Clase</th>
-                              <th className="p-3">Usuario (Login)</th>
-                              <th className="p-3">Puntos</th>
-                              <th className="p-3 text-right">Acciones</th>
-                            </tr>
-                          </thead>
-                          <tbody className="text-sm">
-                            {visibleUsers
-                              .filter(u => u.role === UserRole.STUDENT)
-                              .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(user => (
-                              <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                <td className="p-3 font-medium text-slate-700">{user.firstName} {user.lastName}</td>
-                                <td className="p-3 text-slate-500">{user.className}</td>
-                                <td className="p-3"><span className="font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-xs">{user.username}</span></td>
-                                <td className="p-3 text-fun-orange font-bold">{user.points} XP</td>
-                                <td className="p-3 flex justify-end gap-2">
-                                  <button onClick={() => setReportUser(user)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Informe PDF">
-                                    <FileText size={16} />
-                                  </button>
-                                  <button onClick={() => setManagingPointsUser(user)} className="text-fun-orange hover:text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors" title="Gestionar Puntos">
-                                    <Trophy size={16} />
-                                  </button>
-                                  <button onClick={() => setEditingUser(user)} className="text-brand-400 hover:text-brand-600 p-2 hover:bg-brand-50 rounded-lg transition-colors" title="Editar Clase/Datos">
-                                    <Edit2 size={16} />
-                                  </button>
-                                  <button onClick={() => onDeleteUser(user.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                                    <Trash2 size={16} />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Mobile Card View */}
-                      <div className="md:hidden space-y-4">
-                        {visibleUsers
-                              .filter(u => u.role === UserRole.STUDENT)
-                              .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(user => (
-                              <div key={user.id} className="glass-card p-4 rounded-xl flex flex-col gap-2">
-                                  <div className="flex justify-between items-start">
-                                      <div>
-                                          <h4 className="font-bold text-slate-800">{user.firstName} {user.lastName}</h4>
-                                          <p className="text-xs text-slate-500">{user.className} • <span className="font-mono text-brand-600">{user.username}</span></p>
-                                      </div>
-                                      <span className="bg-fun-orange/10 text-fun-orange px-2 py-1 rounded-lg text-xs font-bold">{user.points} XP</span>
-                                  </div>
-                                  <div className="flex justify-end gap-2 border-t border-slate-100/50 pt-2 mt-1">
-                                      <button onClick={() => setReportUser(user)} className="p-2 text-blue-500 bg-blue-50 rounded-lg"><FileText size={16}/></button>
-                                      <button onClick={() => setManagingPointsUser(user)} className="p-2 text-fun-orange bg-orange-50 rounded-lg"><Trophy size={16}/></button>
-                                      <button onClick={() => setEditingUser(user)} className="p-2 text-brand-500 bg-brand-50 rounded-lg"><Edit2 size={16}/></button>
-                                      <button onClick={() => onDeleteUser(user.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={16}/></button>
-                                  </div>
-                              </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="order-1 lg:order-2">
-                    <MobileActionsToggle label="Añadir / Importar Alumnos" />
-                    <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
-                        {/* Add Single User */}
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                            <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
-                        <form onSubmit={handleAddSingleUser} className="space-y-3">
-                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
-                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
-                          <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
-                          <Button type="submit" className="w-full">
-                            <Plus size={18}/> Crear Usuario
-                          </Button>
-                        </form>
-                    </div>
-
-                    {/* SYNC PANEL */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
-                      <h3 className="font-bold text-lg mb-2 text-indigo-900 flex items-center gap-2">
-                        <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
-                        Sincronización Central
-                      </h3>
-                      <p className="text-sm text-indigo-700 mb-4">
-                          Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
-                      </p>
-                      <Button
-                        onClick={handleSyncStudents}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
-                        disabled={isSyncing}
-                      >
-                        {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
-                      </Button>
-                    </div>
-
-                        {/* CSV Import */}
-                        <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
-                          <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
-                      <div className="mb-4">
-                          <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
-                          <input
-                            type="text"
-                            className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                            placeholder="Ej: 5º A"
-                            value={importClassName}
-                            onChange={(e) => setImportClassName(e.target.value)}
-                          />
-                      </div>
-
-                      <div className="mb-4">
-                          <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Codificación del Archivo</label>
-                          <select
-                            value={csvEncoding}
-                            onChange={(e) => setCsvEncoding(e.target.value)}
-                            className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
-                          >
-                            <option value="windows-1252">Excel / ANSI (Recomendado)</option>
-                            <option value="UTF-8">UTF-8 (Estándar)</option>
-                          </select>
-                      </div>
-
-                      <input
-                          type="file"
-                          accept=".csv, .txt"
-                          ref={userFileInputRef}
-                          onChange={handleUserCSV}
-                          className="hidden"
-                          id="user-csv-upload"
-                      />
-                      <label htmlFor="user-csv-upload">
-                        <div className={`w-full bg-white border-2 border-dashed border-brand-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-brand-600 ${!importClassName ? 'opacity-50' : 'hover:border-brand-500 hover:bg-brand-50'}`}>
-                            <Upload size={24} className="mb-2"/>
-                                <span className="font-semibold">Subir lista</span>
-                            </div>
-                          </label>
-                        </div>
-                    </div>
                   </div>
                 </div>
               )}
@@ -1507,11 +1514,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full overflow-hidden">
                      {/* FIXED HEADER FOR BOOK LIST */}
                      <div className="flex-none p-6 pb-2 border-b border-slate-100">
-                         <div className="flex justify-between items-center mb-0 gap-4">
+                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-0 gap-4">
                             <h2 className="text-xl font-bold font-display text-slate-700 whitespace-nowrap">Catálogo ({books.length})</h2>
-                            <div className="flex gap-2 w-full justify-end">
+                            <div className="flex gap-2 w-full md:w-auto justify-end">
                               <select
-                                  className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm max-w-[150px]"
+                                  className="flex-1 md:flex-none p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm md:max-w-[150px]"
                                   value={shelfFilter}
                                   onChange={(e) => setShelfFilter(e.target.value)}
                               >
@@ -1523,7 +1530,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                               <input
                                 type="text"
                                 placeholder="Buscar libro..."
-                                className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64 bg-white text-slate-900"
+                                className="flex-[2] md:flex-none pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-full md:w-64 bg-white text-slate-900 min-w-0"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                               />
@@ -1532,7 +1539,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                      </div>
 
                      {/* SCROLLABLE GRID */}
-                     <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar">
+                     <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar pb-24 lg:pb-6">
                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {books
                             .filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -1570,7 +1577,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   </div>
                </div>
 
-               <div className="order-1 lg:order-2 flex-none lg:h-full lg:overflow-y-auto no-scrollbar pb-24 lg:pb-0">
+               <div className="order-1 lg:order-2 flex-none lg:h-full lg:overflow-y-auto no-scrollbar">
                  <MobileActionsToggle label="Añadir / Importar Libros" />
                  <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
                      {/* Add Book Panel */}
@@ -1780,7 +1787,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             {isCoverSelectionMode ? (
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <p className="text-sm text-slate-500 mb-3">Selecciona una imagen para usarla como portada:</p>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {candidates.map((cand, idx) => (
                             <div
                                 key={idx}
@@ -1947,7 +1954,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {editingBook.shelf === 'BIBLIOTECA' ? (
                             <select
                                 className="p-2 border rounded bg-white text-slate-900"
