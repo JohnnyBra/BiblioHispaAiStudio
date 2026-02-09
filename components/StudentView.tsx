@@ -207,7 +207,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
   return (
     <div className="min-h-screen pb-20 relative">
       {/* Top Bar */}
-      <div className="bg-white sticky top-0 z-20 shadow-sm border-b border-slate-100">
+      <div className="glass-header">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
              <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
@@ -216,12 +216,12 @@ export const StudentView: React.FC<StudentViewProps> = ({
              <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
              <div className="hidden sm:block">
                  <h1 className="font-display font-bold text-slate-800 text-lg leading-none">{settings.schoolName}</h1>
-                 <p className="text-xs text-slate-400 font-medium">Biblioteca</p>
+                 <p className="text-xs text-slate-500 font-medium">Biblioteca</p>
              </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-brand-50 px-3 py-1.5 rounded-full transition-all hover:bg-brand-100 cursor-default group relative">
+            <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm px-3 py-1.5 rounded-full transition-all hover:bg-white/80 cursor-default group relative border border-white/20 shadow-sm">
                <div className="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center text-brand-700 font-bold border-2 border-brand-100">
                   {currentUser.firstName[0]}
                </div>
@@ -269,11 +269,11 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
         
         {/* Navigation Tabs */}
-        <div className="flex justify-center mb-6 overflow-x-auto no-scrollbar">
-          <div className="bg-white p-1 rounded-2xl shadow-sm border border-slate-100 inline-flex whitespace-nowrap">
+        <div className="flex justify-center mb-6 overflow-x-auto no-scrollbar mask-gradient-x">
+          <div className="glass-panel p-1 rounded-2xl inline-flex whitespace-nowrap">
             <button 
               onClick={() => setActiveTab('catalog')}
-              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
             >
               Catálogo
             </button>
@@ -312,14 +312,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
                     placeholder="Busca por título o autor..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm bg-white text-slate-900"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl glass-input focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                   />
                   <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
                 </div>
                 
                 {/* Controls */}
                 <div className="flex gap-4 w-full md:w-auto">
-                   <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex-1 md:flex-none">
+                   <div className="flex items-center gap-2 glass-panel px-3 py-2 rounded-xl flex-1 md:flex-none">
                       <ArrowUpDown size={16} className="text-slate-400"/>
                       <select 
                         className="bg-transparent text-sm font-medium text-slate-600 outline-none w-full"
@@ -428,9 +428,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
                     const formattedReturn = earliestReturn ? new Date(earliestReturn).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}) : null;
 
                     return (
-                       <div key={book.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 hover:shadow-md transition-shadow">
+                       <div key={book.id} className="glass-card p-4 rounded-2xl flex gap-4 hover:shadow-lg transition-all">
                           {/* Image */}
-                          <div className="w-20 h-28 flex-shrink-0 bg-slate-200 rounded-lg overflow-hidden relative">
+                          <div className="w-20 h-28 flex-shrink-0 bg-slate-200/50 rounded-lg overflow-hidden relative shadow-sm">
                              <img src={book.coverUrl} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} alt={book.title}/>
                              {!isAvailable && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
@@ -551,8 +551,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   })}
                 </div>
               ) : (
-                <div className="bg-white rounded-3xl p-10 text-center shadow-sm border border-slate-100">
-                   <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <div className="glass-panel rounded-3xl p-10 text-center">
+                   <div className="w-20 h-20 bg-white/50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 shadow-inner">
                       <BookOpen size={32} />
                    </div>
                    <h3 className="text-xl font-bold text-slate-700 mb-2">No tienes libros prestados</h3>
@@ -577,8 +577,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
                        if (!book) return null; // Should not happen
 
                        return (
-                          <div key={tx.id} className={`bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-center transition-all hover:shadow-md ${tx.active ? 'ring-2 ring-brand-100' : 'opacity-80 hover:opacity-100'}`}>
-                             <div className="w-14 h-20 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden">
+                          <div key={tx.id} className={`glass-card p-4 rounded-2xl flex gap-4 items-center transition-all hover:shadow-lg ${tx.active ? 'ring-2 ring-brand-200 bg-brand-50/30' : 'opacity-80 hover:opacity-100'}`}>
+                             <div className="w-14 h-20 flex-shrink-0 bg-slate-100/50 rounded-lg overflow-hidden shadow-sm">
                                 {book.coverUrl ? (
                                    <img src={book.coverUrl} className="w-full h-full object-cover" alt="cover"/>
                                 ) : (
@@ -633,8 +633,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                   
                   {/* COL 1: TOP STUDENTS */}
-                  <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden flex flex-col">
-                      <div className="bg-brand-50 p-4 border-b border-brand-100 flex items-center gap-2">
+                  <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
+                      <div className="bg-brand-50/50 backdrop-blur-sm p-4 border-b border-brand-100/50 flex items-center gap-2">
                           <Trophy size={20} className="text-brand-600" />
                           <h3 className="font-bold text-brand-800">Superlectores</h3>
                       </div>
@@ -688,7 +688,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   </div>
 
                   {/* COL 2: TOP BORROWED BOOKS */}
-                  <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden flex flex-col">
+                  <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
                       <div className="bg-fun-green/10 p-4 border-b border-fun-green/20 flex items-center gap-2">
                           <TrendingUp size={20} className="text-fun-green" />
                           <h3 className="font-bold text-green-800">Más Leídos</h3>
@@ -710,7 +710,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   </div>
 
                   {/* COL 3: TOP RATED BOOKS */}
-                  <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden flex flex-col">
+                  <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
                       <div className="bg-fun-purple/10 p-4 border-b border-fun-purple/20 flex items-center gap-2">
                           <Heart size={20} className="text-fun-purple" />
                           <h3 className="font-bold text-purple-800">Mejores Valorados</h3>
@@ -744,9 +744,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
          {/* Chat Window */}
          {isChatOpen && (
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-80 sm:w-96 mb-4 overflow-hidden flex flex-col animate-scale-in origin-bottom-right h-[500px]">
+            <div className="glass-panel !bg-white/95 rounded-2xl shadow-2xl w-80 sm:w-96 mb-4 overflow-hidden flex flex-col animate-scale-in origin-bottom-right h-[500px]">
                {/* Header */}
-               <div className="bg-brand-600 p-4 flex justify-between items-center text-white">
+               <div className="bg-brand-600/90 backdrop-blur p-4 flex justify-between items-center text-white">
                   <div className="flex items-center gap-2">
                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                         <Sparkles size={16} />
@@ -818,8 +818,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
       {/* --- BOOK DETAILS MODAL --- */}
       {viewingBook && (
-         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row overflow-hidden relative">
+         <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="glass-panel !bg-white/95 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row overflow-hidden relative animate-scale-in">
                <button 
                   onClick={() => setViewingBook(null)}
                   className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white p-2 rounded-full shadow-sm backdrop-blur transition-all"
@@ -902,8 +902,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
       {/* --- REVIEW MODAL --- */}
       {reviewingBook && (
-         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+         <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="glass-panel !bg-white/95 rounded-3xl w-full max-w-md p-6 shadow-2xl relative animate-scale-in">
                <button 
                   onClick={() => setReviewingBook(null)}
                   className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"

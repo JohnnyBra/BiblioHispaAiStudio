@@ -101,11 +101,11 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
   }, [onScanSuccess, onScanFailure]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-md relative shadow-2xl flex flex-col items-center">
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+      <div className="glass-panel !bg-white/95 rounded-3xl p-6 w-full max-w-md relative shadow-2xl flex flex-col items-center animate-scale-in">
         <button 
             onClick={onClose} 
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 z-10 bg-slate-100 rounded-full p-2 hover:bg-slate-200 transition-colors"
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 z-10 bg-slate-100/50 rounded-full p-2 hover:bg-slate-200 transition-colors"
         >
             <X size={20} />
         </button>
