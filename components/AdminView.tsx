@@ -62,14 +62,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // Single Entry States
   const [newUser, setNewUser] = React.useState({ name: '', lastname: '', className: '' });
 
-  // Book View States
-  const [sortOrder, setSortOrder] = React.useState<'title' | 'author' | 'genre' | 'age'>('title');
-
   // Add Book State
   const [newBook, setNewBook] = React.useState<Partial<Book>>({ unitsTotal: 1, unitsAvailable: 1, shelf: 'Recepción' });
   const [candidates, setCandidates] = React.useState<Partial<Book>[]>([]);
   const [showCandidates, setShowCandidates] = React.useState(false);
-  const [candidateSearchTerm, setCandidateSearchTerm] = React.useState('');
   const [isCoverSelectionMode, setIsCoverSelectionMode] = React.useState(false);
 
   // Edit Book State
@@ -618,25 +614,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
     if (backupInputRef.current) backupInputRef.current.value = '';
   };
 
-  const handleManualCandidateSearch = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!candidateSearchTerm.trim()) return;
-
-      const results = await searchBookCandidates(candidateSearchTerm);
-      setCandidates(results);
-      if (results.length === 0) {
-          onShowToast("No se encontraron resultados para esa búsqueda.", "info");
-      }
-  };
-
   const availableClasses = Array.from(new Set(visibleUsers.filter(u => u.role === UserRole.STUDENT).map(u => u.className))).sort(compareClassNames);
-
-  const availableShelves = React.useMemo(() => {
-    const shelves = Array.from(new Set(books.map(b => b.shelf || 'Recepción')));
-    const hasBiblioteca = shelves.includes('BIBLIOTECA');
-    const others = shelves.filter(s => s !== 'BIBLIOTECA').sort();
-    return hasBiblioteca ? ['BIBLIOTECA', ...others] : others;
-  }, [books]);
+  const availableShelves = Array.from(new Set(books.map(b => b.shelf || 'Recepción'))).sort();
 
   const LIBRARY_SUBCATEGORIES = [
     "Narrativa",
@@ -939,17 +918,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <h2 className="text-xl font-bold font-display text-slate-700 whitespace-nowrap">Catálogo ({books.length})</h2>
                     <div className="flex gap-2 w-full justify-end">
                       <select
-                          className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm"
-                          value={sortOrder}
-                          onChange={(e) => setSortOrder(e.target.value as any)}
-                          title="Ordenar por"
-                      >
-                          <option value="title">Título</option>
-                          <option value="author">Autor</option>
-                          <option value="genre">Género</option>
-                          <option value="age">Edad</option>
-                      </select>
-                      <select
                           className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm max-w-[150px]"
                           value={shelfFilter}
                           onChange={(e) => setShelfFilter(e.target.value)}
@@ -972,16 +940,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     {books
                     .filter(b => b.title.toLowerCase().includes(searchTerm.toLowerCase()))
                     .filter(b => shelfFilter === 'all' || (b.shelf || 'Recepción') === shelfFilter)
-                    .sort((a, b) => {
-                        if (sortOrder === 'title') return a.title.localeCompare(b.title);
-                        if (sortOrder === 'author') return a.author.localeCompare(b.author);
-                        if (sortOrder === 'genre') return (a.genre || '').localeCompare(b.genre || '');
-                        if (sortOrder === 'age') {
-                            const getAge = (s?: string) => parseInt((s || '0').split('-')[0].replace(/\D/g, '')) || 0;
-                            return getAge(a.recommendedAge) - getAge(b.recommendedAge);
-                        }
-                        return 0;
-                    })
                     .map(book => (
                        <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
                           {book.coverUrl ? (
@@ -1707,19 +1665,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                <button onClick={() => { setShowCandidates(false); setIsCoverSelectionMode(false); }} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full">
                   <X size={20} />
                </button>
-            </div>
-
-            <div className="mb-4 flex gap-2">
-                 <input
-                    className="flex-1 p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm"
-                    placeholder="¿No es ninguno? Busca otra cosa..."
-                    value={candidateSearchTerm}
-                    onChange={(e) => setCandidateSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleManualCandidateSearch(e)}
-                 />
-                 <Button onClick={handleManualCandidateSearch} size="sm" disabled={!candidateSearchTerm}>
-                    <Search size={16} />
-                 </Button>
             </div>
             
             {isCoverSelectionMode ? (
