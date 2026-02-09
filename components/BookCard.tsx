@@ -56,8 +56,8 @@ export const BookCard: React.FC<BookCardProps> = ({
     : null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full group">
-      <div className="relative h-48 overflow-hidden bg-slate-100">
+    <div className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group">
+      <div className="relative h-48 overflow-hidden bg-slate-100/50">
         {book.coverUrl ? (
             <img 
             src={book.coverUrl} 
@@ -97,7 +97,7 @@ export const BookCard: React.FC<BookCardProps> = ({
         )}
       </div>
 
-      <div className="p-4 flex flex-col flex-grow">
+      <div className="p-4 flex flex-col flex-grow bg-white/30 backdrop-blur-sm">
         <div className="flex justify-between items-start mb-2 gap-2">
           <div className="flex gap-1 flex-wrap">
              <span className="text-xs font-bold text-brand-600 uppercase tracking-wider bg-brand-50 px-2 py-0.5 rounded-md">
