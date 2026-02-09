@@ -650,85 +650,72 @@ export const AdminView: React.FC<AdminViewProps> = ({
     "Otros"
   ];
 
-  // Common Modal Classes (Bottom Sheet on Mobile)
-  const modalOverlayClass = "fixed inset-0 bg-slate-900/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4 backdrop-blur-sm transition-all";
-  const modalContentClass = "bg-white rounded-t-3xl sm:rounded-3xl w-full sm:w-auto sm:max-w-lg shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] transition-all duration-300";
-
   // --- Render ---
 
   return (
-    <div className="max-w-7xl mx-auto md:p-6 space-y-6">
-
-      {/* Sticky Header */}
-      <header className="flex flex-col gap-4 bg-white/95 backdrop-blur-md p-4 md:p-6 md:rounded-3xl shadow-sm border-b md:border border-slate-100 no-print sticky top-0 z-40 transition-all">
-        <div className="flex justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-            <a href="https://prisma.bibliohispa.es/" className="text-slate-400 hover:text-brand-600 transition-colors p-2 -ml-2 hover:bg-slate-100 rounded-full" title="Volver a Prisma">
-                <ArrowLeft size={24} />
-            </a>
-            <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 md:w-12 md:h-12 border border-slate-100 rounded-xl flex items-center justify-center bg-slate-50 flex-shrink-0">
-                    <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
-                </div>
-                <div>
-                    <h1 className="text-lg md:text-2xl font-display font-bold text-slate-800 leading-tight">Admin</h1>
-                    <p className="text-xs text-slate-500 hidden sm:block">
-                    {settings.schoolName}
-                    </p>
-                </div>
-            </div>
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+      <header className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
+        <div className="flex items-center gap-4">
+          <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
+             <ArrowLeft size={24} />
+          </a>
+          <div className="w-16 h-16 p-2 border border-slate-100 rounded-xl flex items-center justify-center bg-slate-50">
+             <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </div>
-
-          <div className="flex items-center gap-2">
-             {/* Mobile Scope Toggle (Compact) */}
-             {isTechnical && (
-                  <div className="flex bg-slate-100 p-1 rounded-lg">
-                      <button
-                          onClick={() => setViewScope('global')}
-                          className={`px-2 py-1 rounded-md text-xs font-bold transition-all ${viewScope === 'global' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
-                      >
-                          Global
-                      </button>
-                      <button
-                          onClick={() => setViewScope('class')}
-                          className={`px-2 py-1 rounded-md text-xs font-bold transition-all ${viewScope === 'class' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
-                      >
-                          Mi Clase
-                      </button>
-                  </div>
-              )}
+          <div>
+            <h1 className="text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
+            <p className="text-slate-500">
+               {settings.schoolName} • <span className="text-brand-600 font-bold">
+                   {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
+                   {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
+               </span>
+            </p>
           </div>
         </div>
-
-        {/* Scrollable Nav */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
+        <div className="flex gap-2 flex-wrap justify-center items-center">
+          {isTechnical && (
+              <div className="flex bg-slate-100 p-1 rounded-lg mr-2">
+                  <button
+                      onClick={() => setViewScope('global')}
+                      className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                      Global
+                  </button>
+                  <button
+                      onClick={() => setViewScope('class')}
+                      className={`px-3 py-1.5 rounded-md text-sm transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                      Mi Clase
+                  </button>
+              </div>
+          )}
           {isSuperAdmin && (
-             <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')} className="flex-shrink-0 whitespace-nowrap">
+             <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')}>
                <Shield size={18} /> Profesores
              </Button>
           )}
-          <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')} className="flex-shrink-0 whitespace-nowrap">
+          <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')}>
             <Users size={18} /> Alumnos
           </Button>
-          <Button variant={activeTab === 'books' ? 'primary' : 'outline'} onClick={() => setActiveTab('books')} className="flex-shrink-0 whitespace-nowrap">
+          <Button variant={activeTab === 'books' ? 'primary' : 'outline'} onClick={() => setActiveTab('books')}>
             <BookOpen size={18} /> Libros
           </Button>
-          <Button variant={activeTab === 'reviews' ? 'primary' : 'outline'} onClick={() => setActiveTab('reviews')} className="flex-shrink-0 whitespace-nowrap">
+          <Button variant={activeTab === 'reviews' ? 'primary' : 'outline'} onClick={() => setActiveTab('reviews')}>
             <MessageSquare size={18} /> Opiniones
           </Button>
-          <Button variant={activeTab === 'history' ? 'primary' : 'outline'} onClick={() => setActiveTab('history')} className="flex-shrink-0 whitespace-nowrap">
+          <Button variant={activeTab === 'history' ? 'primary' : 'outline'} onClick={() => setActiveTab('history')}>
             <Clock size={18} /> Historial
           </Button>
-           <Button variant={activeTab === 'stats' ? 'primary' : 'outline'} onClick={() => setActiveTab('stats')} className="flex-shrink-0 whitespace-nowrap">
+           <Button variant={activeTab === 'stats' ? 'primary' : 'outline'} onClick={() => setActiveTab('stats')}>
             <BarChart3 size={18} /> Estadísticas
           </Button>
-          <Button variant={activeTab === 'cards' ? 'primary' : 'outline'} onClick={() => setActiveTab('cards')} className="flex-shrink-0 whitespace-nowrap">
+          <Button variant={activeTab === 'cards' ? 'primary' : 'outline'} onClick={() => setActiveTab('cards')}>
             <CreditCard size={18} /> Carnets
           </Button>
           
           {isTechnical && viewScope === 'global' && (
-          <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }} className="flex-shrink-0 whitespace-nowrap">
-            <Settings size={18} /> Config
+          <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
+            <Settings size={18} />
           </Button>
           )}
         </div>
@@ -736,13 +723,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Teachers Tab (SuperAdmin Only) */}
       {activeTab === 'teachers' && isSuperAdmin && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 md:p-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Profesores Administradores</h2>
-
-                {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-slate-100 text-slate-500 text-sm">
@@ -777,36 +762,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             ))}
                         </tbody>
                     </table>
-                </div>
-
-                {/* Mobile Cards (Teachers) */}
-                <div className="md:hidden space-y-4">
-                    {users.filter(u => u.role === UserRole.ADMIN).map(teacher => (
-                        <div key={teacher.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="font-bold text-slate-800">{teacher.firstName}</h3>
-                                    <div className="text-xs font-mono text-brand-600 mt-1">{teacher.username}</div>
-                                </div>
-                                <button
-                                    onClick={() => onUpdateUser && onUpdateUser({ ...teacher, isTechnical: !teacher.isTechnical })}
-                                    className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${teacher.isTechnical ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}
-                                >
-                                    {teacher.isTechnical ? 'Técnico' : 'Estándar'}
-                                </button>
-                            </div>
-                            <div className="flex justify-end pt-2 border-t border-slate-50">
-                                <Button variant="danger" size="sm" onClick={() => onDeleteUser(teacher.id)}>
-                                    <Trash2 size={16} className="mr-1"/> Eliminar
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
                     {users.filter(u => u.role === UserRole.ADMIN).length === 0 && (
-                         <p className="p-4 text-center text-slate-400 text-sm">No hay profesores añadidos.</p>
+                        <p className="p-4 text-center text-slate-400 text-sm">No hay profesores añadidos.</p>
                     )}
                 </div>
-
              </div>
            </div>
            
@@ -816,9 +775,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                      <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
                      <form onSubmit={handleAddTeacher} className="space-y-3">
-                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
-                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base" placeholder="Usuario (ej: profe.juan)" value={newTeacher.username} onChange={e => setNewTeacher({...newTeacher, username: e.target.value})} />
-                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base" type="password" placeholder="Contraseña" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Usuario (ej: profe.juan)" value={newTeacher.username} onChange={e => setNewTeacher({...newTeacher, username: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" type="password" placeholder="Contraseña" value={newTeacher.password} onChange={e => setNewTeacher({...newTeacher, password: e.target.value})} />
                         <Button type="submit" className="w-full">
                             <UserPlus size={18}/> Crear Profesor
                         </Button>
@@ -831,25 +790,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Users Tab */}
       {activeTab === 'users' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 md:p-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+              <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold font-display text-slate-700">Listado de Alumnos</h2>
-                <div className="relative w-full sm:w-auto">
+                <div className="relative">
                   <input 
                     type="text" 
                     placeholder="Buscar alumno..." 
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-base sm:text-sm bg-white text-slate-900"
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                   <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
                 </div>
               </div>
-
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 text-slate-500 text-sm">
@@ -889,44 +846,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   </tbody>
                 </table>
               </div>
-
-              {/* Mobile Cards (Users) */}
-              <div className="md:hidden space-y-3">
-                 {visibleUsers
-                    .filter(u => u.role === UserRole.STUDENT)
-                    .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .map(user => (
-                        <div key={user.id} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                             <div className="flex justify-between items-start">
-                                 <div>
-                                     <h3 className="font-bold text-slate-800 text-lg">{user.firstName} {user.lastName}</h3>
-                                     <div className="flex gap-2 items-center mt-1">
-                                         <span className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-bold">{user.className}</span>
-                                         <span className="font-mono text-brand-500 text-xs">{user.username}</span>
-                                     </div>
-                                 </div>
-                                 <div className="text-fun-orange font-bold text-xl">{user.points} <span className="text-xs">XP</span></div>
-                             </div>
-
-                             <div className="flex gap-2 justify-end border-t border-slate-50 pt-2 mt-2">
-                                <button onClick={() => setReportUser(user)} className="flex items-center gap-1 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg text-xs font-bold">
-                                    <FileText size={14} /> Reporte
-                                </button>
-                                <button onClick={() => setManagingPointsUser(user)} className="flex items-center gap-1 text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg text-xs font-bold">
-                                    <Trophy size={14} /> Puntos
-                                </button>
-                                <button onClick={() => setEditingUser(user)} className="flex items-center gap-1 text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg text-xs font-bold">
-                                    <Edit2 size={14} />
-                                </button>
-                                <button onClick={() => onDeleteUser(user.id)} className="flex items-center gap-1 text-red-600 bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold">
-                                    <Trash2 size={14} />
-                                </button>
-                             </div>
-                        </div>
-                    ))
-                 }
-              </div>
-
             </div>
           </div>
 
@@ -937,9 +856,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
                 <form onSubmit={handleAddSingleUser} className="space-y-3">
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
-                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
+                  <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
                   <Button type="submit" className="w-full">
                     <Plus size={18}/> Crear Usuario
                   </Button>
@@ -950,28 +869,28 @@ export const AdminView: React.FC<AdminViewProps> = ({
              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
                <h3 className="font-bold text-lg mb-2 text-indigo-900 flex items-center gap-2">
                  <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
-                 Sincronización
+                 Sincronización Central
                </h3>
                <p className="text-sm text-indigo-700 mb-4">
-                  Actualiza alumnos y profesores desde PrismaEdu.
+                  Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
                </p>
                <Button
                  onClick={handleSyncStudents}
                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
                  disabled={isSyncing}
                >
-                 {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar'}
+                 {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
                </Button>
              </div>
 
                  {/* CSV Import */}
                  <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100">
-                   <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV</h3>
+                   <h3 className="font-bold text-lg mb-2 text-brand-800">Importar Alumnos CSV (Manual)</h3>
                <div className="mb-4">
                   <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Clase para esta lista</label>
                   <input 
                     type="text"
-                    className="w-full p-2 border border-brand-200 rounded-xl text-base focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
                     placeholder="Ej: 5º A"
                     value={importClassName}
                     onChange={(e) => setImportClassName(e.target.value)}
@@ -979,11 +898,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                </div>
 
                <div className="mb-4">
-                  <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Codificación</label>
+                  <label className="block text-xs font-bold text-brand-700 uppercase mb-1">Codificación del Archivo</label>
                   <select 
                     value={csvEncoding}
                     onChange={(e) => setCsvEncoding(e.target.value)}
-                    className="w-full p-2 border border-brand-200 rounded-xl text-base focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
+                    className="w-full p-2 border border-brand-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-white text-slate-900"
                   >
                     <option value="windows-1252">Excel / ANSI (Recomendado)</option>
                     <option value="UTF-8">UTF-8 (Estándar)</option>
@@ -1012,15 +931,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Books Tab */}
       {activeTab === 'books' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 md:p-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
               {/* Books Grid Preview */}
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                 <div className="flex justify-between items-center mb-6 gap-4">
                     <h2 className="text-xl font-bold font-display text-slate-700 whitespace-nowrap">Catálogo ({books.length})</h2>
-                    <div className="flex flex-col sm:flex-row gap-2 w-full justify-end">
+                    <div className="flex gap-2 w-full justify-end">
                       <select
-                          className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base sm:text-sm"
+                          className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm"
                           value={sortOrder}
                           onChange={(e) => setSortOrder(e.target.value as any)}
                           title="Ordenar por"
@@ -1031,7 +950,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           <option value="age">Edad</option>
                       </select>
                       <select
-                          className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-base sm:text-sm sm:max-w-[150px]"
+                          className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 text-sm max-w-[150px]"
                           value={shelfFilter}
                           onChange={(e) => setShelfFilter(e.target.value)}
                       >
@@ -1043,7 +962,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       <input
                         type="text"
                         placeholder="Buscar libro..."
-                        className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-base sm:text-sm sm:w-64 bg-white text-slate-900"
+                        className="pl-4 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm w-64 bg-white text-slate-900"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -1064,7 +983,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         return 0;
                     })
                     .map(book => (
-                       <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group transition-all">
+                       <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
                           {book.coverUrl ? (
                              <img src={book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
                           ) : (
@@ -1072,20 +991,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 {book.title.substring(0, 10)}...
                              </div>
                           )}
-                          <div className="flex-1 min-w-0 flex flex-col h-full">
+                          <div className="flex-1 min-w-0">
                              <h4 className="font-bold text-slate-800 truncate text-sm" title={book.title}>{book.title}</h4>
-                             <p className="text-xs text-slate-500 mb-1 truncate">{book.author}</p>
+                             <p className="text-xs text-slate-500 mb-1">{book.author}</p>
                              <div className="flex gap-2 text-xs text-slate-400 mb-2 flex-wrap">
-                               <span className="truncate">{book.shelf}</span>
+                               <span>{book.shelf}</span>
                                <span className={book.unitsAvailable > 0 ? "text-green-600" : "text-red-500"}>{book.unitsAvailable}/{book.unitsTotal}</span>
+                               {book.recommendedAge && <span className="text-purple-500 font-bold">{book.recommendedAge}</span>}
                              </div>
-
-                             <div className="flex gap-2 mt-auto">
-                                <button onClick={() => handleStartEditing(book)} className="text-xs text-brand-500 bg-brand-50 px-2 py-1 rounded-md hover:bg-brand-100 flex items-center gap-1 font-bold">
+                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleStartEditing(book)} className="text-xs text-brand-500 hover:text-brand-700 flex items-center gap-1">
                                     <Edit2 size={12}/> Editar
                                 </button>
-                                <button onClick={() => onDeleteBook(book.id)} className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-md hover:bg-red-100 flex items-center gap-1 font-bold">
-                                    <Trash2 size={12}/>
+                                <button onClick={() => onDeleteBook(book.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
+                                    <Trash2 size={12}/> Eliminar
                                 </button>
                              </div>
                           </div>
@@ -1111,7 +1030,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Título *</label>
                             <div className="flex gap-2">
                                 <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900 font-bold"
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 font-bold"
                                     value={newBook.title || ''}
                                     onChange={e => setNewBook({...newBook, title: e.target.value})}
                                     onBlur={handleBlur}
@@ -1131,7 +1050,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                             <label className="text-[10px] font-bold text-slate-400 uppercase mt-1">Autor</label>
                             <input
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900"
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.author || ''}
                                 onChange={e => setNewBook({...newBook, author: e.target.value})}
                                 onBlur={handleBlur}
@@ -1147,7 +1066,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             </label>
                             {newBook.shelf === 'BIBLIOTECA' ? (
                                 <select
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900"
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                     value={newBook.genre || ''}
                                     onChange={e => setNewBook({...newBook, genre: e.target.value})}
                                 >
@@ -1158,7 +1077,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 </select>
                             ) : (
                                 <input
-                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900"
+                                    className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                     value={newBook.genre || ''}
                                     onChange={e => setNewBook({...newBook, genre: e.target.value})}
                                     placeholder="Ej: Fantasía"
@@ -1168,7 +1087,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Edad</label>
                             <select
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900"
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.recommendedAge || ''}
                                 onChange={e => setNewBook({...newBook, recommendedAge: e.target.value})}
                             >
@@ -1185,7 +1104,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Unidades</label>
                             <input
                                 type="number" min="1"
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900"
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.unitsTotal || 1}
                                 onChange={e => setNewBook({...newBook, unitsTotal: parseInt(e.target.value)})}
                             />
@@ -1193,7 +1112,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Espacio</label>
                             <select
-                                className="w-full p-1.5 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900"
+                                className="w-full p-1.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                 value={newBook.shelf || ''}
                                 onChange={e => setNewBook({...newBook, shelf: e.target.value})}
                             >
@@ -1209,7 +1128,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase">Sinopsis</label>
                         <textarea
-                            className="w-full p-2 border border-slate-200 rounded-lg text-base sm:text-xs bg-slate-50 text-slate-700 h-20"
+                            className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 text-slate-700 h-20"
                             value={newBook.description || ''}
                             onChange={e => setNewBook({...newBook, description: e.target.value})}
                         />
@@ -1233,11 +1152,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                    <h3 className="font-bold text-lg mb-2 text-fun-purple">Importar Libros CSV</h3>
                <p className="text-xs text-purple-600 mb-3">Formato: Título, Autor, Género, Unidades, Espacio, Edad Rec.</p>
                <div className="mb-4">
-                  <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación</label>
+                  <label className="block text-xs font-bold text-purple-700 uppercase mb-1">Codificación del Archivo</label>
                   <select 
                     value={csvEncoding}
                     onChange={(e) => setCsvEncoding(e.target.value)}
-                    className="w-full p-2 border border-purple-200 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white text-slate-900"
+                    className="w-full p-2 border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white text-slate-900"
                   >
                     <option value="windows-1252">Excel / ANSI (Recomendado)</option>
                     <option value="UTF-8">UTF-8 (Estándar)</option>
@@ -1286,11 +1205,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Reviews Tab */}
       {activeTab === 'reviews' && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 p-4 md:p-6">
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
            <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Opiniones de Lectores</h2>
-
-           {/* Desktop Table */}
-           <div className="hidden md:block overflow-x-auto">
+           <div className="overflow-x-auto">
              <table className="w-full text-left border-collapse">
                <thead>
                  <tr className="border-b border-slate-100 text-slate-500 text-sm">
@@ -1328,49 +1245,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
                </tbody>
              </table>
            </div>
-
-           {/* Mobile List (Reviews) */}
-           <div className="md:hidden space-y-4">
-                {visibleReviews.length === 0 ? (
-                    <p className="text-slate-400 text-center text-sm">No hay opiniones.</p>
-                ) : (
-                    visibleReviews.map(review => {
-                        const book = books.find(b => b.id === review.bookId);
-                        const user = users.find(u => u.id === review.userId);
-                        return (
-                            <div key={review.id} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                                <div className="flex justify-between">
-                                    <span className="text-xs text-slate-400">{new Date(review.date).toLocaleDateString()}</span>
-                                    <div className="text-fun-orange text-sm">{'★'.repeat(review.rating)}</div>
-                                </div>
-                                <h4 className="font-bold text-slate-800">{book?.title || 'Libro desconocido'}</h4>
-                                <p className="text-xs text-brand-600 font-bold">{user ? `${user.firstName} ${user.lastName}` : review.authorName}</p>
-                                <div className="bg-slate-50 p-3 rounded-xl text-sm italic text-slate-600">"{review.comment}"</div>
-                                <div className="flex justify-end pt-2">
-                                     <button onClick={() => onDeleteReview && onDeleteReview(review.id)} className="text-red-500 text-xs font-bold uppercase flex items-center gap-1">
-                                        <Trash2 size={12} /> Eliminar
-                                     </button>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-           </div>
-
         </div>
       )}
 
       {/* History Tab */}
       {activeTab === 'history' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-4 md:p-6">
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
            <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-               <h2 className="text-xl font-bold font-display text-slate-700 w-full md:w-auto">Historial</h2>
+               <h2 className="text-xl font-bold font-display text-slate-700">Historial de Préstamos</h2>
                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                    <div className="relative w-full md:w-64">
                       <input
                         type="text"
                         placeholder="Buscar por libro o alumno..."
-                        className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-base sm:text-sm bg-white text-slate-900 w-full"
+                        className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-full"
                         value={historySearchTerm}
                         onChange={(e) => setHistorySearchTerm(e.target.value)}
                       />
@@ -1378,9 +1266,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                    </div>
                </div>
            </div>
-
-           {/* Desktop Table */}
-           <div className="hidden md:block overflow-x-auto">
+           <div className="overflow-x-auto">
              <table className="w-full text-left border-collapse">
                <thead>
                  <tr className="border-b border-slate-100 text-slate-500 text-sm">
@@ -1428,54 +1314,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                </tbody>
              </table>
            </div>
-
-           {/* Mobile List (History) */}
-           <div className="md:hidden space-y-4">
-               {visibleTransactions.length === 0 ? (
-                    <p className="text-slate-400 text-center text-sm">No hay datos.</p>
-               ) : (
-                   [...visibleTransactions]
-                    .filter(tx => {
-                        if (!historySearchTerm) return true;
-                        const term = historySearchTerm.toLowerCase();
-                        const book = books.find(b => b.id === tx.bookId);
-                        const user = users.find(u => u.id === tx.userId);
-                        const bookTitle = book?.title.toLowerCase() || '';
-                        const userName = user ? `${user.firstName} ${user.lastName}`.toLowerCase() : '';
-                        return bookTitle.includes(term) || userName.includes(term);
-                    })
-                    .sort((a,b) => new Date(b.dateBorrowed).getTime() - new Date(a.dateBorrowed).getTime()).map(tx => {
-                        const book = books.find(b => b.id === tx.bookId);
-                        const user = users.find(u => u.id === tx.userId);
-                        return (
-                            <div key={tx.id} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                                <div className="flex justify-between items-start">
-                                    <div className="font-bold text-slate-800 text-sm max-w-[70%]">{book?.title || 'Libro desconocido'}</div>
-                                    <div className="text-right">
-                                        {tx.active ? (
-                                            <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-[10px] font-bold">Prestado</span>
-                                        ) : (
-                                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold">Devuelto</span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="text-sm text-slate-600">{user ? `${user.firstName} ${user.lastName}` : 'Usuario desconocido'}</div>
-                                <div className="flex justify-between text-xs text-slate-400 pt-2 border-t border-slate-50 mt-1">
-                                    <span>Salida: {new Date(tx.dateBorrowed).toLocaleDateString()}</span>
-                                    <span>{tx.dateReturned ? `Vuelta: ${new Date(tx.dateReturned).toLocaleDateString()}` : ''}</span>
-                                </div>
-                            </div>
-                        )
-                    })
-               )}
-           </div>
-
         </div>
       )}
 
-      {/* Stats Tab (Mostly responsive already, just checking container padding) */}
+      {/* Stats Tab */}
       {activeTab === 'stats' && (
-        <div className="space-y-6 p-4 md:p-0">
+        <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
@@ -1551,16 +1395,16 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Cards Tab */}
       {activeTab === 'cards' && (
-        <div className="space-y-6 p-4 md:p-0">
+        <div className="space-y-6">
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
                         <h2 className="text-xl font-bold font-display text-slate-800">Generador de Carnets</h2>
                         <p className="text-slate-500">Imprime los carnets por clase o individualmente.</p>
                     </div>
-                    <div className="flex flex-col gap-4 items-end md:items-center w-full md:w-auto">
+                    <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
                         {/* Mode Selector */}
-                        <div className="flex gap-2 flex-wrap justify-center w-full md:w-auto">
+                        <div className="flex gap-2">
                             <div className="bg-slate-100 p-1 rounded-lg flex text-sm">
                                 <button
                                     className={`px-3 py-1.5 rounded-md transition-all ${cardPrintMode === 'class' ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700'}`}
@@ -1594,7 +1438,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                         {cardPrintMode === 'class' ? (
                             <select
-                                className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900 w-full md:w-auto text-base sm:text-sm"
+                                className="p-2 border border-slate-200 rounded-xl bg-white text-slate-900"
                                 value={cardClassFilter}
                                 onChange={(e) => setCardClassFilter(e.target.value)}
                             >
@@ -1602,19 +1446,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                         ) : (
-                            <div className="relative w-full md:w-auto">
+                            <div className="relative">
                                 <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
                                 <input
                                     type="text"
                                     placeholder="Buscar alumno..."
-                                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-base sm:text-sm bg-white text-slate-900 w-full md:w-64"
+                                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900 w-64"
                                     value={cardSearchTerm}
                                     onChange={(e) => setCardSearchTerm(e.target.value)}
                                 />
                             </div>
                         )}
 
-                        <Button onClick={handlePrintCards} className="w-full md:w-auto">
+                        <Button onClick={handlePrintCards}>
                             <Printer size={18} className="mr-2"/> Imprimir
                         </Button>
                     </div>
@@ -1729,7 +1573,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Settings Tab */}
       {activeTab === 'settings' && isTechnical && (
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 md:p-0">
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Configuración General</h2>
@@ -1737,7 +1581,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <div>
                             <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Nombre del Colegio / Biblioteca</label>
                             <input
-                                className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900 font-medium text-base sm:text-sm"
+                                className="w-full p-3 border border-slate-200 rounded-xl bg-white text-slate-900 font-medium"
                                 value={tempSettings.schoolName}
                                 onChange={e => setTempSettings({...tempSettings, schoolName: e.target.value})}
                                 placeholder="Ej: Biblioteca Escolar Cervantes"
@@ -1756,7 +1600,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 </div>
                                 <div className="flex-1 space-y-2">
                                     <input
-                                        className="w-full p-2 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900"
+                                        className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900"
                                         value={tempSettings.logoUrl}
                                         onChange={e => setTempSettings({...tempSettings, logoUrl: e.target.value})}
                                         placeholder="https://..."
@@ -1796,7 +1640,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nueva Contraseña</label>
                                 <input
                                     type="password"
-                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-base sm:text-sm"
+                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
                                     value={newAdminPassword}
                                     onChange={e => setNewAdminPassword(e.target.value)}
                                 />
@@ -1805,7 +1649,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Confirmar</label>
                                 <input
                                     type="password"
-                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-base sm:text-sm"
+                                    className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900"
                                     value={confirmAdminPassword}
                                     onChange={e => setConfirmAdminPassword(e.target.value)}
                                 />
@@ -1850,9 +1694,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* CANDIDATES SELECTION MODAL */}
       {showCandidates && (
-        <div className={modalOverlayClass}>
-          <div className={modalContentClass}>
-            <div className="flex-none flex justify-between items-center p-6 pb-2">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="flex justify-between items-center mb-4">
                <div>
                   <h3 className="text-xl font-bold font-display text-slate-800 flex items-center gap-2">
                     <Wand2 className="text-brand-500" size={24}/>
@@ -1865,24 +1709,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
                </button>
             </div>
 
-            <div className="flex-none p-6 pt-2 pb-4 border-b border-slate-100">
-                <div className="flex gap-2">
-                    <input
-                        className="flex-1 p-2 border border-slate-200 rounded-xl bg-slate-50 text-base sm:text-sm"
-                        placeholder="¿No es ninguno? Busca otra cosa..."
-                        value={candidateSearchTerm}
-                        onChange={(e) => setCandidateSearchTerm(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleManualCandidateSearch(e)}
-                    />
-                    <Button onClick={handleManualCandidateSearch} size="sm" disabled={!candidateSearchTerm}>
-                        <Search size={16} />
-                    </Button>
-                </div>
+            <div className="mb-4 flex gap-2">
+                 <input
+                    className="flex-1 p-2 border border-slate-200 rounded-xl bg-slate-50 text-sm"
+                    placeholder="¿No es ninguno? Busca otra cosa..."
+                    value={candidateSearchTerm}
+                    onChange={(e) => setCandidateSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleManualCandidateSearch(e)}
+                 />
+                 <Button onClick={handleManualCandidateSearch} size="sm" disabled={!candidateSearchTerm}>
+                    <Search size={16} />
+                 </Button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 pt-2 custom-scrollbar">
             {isCoverSelectionMode ? (
-                <div>
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <p className="text-sm text-slate-500 mb-3">Selecciona una imagen para usarla como portada:</p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
                         {candidates.map((cand, idx) => (
@@ -1902,7 +1743,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
                     {candidates.map((cand, idx) => (
                         <div
                             key={idx}
@@ -1932,32 +1773,30 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     ))}
                 </div>
             )}
-            </div>
           </div>
         </div>
       )}
 
       {/* Edit User Modal */}
       {editingUser && (
-        <div className={modalOverlayClass}>
-            <div className={modalContentClass}>
-                <div className="flex-none flex justify-between items-center p-6 pb-2">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Editar Usuario</h3>
                     <button onClick={() => setEditingUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-6 pt-2">
                 <form onSubmit={handleUpdateUser} className="space-y-4">
                     <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nombre</label>
-                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-base sm:text-sm" value={editingUser.firstName} onChange={e => setEditingUser({...editingUser, firstName: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900" value={editingUser.firstName} onChange={e => setEditingUser({...editingUser, firstName: e.target.value})} />
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Apellido</label>
-                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-base sm:text-sm" value={editingUser.lastName} onChange={e => setEditingUser({...editingUser, lastName: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900" value={editingUser.lastName} onChange={e => setEditingUser({...editingUser, lastName: e.target.value})} />
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Clase</label>
-                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900 text-base sm:text-sm" value={editingUser.className} onChange={e => setEditingUser({...editingUser, className: e.target.value})} />
+                        <input className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-900" value={editingUser.className} onChange={e => setEditingUser({...editingUser, className: e.target.value})} />
                     </div>
                     {editingUser.role === UserRole.STUDENT && (
                         <div>
@@ -1967,21 +1806,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             </div>
                         </div>
                     )}
-                    <div className="pt-2 flex justify-end gap-2 pb-6 sm:pb-0">
+                    <div className="pt-2 flex justify-end gap-2">
                         <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>Cancelar</Button>
                         <Button type="submit">Guardar</Button>
                     </div>
                 </form>
-                </div>
             </div>
         </div>
       )}
 
       {/* Manage Points Modal */}
       {managingPointsUser && (
-        <div className={modalOverlayClass}>
-            <div className={modalContentClass}>
-                <div className="flex-none flex justify-between items-center p-6 pb-2">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] flex flex-col">
+                <div className="flex justify-between items-center mb-4">
                     <div>
                         <h3 className="text-xl font-bold font-display text-slate-800">Gestión de Puntos</h3>
                         <p className="text-sm text-slate-500">{managingPointsUser.firstName} {managingPointsUser.lastName} • <span className="font-bold text-fun-orange">{managingPointsUser.points} XP</span></p>
@@ -1989,27 +1827,25 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <button onClick={() => setManagingPointsUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
                 </div>
 
-                <div className="flex-none p-6 py-2">
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <h4 className="font-bold text-sm text-slate-700 mb-2">Añadir / Restar Puntos</h4>
-                        <form onSubmit={handleAddPointsSubmit} className="flex gap-2 items-end">
-                            <div className="flex-1">
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo</label>
-                                <input className="w-full p-2 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900" placeholder="Ej: Ayudar" value={pointsReason} onChange={e => setPointsReason(e.target.value)} />
-                            </div>
-                            <div className="w-24">
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cantidad</label>
-                                <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-base sm:text-sm bg-white text-slate-900" placeholder="+10" value={pointsAmount || ''} onChange={e => setPointsAmount(parseInt(e.target.value))} />
-                            </div>
-                            <Button type="submit" disabled={!pointsReason || !pointsAmount}>
-                                <Plus size={18}/>
-                            </Button>
-                        </form>
-                    </div>
+                <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
+                    <h4 className="font-bold text-sm text-slate-700 mb-2">Añadir / Restar Puntos</h4>
+                    <form onSubmit={handleAddPointsSubmit} className="flex gap-2 items-end">
+                        <div className="flex-1">
+                             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Motivo</label>
+                             <input className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900" placeholder="Ej: Ayudar en biblioteca" value={pointsReason} onChange={e => setPointsReason(e.target.value)} />
+                        </div>
+                        <div className="w-24">
+                             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cantidad</label>
+                             <input type="number" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900" placeholder="+10 / -5" value={pointsAmount || ''} onChange={e => setPointsAmount(parseInt(e.target.value))} />
+                        </div>
+                        <Button type="submit" disabled={!pointsReason || !pointsAmount}>
+                            <Plus size={18}/>
+                        </Button>
+                    </form>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
-                    <h4 className="font-bold text-sm text-slate-700 mb-2 sticky top-0 bg-white py-2">Historial</h4>
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <h4 className="font-bold text-sm text-slate-700 mb-2">Historial</h4>
                     {pointHistory.filter(h => h.userId === managingPointsUser.id).length === 0 ? (
                         <p className="text-sm text-slate-400 text-center py-4">No hay historial de puntos.</p>
                     ) : (
@@ -2039,20 +1875,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Edit Book Modal */}
       {editingBook && (
-        <div className={modalOverlayClass}>
-            <div className={`${modalContentClass} sm:max-w-2xl`}>
-                <div className="flex-none flex justify-between items-center p-6 pb-2">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Editar Libro</h3>
                     <button onClick={() => { setEditingBook(null); setShowCandidates(false); setIsCoverSelectionMode(false); }} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 pt-2 custom-scrollbar">
                 <div className="space-y-3">
                     <div className="flex gap-4">
                         {editingBook.coverUrl && <img src={editingBook.coverUrl} className="w-20 h-32 object-cover rounded bg-slate-200"/>}
                         <div className="flex-1 space-y-2">
-                            <input className="w-full p-2 border rounded text-base sm:text-sm" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} placeholder="Título" />
-                            <input className="w-full p-2 border rounded text-base sm:text-sm" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} placeholder="Autor" />
+                            <input className="w-full p-2 border rounded" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} placeholder="Título" />
+                            <input className="w-full p-2 border rounded" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} placeholder="Autor" />
                             <Button size="sm" variant="outline" onClick={() => { setIsCoverSelectionMode(true); setShowCandidates(true); }}><Wand2 size={14} className="mr-2"/> Buscar Portada Alternativa</Button>
                         </div>
                     </div>
@@ -2060,7 +1895,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <div className="grid grid-cols-2 gap-2">
                         {editingBook.shelf === 'BIBLIOTECA' ? (
                             <select
-                                className="p-2 border rounded bg-white text-slate-900 text-base sm:text-sm"
+                                className="p-2 border rounded bg-white text-slate-900"
                                 value={editingBook.genre || ''}
                                 onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
                             >
@@ -2071,14 +1906,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             </select>
                         ) : (
                             <input
-                                className="p-2 border rounded text-base sm:text-sm"
+                                className="p-2 border rounded"
                                 value={editingBook.genre}
                                 onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
                                 placeholder="Género"
                             />
                         )}
                         <select
-                            className="p-2 border rounded bg-white text-slate-900 text-base sm:text-sm"
+                            className="p-2 border rounded bg-white text-slate-900"
                             value={editingBook.recommendedAge || ''}
                             onChange={e => setEditingBook({...editingBook, recommendedAge: e.target.value})}
                         >
@@ -2087,9 +1922,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 <option key={age} value={age}>{age}</option>
                             ))}
                         </select>
-                        <input type="number" className="p-2 border rounded text-base sm:text-sm" value={editingBook.unitsTotal} onChange={e => setEditingBook({...editingBook, unitsTotal: parseInt(e.target.value)})} placeholder="Unidades" />
+                        <input type="number" className="p-2 border rounded" value={editingBook.unitsTotal} onChange={e => setEditingBook({...editingBook, unitsTotal: parseInt(e.target.value)})} placeholder="Unidades" />
                         <select
-                            className="p-2 border rounded bg-white text-slate-900 text-base sm:text-sm"
+                            className="p-2 border rounded bg-white text-slate-900"
                             value={editingBook.shelf || ''}
                             onChange={e => setEditingBook({...editingBook, shelf: e.target.value})}
                         >
@@ -2101,13 +1936,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </select>
                     </div>
 
-                    <textarea className="w-full p-2 border rounded h-24 text-base sm:text-sm" value={editingBook.description || ''} onChange={e => setEditingBook({...editingBook, description: e.target.value})} placeholder="Sinopsis" />
+                    <textarea className="w-full p-2 border rounded h-24 text-sm" value={editingBook.description || ''} onChange={e => setEditingBook({...editingBook, description: e.target.value})} placeholder="Sinopsis" />
 
-                    <div className="flex justify-end gap-2 pt-2 pb-6 sm:pb-0">
+                    <div className="flex justify-end gap-2 pt-2">
                         <Button variant="outline" onClick={() => { setEditingBook(null); setShowCandidates(false); setIsCoverSelectionMode(false); }}>Cancelar</Button>
                         <Button onClick={handleSaveEdit}><Save size={16} className="mr-2"/> Guardar Cambios</Button>
                     </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -2115,28 +1949,26 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Report Selection Modal */}
       {reportUser && (
-        <div className={modalOverlayClass}>
-            <div className={`${modalContentClass} sm:max-w-sm`}>
-                <div className="flex-none flex justify-between items-center p-6 pb-2">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Informe de Préstamos</h3>
                     <button onClick={() => setReportUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
                 </div>
-                <div className="flex-1 p-6 pt-2">
-                    <p className="text-sm text-slate-500 mb-4">
-                        Selecciona el periodo para el informe de <strong>{reportUser.firstName} {reportUser.lastName}</strong>.
-                    </p>
+                <p className="text-sm text-slate-500 mb-4">
+                    Selecciona el periodo para el informe de <strong>{reportUser.firstName} {reportUser.lastName}</strong>.
+                </p>
 
-                    <div className="space-y-3">
-                        <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'monthly', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
-                            <span>Último Mes</span> <FileText size={16}/>
-                        </Button>
-                        <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'quarterly', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
-                            <span>Último Trimestre</span> <FileText size={16}/>
-                        </Button>
-                        <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'annual', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
-                            <span>Último Año (Anual)</span> <FileText size={16}/>
-                        </Button>
-                    </div>
+                <div className="space-y-3">
+                    <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'monthly', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
+                        <span>Último Mes</span> <FileText size={16}/>
+                    </Button>
+                    <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'quarterly', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
+                        <span>Último Trimestre</span> <FileText size={16}/>
+                    </Button>
+                    <Button className="w-full justify-between" onClick={() => { generateStudentLoanReport(reportUser, transactions, books, 'annual', settings.schoolName, settings.logoUrl); setReportUser(null); }}>
+                        <span>Último Año (Anual)</span> <FileText size={16}/>
+                    </Button>
                 </div>
             </div>
         </div>
