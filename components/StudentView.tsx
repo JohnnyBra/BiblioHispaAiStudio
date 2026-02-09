@@ -205,7 +205,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen pb-20 relative">
+    <div className="min-h-screen pb-24 relative">
       {/* Top Bar */}
       <div className="glass-header">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -268,8 +268,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
         
-        {/* Navigation Tabs */}
-        <div className="flex justify-center mb-6 overflow-x-auto no-scrollbar mask-gradient-x">
+        {/* Navigation Tabs (Desktop) */}
+        <div className="hidden md:flex justify-center mb-6 overflow-x-auto no-scrollbar mask-gradient-x">
           <div className="glass-panel p-1 rounded-2xl inline-flex whitespace-nowrap">
             <button 
               onClick={() => setActiveTab('catalog')}
@@ -951,6 +951,45 @@ export const StudentView: React.FC<StudentViewProps> = ({
             </div>
          </div>
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 p-2 pb-safe flex justify-around items-center z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <button
+          onClick={() => setActiveTab('catalog')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'catalog' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <LayoutGrid size={24} className={activeTab === 'catalog' ? 'fill-current' : ''} />
+          <span className="text-[10px] font-bold mt-1">Catálogo</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('mybooks')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 relative ${activeTab === 'mybooks' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <div className="relative">
+            <BookOpen size={24} className={activeTab === 'mybooks' ? 'fill-current' : ''} />
+            {myBooks.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                {myBooks.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-bold mt-1">Mis Libros</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'history' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <Clock size={24} className={activeTab === 'history' ? 'fill-current' : ''} />
+          <span className="text-[10px] font-bold mt-1">Historial</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('ranking')}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'ranking' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+        >
+          <Trophy size={24} className={activeTab === 'ranking' ? 'fill-current' : ''} />
+          <span className="text-[10px] font-bold mt-1">Rankings</span>
+        </button>
+      </div>
     </div>
   );
 };
