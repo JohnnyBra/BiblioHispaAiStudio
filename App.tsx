@@ -451,13 +451,13 @@ const App: React.FC = () => {
   if (connectionError) {
       return (
           <div className="min-h-screen flex items-center justify-center p-4">
-              <div className="glass-panel p-8 rounded-3xl text-center max-w-md border border-red-100/50">
-                  <div className="w-20 h-20 bg-red-50/50 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                      <WifiOff size={40} />
+              <div className="glass-panel p-10 rounded-4xl text-center max-w-md shadow-glass-lg animate-modal-in">
+                  <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-5 text-accent-coral animate-float">
+                      <WifiOff size={36} />
                   </div>
-                  <h1 className="text-2xl font-bold text-slate-800 mb-2">Error de Conexión</h1>
-                  <p className="text-slate-500 mb-6">No podemos conectar con el servidor de la biblioteca. Asegúrate de que el servidor está encendido.</p>
-                  <Button onClick={() => window.location.reload()} className="w-full">Reintentar</Button>
+                  <h1 className="text-2xl font-display font-bold text-slate-800 mb-2">Error de Conexión</h1>
+                  <p className="text-slate-400 mb-8 text-sm leading-relaxed">No podemos conectar con el servidor de la biblioteca. Asegúrate de que el servidor está encendido.</p>
+                  <Button onClick={() => window.location.reload()} className="w-full" size="lg">Reintentar</Button>
               </div>
           </div>
       );
@@ -465,11 +465,15 @@ const App: React.FC = () => {
 
   if (!isLoaded) {
       return (
-          <div className="min-h-screen bg-brand-50 flex items-center justify-center">
-              <div className="text-center animate-pulse">
-                  <img src="/vite.svg" className="w-16 h-16 mx-auto mb-4 opacity-50" alt="logo"/>
-                  <Loader2 size={40} className="text-brand-500 animate-spin mx-auto mb-2"/>
-                  <p className="font-bold text-brand-700">Conectando a la biblioteca...</p>
+          <div className="min-h-screen flex items-center justify-center">
+              <div className="text-center space-y-5 animate-fade-in">
+                  <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-brand animate-glow">
+                      <img src={settings.logoUrl || "/vite.svg"} className="w-10 h-10 brightness-0 invert" alt="logo"/>
+                  </div>
+                  <div className="space-y-2">
+                      <div className="skeleton h-3 w-48 mx-auto rounded-full"></div>
+                      <div className="skeleton h-2.5 w-32 mx-auto rounded-full"></div>
+                  </div>
               </div>
           </div>
       );
@@ -481,31 +485,32 @@ const App: React.FC = () => {
     return (
      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-        <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 bg-white/80 hover:bg-white p-3 rounded-full shadow-md text-slate-500 hover:text-brand-600 transition-all hover:scale-110 backdrop-blur-sm" title="Volver a Prisma">
-          <ArrowLeft size={24} />
+        <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 glass-panel hover:bg-white/90 p-3 rounded-2xl shadow-glass-sm text-slate-400 hover:text-brand-500 transition-all duration-300 hover:shadow-glass hover:scale-105 press-effect" title="Volver a Prisma">
+          <ArrowLeft size={22} />
         </a>
         <ToastContainer toasts={toasts} removeToast={removeToast} />
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-fun-yellow/20 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-accent-amber/10 rounded-full blur-[100px] animate-float"></div>
+        <div className="absolute bottom-[-15%] right-[-10%] w-[50%] h-[50%] bg-accent-violet/10 rounded-full blur-[100px] animate-float" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-[40%] right-[20%] w-[30%] h-[30%] bg-brand-500/8 rounded-full blur-[80px] animate-float" style={{animationDelay: '4s'}}></div>
 
-        <div className="glass-panel max-w-md w-full rounded-3xl p-8 relative z-10 animate-fade-in">
+        <div className="glass-panel max-w-md w-full rounded-4xl p-8 md:p-10 relative z-10 animate-modal-in shadow-glass-lg">
           <div className="text-center mb-8">
-            <div className="inline-block p-4 bg-white/50 backdrop-blur-sm rounded-2xl mb-4 shadow-sm">
+            <div className="inline-block p-4 bg-white/60 backdrop-blur-sm rounded-3xl mb-5 shadow-glass-sm ring-1 ring-white/50">
                <img src={settings.logoUrl || "https://cdn-icons-png.flaticon.com/512/3413/3413535.png"} alt="Logo" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-4xl font-display font-bold text-slate-800 mb-1">{settings.schoolName || 'Biblioteca'}</h1>
-            <p className="text-slate-600 font-medium">Tu puerta a mil aventuras</p>
+            <p className="text-slate-400 font-medium text-sm">Tu puerta a mil aventuras</p>
           </div>
 
-          <div className="flex bg-slate-100/50 backdrop-blur-sm p-1 rounded-xl mb-6 border border-white/20">
-            <button 
-              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${!isAdminMode ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500 hover:text-slate-700'}`}
+          <div className="flex bg-slate-100/60 backdrop-blur-sm p-1 rounded-2xl mb-8 border border-white/30">
+            <button
+              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${!isAdminMode ? 'bg-white shadow-glass-sm text-brand-600' : 'text-slate-400 hover:text-slate-600'}`}
               onClick={() => { setIsAdminMode(false); setAuthError(''); }}
             >
               ACCESO ALUMNOS
             </button>
-            <button 
-              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${isAdminMode ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500 hover:text-slate-700'}`}
+            <button
+              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${isAdminMode ? 'bg-white shadow-glass-sm text-brand-600' : 'text-slate-400 hover:text-slate-600'}`}
               onClick={() => { setIsAdminMode(true); setAuthError(''); setIsManualLogin(false); }}
             >
               ACCESO PROFESORES
@@ -514,13 +519,13 @@ const App: React.FC = () => {
 
           {!isAdminMode && (
             <div className="mb-6">
-               <Button onClick={() => setShowQRScanner(true)} className="w-full bg-slate-800 hover:bg-slate-900 text-white flex items-center justify-center gap-2 py-3 shadow-lg shadow-slate-300">
+               <button onClick={() => setShowQRScanner(true)} className="w-full bg-gradient-to-b from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white flex items-center justify-center gap-3 py-3.5 rounded-2xl font-display font-semibold shadow-glass-lg hover-glow transition-all duration-300 press-effect">
                   <QrCode size={20} /> Escanear Carnet
-               </Button>
-               <div className="relative flex py-4 items-center">
-                  <div className="flex-grow border-t border-slate-200/50"></div>
-                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase">O entra con tu nombre</span>
-                  <div className="flex-grow border-t border-slate-200/50"></div>
+               </button>
+               <div className="relative flex py-5 items-center">
+                  <div className="flex-grow border-t border-slate-200/40"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-300 text-[11px] font-bold uppercase tracking-wider">O entra con tu nombre</span>
+                  <div className="flex-grow border-t border-slate-200/40"></div>
                </div>
             </div>
           )}
@@ -579,12 +584,12 @@ const App: React.FC = () => {
                               placeholder="••••••••"
                             />
                           </div>
-                          <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-brand-500/20" size="lg">
+                          <Button type="submit" className="w-full" size="lg">
                             Entrar
                           </Button>
                           <button
                              type="button"
-                             className="text-xs text-brand-600 font-bold hover:underline w-full text-center"
+                             className="text-xs text-brand-500 font-bold hover:text-brand-600 w-full text-center transition-colors py-2"
                              onClick={() => setIsManualLogin(false)}
                           >
                              Volver a Google Login
@@ -605,17 +610,16 @@ const App: React.FC = () => {
                     placeholder="juan.garcia"
                   />
                 </div>
-                <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-brand-500/20" size="lg">
+                <Button type="submit" className="w-full" size="lg">
                   Entrar
                 </Button>
              </form>
           )}
 
-          {authError && <div className="mt-4 text-red-500 text-sm font-medium text-center bg-red-50 p-2 rounded-lg">{authError}</div>}
+          {authError && <div className="mt-4 text-accent-coral text-sm font-medium text-center bg-red-50/80 p-3 rounded-2xl animate-fade-in">{authError}</div>}
 
-
-          <div className="mt-8 text-center border-t border-slate-200/50 pt-4">
-             <p className="text-xs text-slate-400">Creado por <span className="font-bold text-brand-600">Javi Barrero</span></p>
+          <div className="mt-8 text-center border-t border-slate-100/50 pt-5">
+             <p className="text-[11px] text-slate-300">Creado por <span className="font-semibold text-slate-400">Javi Barrero</span></p>
           </div>
         </div>
         
@@ -631,7 +635,7 @@ const App: React.FC = () => {
 
   if (currentUser.role === UserRole.SUPERADMIN || currentUser.role === UserRole.ADMIN) {
      return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+        <div className="min-h-screen font-sans text-slate-900">
            <ToastContainer toasts={toasts} removeToast={removeToast} />
            <AdminView 
              currentUser={currentUser}
@@ -656,14 +660,14 @@ const App: React.FC = () => {
              onLogout={handleLogout}
            />
            <div className="hidden md:block fixed bottom-6 right-6 z-50 no-print">
-              <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-lg">Cerrar Sesión</Button>
+              <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-glass-lg press-effect">Cerrar Sesión</Button>
            </div>
         </div>
      );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="min-h-screen font-sans text-slate-900">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <StudentView 
         currentUser={currentUser}

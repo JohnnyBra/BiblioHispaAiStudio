@@ -16,20 +16,20 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props 
 }) => {
-  const baseStyle = "font-display font-semibold rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2";
-  
+  const baseStyle = "font-display font-semibold rounded-2xl transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 select-none";
+
   const variants = {
-    primary: "bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-500/30",
-    secondary: "bg-fun-yellow hover:bg-yellow-400 text-yellow-900 shadow-lg shadow-yellow-500/30",
-    danger: "bg-fun-red hover:bg-red-500 text-white shadow-lg shadow-red-500/30",
-    success: "bg-fun-green hover:bg-green-500 text-white shadow-lg shadow-green-500/30",
-    outline: "border-2 border-slate-200 hover:border-brand-500 hover:text-brand-600 text-slate-600 bg-white"
+    primary: "bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-500 hover:to-brand-700 text-white shadow-brand hover:shadow-brand-lg",
+    secondary: "bg-white hover:bg-slate-50 text-slate-700 shadow-glass-sm hover:shadow-glass border border-slate-200/80",
+    danger: "bg-gradient-to-b from-red-500 to-red-600 hover:from-red-500 hover:to-red-700 text-white shadow-danger",
+    success: "bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-700 text-white shadow-success",
+    outline: "border-[1.5px] border-slate-200 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 text-slate-600 bg-white/50 backdrop-blur-sm"
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-8 py-3.5 text-lg"
+    sm: "px-4 py-2 text-sm",
+    md: "px-6 py-3 text-base",
+    lg: "px-8 py-4 text-lg"
   };
 
   return (
