@@ -101,31 +101,31 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
   }, [onScanSuccess, onScanFailure]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-      <div className="glass-panel !bg-white/95 rounded-3xl p-6 w-full max-w-md relative shadow-2xl flex flex-col items-center animate-scale-in">
-        <button 
-            onClick={onClose} 
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 z-10 bg-slate-100/50 rounded-full p-2 hover:bg-slate-200 transition-colors"
+    <div className="fixed inset-0 z-50 modal-backdrop flex items-end sm:items-center justify-center animate-fade-in">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 w-full sm:max-w-md relative shadow-glass-xl flex flex-col items-center animate-slide-up sm:animate-modal-in">
+        <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-slate-300 hover:text-slate-500 z-10 bg-slate-50 rounded-xl p-2 hover:bg-slate-100 transition-all press-effect"
         >
             <X size={20} />
         </button>
-        
+
         <div className="text-center mb-6">
             <h3 className="text-xl font-display font-bold text-slate-800 flex items-center justify-center gap-2">
-                <Camera className="text-brand-600" /> Escanear Carnet
+                <Camera className="text-brand-500" /> Escanear Carnet
             </h3>
             <p className="text-xs text-slate-400 mt-1">Enfoca el código QR de tu carnet</p>
         </div>
-        
-        <div className="relative w-full aspect-square bg-slate-900 rounded-2xl overflow-hidden border-4 border-slate-100 shadow-inner">
+
+        <div className="relative w-full aspect-square bg-slate-900 rounded-2xl overflow-hidden ring-4 ring-slate-100 shadow-inner">
             {/* The library mounts the video element here */}
             <div id={readerId} className="w-full h-full"></div>
 
             {/* Loading State */}
             {loading && !error && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black/50 backdrop-blur-sm z-10">
-                    <Loader2 size={48} className="animate-spin mb-4 text-brand-500" />
-                    <p className="font-bold text-sm">Iniciando cámara...</p>
+                    <Loader2 size={48} className="animate-spin mb-4 text-brand-400" />
+                    <p className="font-display font-bold text-sm">Iniciando cámara...</p>
                     <p className="text-xs text-slate-300 mt-2">Por favor, acepta los permisos.</p>
                 </div>
             )}
@@ -133,14 +133,14 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
             {/* Error State */}
             {error && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 p-6 z-20 text-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                        <AlertTriangle className="text-red-500" size={32} />
+                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+                        <AlertTriangle className="text-accent-coral" size={32} />
                     </div>
-                    <h4 className="font-bold text-slate-800 mb-2">Error de Cámara</h4>
-                    <p className="text-sm text-red-600 font-medium">{error}</p>
-                    <button 
+                    <h4 className="font-display font-bold text-slate-800 mb-2">Error de Cámara</h4>
+                    <p className="text-sm text-accent-coral font-medium">{error}</p>
+                    <button
                         onClick={onClose}
-                        className="mt-6 bg-slate-800 text-white px-6 py-2 rounded-xl text-sm font-bold"
+                        className="mt-6 bg-gradient-to-b from-slate-800 to-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-bold press-effect shadow-glass"
                     >
                         Cerrar
                     </button>
@@ -150,19 +150,19 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
             {/* Overlay Guides (Only show when active and no error) */}
             {!loading && !error && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="w-56 h-56 border-2 border-white/50 rounded-lg relative">
-                        <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-brand-500 -mt-1 -ml-1 rounded-tl"></div>
-                        <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-brand-500 -mt-1 -mr-1 rounded-tr"></div>
-                        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-brand-500 -mb-1 -ml-1 rounded-bl"></div>
-                        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-brand-500 -mb-1 -mr-1 rounded-br"></div>
-                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-brand-500/50 -translate-y-1/2"></div>
+                    <div className="w-56 h-56 border-2 border-white/30 rounded-xl relative">
+                        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brand-400 -mt-1 -ml-1 rounded-tl-lg animate-pulse-slow"></div>
+                        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brand-400 -mt-1 -mr-1 rounded-tr-lg animate-pulse-slow"></div>
+                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brand-400 -mb-1 -ml-1 rounded-bl-lg animate-pulse-slow"></div>
+                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-brand-400 -mb-1 -mr-1 rounded-br-lg animate-pulse-slow"></div>
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-400 to-transparent" style={{animation: 'scanLine 2s ease-in-out infinite'}}></div>
                     </div>
                 </div>
             )}
         </div>
 
-        <p className="mt-4 text-[10px] text-slate-400 text-center max-w-xs">
-            Si tienes problemas, asegúrate de estar accediendo mediante <strong>HTTPS</strong> y de haber dado permisos al navegador.
+        <p className="mt-5 text-[10px] text-slate-300 text-center max-w-xs">
+            Si tienes problemas, asegúrate de estar accediendo mediante <strong className="text-slate-400">HTTPS</strong> y de haber dado permisos al navegador.
         </p>
       </div>
     </div>

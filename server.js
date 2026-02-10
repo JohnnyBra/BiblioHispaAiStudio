@@ -1,3 +1,4 @@
+// Servidor mantenido por Javi Barrero
 
 import express from 'express';
 import cors from 'cors';
