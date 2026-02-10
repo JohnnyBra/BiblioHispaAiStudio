@@ -210,45 +210,45 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="glass-header">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-             <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
+             <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-300 hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
                 <ArrowLeft size={20} />
              </a>
              <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
              <div className="hidden sm:block">
                  <h1 className="font-display font-bold text-slate-800 text-lg leading-none">{settings.schoolName}</h1>
-                 <p className="text-xs text-slate-500 font-medium">Biblioteca</p>
+                 <p className="text-[11px] text-slate-400 font-medium">Biblioteca</p>
              </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm px-3 py-1.5 rounded-full transition-all hover:bg-white/80 cursor-default group relative border border-white/20 shadow-sm">
-               <div className="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center text-brand-700 font-bold border-2 border-brand-100">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 glass-panel px-4 py-2 rounded-2xl cursor-default group relative hover-glow">
+               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white shadow-sm">
                   {currentUser.firstName[0]}
                </div>
                <div className="flex flex-col">
                   <span className="font-bold text-xs text-slate-700 leading-none">{currentUser.firstName}</span>
                   <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-0.5 text-[10px] font-bold text-fun-orange">
-                         <Star size={10} fill="currentColor" /> {currentUser.points} XP
+                      <span className="flex items-center gap-0.5 text-[10px] font-bold gradient-text">
+                         <Star size={10} className="text-accent-amber" fill="currentColor" /> {currentUser.points} XP
                       </span>
                       {currentUser.currentStreak && currentUser.currentStreak > 0 && (
-                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-red-500" title="Racha actual">
-                             <TrendingUp size={10} /> {currentUser.currentStreak} días
+                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-accent-coral" title="Racha actual">
+                             <TrendingUp size={10} /> {currentUser.currentStreak}
                           </span>
                       )}
                   </div>
                </div>
 
                {/* Badges Preview Tooltip/Dropdown */}
-               <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 p-4 hidden group-hover:block z-50">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1"><Award size={12}/> Insignias</h4>
+               <div className="absolute top-full right-0 mt-2 w-64 glass-panel rounded-2xl shadow-glass-lg p-4 hidden group-hover:block z-50 animate-fade-in-down">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-3 flex items-center gap-1"><Award size={12}/> Insignias</h4>
                   <div className="grid grid-cols-4 gap-2">
                      {currentUser.badges && currentUser.badges.length > 0 ? (
                         currentUser.badges.map(bId => {
                            const badgeDef = badges.find(b => b.id === bId);
                            if (!badgeDef) return null;
                            return (
-                              <div key={bId} className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-xl border border-slate-200" title={badgeDef.name + ': ' + badgeDef.description}>
+                              <div key={bId} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-xl border border-slate-100 hover:scale-110 transition-transform" title={badgeDef.name + ': ' + badgeDef.description}>
                                  {badgeDef.icon}
                               </div>
                            );
@@ -259,7 +259,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   </div>
                </div>
             </div>
-            <Button variant="outline" size="sm" onClick={onLogout} className="border-slate-200 hover:border-red-200 hover:bg-red-50 hover:text-red-500">
+            <Button variant="outline" size="sm" onClick={onLogout} className="border-slate-200 hover:border-red-200 hover:bg-red-50 hover:text-red-500 press-effect">
                <span className="text-xs">Salir</span>
             </Button>
           </div>
@@ -270,29 +270,29 @@ export const StudentView: React.FC<StudentViewProps> = ({
         
         {/* Navigation Tabs (Desktop) */}
         <div className="hidden md:flex justify-center mb-6 overflow-x-auto no-scrollbar mask-gradient-x">
-          <div className="glass-panel p-1 rounded-2xl inline-flex whitespace-nowrap">
-            <button 
+          <div className="glass-panel p-1.5 rounded-2xl inline-flex whitespace-nowrap gap-1">
+            <button
               onClick={() => setActiveTab('catalog')}
-              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-500 hover:text-brand-600 hover:bg-white/50'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
             >
               Catálogo
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('mybooks')}
-              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'mybooks' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeTab === 'mybooks' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
             >
-              Mis Libros 
-              {myBooks.length > 0 && <span className="bg-white text-brand-600 text-xs px-1.5 rounded-full">{myBooks.length}</span>}
+              Mis Libros
+              {myBooks.length > 0 && <span className={`text-xs px-1.5 rounded-full font-bold ${activeTab === 'mybooks' ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-600'}`}>{myBooks.length}</span>}
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('history')}
-              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
             >
               Historial
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('ranking')}
-              className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'ranking' ? 'bg-brand-500 text-white shadow-md' : 'text-slate-500 hover:text-brand-600'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'ranking' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
             >
               Rankings
             </button>
@@ -301,27 +301,27 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
         {/* --- Catalog Tab --- */}
         {activeTab === 'catalog' && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-6 animate-fade-in-up">
             {/* Filters & View Control */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                 {/* Search */}
-                <div className="relative w-full md:w-96">
-                  <input 
-                    type="text" 
-                    placeholder="Busca por título o autor..." 
+                <div className="relative w-full md:w-96 group">
+                  <input
+                    type="text"
+                    placeholder="Busca por título o autor..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl glass-input focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl glass-input focus:outline-none text-slate-900 text-sm placeholder:text-slate-400"
                   />
-                  <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
+                  <Search className="absolute left-3.5 top-4 text-slate-300 group-focus-within:text-brand-500 transition-colors duration-200" size={18} />
                 </div>
                 
                 {/* Controls */}
-                <div className="flex gap-4 w-full md:w-auto">
-                   <div className="flex items-center gap-2 glass-panel px-3 py-2 rounded-xl flex-1 md:flex-none">
-                      <ArrowUpDown size={16} className="text-slate-400"/>
-                      <select 
+                <div className="flex gap-3 w-full md:w-auto">
+                   <div className="flex items-center gap-2 glass-panel px-3 py-2.5 rounded-2xl flex-1 md:flex-none">
+                      <ArrowUpDown size={15} className="text-slate-300"/>
+                      <select
                         className="bg-transparent text-sm font-medium text-slate-600 outline-none w-full"
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as any)}
@@ -332,46 +332,46 @@ export const StudentView: React.FC<StudentViewProps> = ({
                          <option value="rating">Mejor Valorados</option>
                       </select>
                    </div>
-                   
-                   <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-200">
-                      <button 
-                         onClick={() => setViewMode('grid')} 
-                         className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+
+                   <div className="glass-panel p-1 rounded-2xl flex gap-0.5">
+                      <button
+                         onClick={() => setViewMode('grid')}
+                         className={`p-2.5 rounded-xl transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-brand-500 shadow-glass-sm' : 'text-slate-300 hover:text-slate-500'}`}
                          title="Vista Cuadrícula"
                       >
-                         <LayoutGrid size={20}/>
+                         <LayoutGrid size={18}/>
                       </button>
-                      <button 
-                         onClick={() => setViewMode('list')} 
-                         className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      <button
+                         onClick={() => setViewMode('list')}
+                         className={`p-2.5 rounded-xl transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-brand-500 shadow-glass-sm' : 'text-slate-300 hover:text-slate-500'}`}
                          title="Vista Lista"
                       >
-                         <List size={20}/>
+                         <List size={18}/>
                       </button>
                    </div>
                 </div>
               </div>
 
               {/* Filters Row */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                   {/* Genres */}
                   <div className="flex gap-2 overflow-x-auto pb-2 flex-1 no-scrollbar">
                     {genres.map(g => (
                       <button
                         key={g}
                         onClick={() => setSelectedGenre(g)}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${selectedGenre === g ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 press-effect ${selectedGenre === g ? 'bg-slate-800 text-white shadow-glass-sm' : 'glass-panel text-slate-500 hover:text-slate-700'}`}
                       >
                         {g}
                       </button>
                     ))}
                   </div>
-                  
+
                   {/* Age Filter */}
-                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex-shrink-0">
-                      <UserIcon size={16} className="text-fun-purple"/>
-                      <span className="text-xs font-bold text-slate-400 uppercase mr-1">Edad:</span>
-                      <select 
+                  <div className="flex items-center gap-2 glass-panel px-3 py-2 rounded-2xl flex-shrink-0">
+                      <UserIcon size={15} className="text-accent-violet"/>
+                      <span className="text-[10px] font-bold text-slate-300 uppercase mr-1">Edad:</span>
+                      <select
                         className="bg-transparent text-sm font-bold text-slate-600 outline-none"
                         value={selectedAge}
                         onChange={(e) => setSelectedAge(e.target.value)}
@@ -383,9 +383,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
                    </div>
 
                   {/* Shelf Filter */}
-                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex-shrink-0">
-                      <Archive size={16} className="text-brand-500"/>
-                      <span className="text-xs font-bold text-slate-400 uppercase mr-1">Espacio:</span>
+                  <div className="flex items-center gap-2 glass-panel px-3 py-2 rounded-2xl flex-shrink-0">
+                      <Archive size={15} className="text-brand-500"/>
+                      <span className="text-[10px] font-bold text-slate-300 uppercase mr-1">Espacio:</span>
                       <select
                         className="bg-transparent text-sm font-bold text-slate-600 outline-none max-w-[150px]"
                         value={selectedShelf}
@@ -402,19 +402,20 @@ export const StudentView: React.FC<StudentViewProps> = ({
             {/* Content Display */}
             {viewMode === 'grid' ? (
               // GRID VIEW
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredBooks.map(book => (
-                  <BookCard 
-                    key={book.id} 
-                    book={book} 
-                    role={currentUser.role}
-                    canBorrow={!myActiveTransactionIds.includes(book.id)}
-                    onBorrow={onBorrow}
-                    onViewDetails={handleViewDetails}
-                    showShelf={true}
-                    rating={getBookRating(book.id)}
-                    earliestReturnDate={book.unitsAvailable <= 0 ? getEarliestReturnDate(book.id) : undefined}
-                  />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {filteredBooks.map((book, index) => (
+                  <div key={book.id} className="animate-fade-in-up" style={{animationDelay: `${Math.min(index * 50, 400)}ms`}}>
+                    <BookCard
+                      book={book}
+                      role={currentUser.role}
+                      canBorrow={!myActiveTransactionIds.includes(book.id)}
+                      onBorrow={onBorrow}
+                      onViewDetails={handleViewDetails}
+                      showShelf={true}
+                      rating={getBookRating(book.id)}
+                      earliestReturnDate={book.unitsAvailable <= 0 ? getEarliestReturnDate(book.id) : undefined}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -428,7 +429,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                     const formattedReturn = earliestReturn ? new Date(earliestReturn).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}) : null;
 
                     return (
-                       <div key={book.id} className="glass-card p-4 rounded-2xl flex gap-4 hover:shadow-lg transition-all">
+                       <div key={book.id} className="glass-card p-4 rounded-2xl flex gap-4 transition-all">
                           {/* Image */}
                           <div className="w-20 h-28 flex-shrink-0 bg-slate-200/50 rounded-lg overflow-hidden relative shadow-sm">
                              <img src={book.coverUrl} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} alt={book.title}/>
@@ -491,9 +492,12 @@ export const StudentView: React.FC<StudentViewProps> = ({
             )}
 
             {filteredBooks.length === 0 && (
-              <div className="col-span-full text-center py-20 text-slate-400">
-                <BookOpen size={48} className="mx-auto mb-4 opacity-50"/>
-                <p>No se encontraron libros con esos filtros.</p>
+              <div className="col-span-full flex flex-col items-center justify-center py-20 animate-fade-in">
+                <div className="w-24 h-24 bg-slate-100/80 rounded-3xl flex items-center justify-center mb-6">
+                  <BookOpen size={40} className="text-slate-300"/>
+                </div>
+                <h3 className="font-display font-bold text-xl text-slate-700 mb-2">Sin resultados</h3>
+                <p className="text-slate-400 text-sm max-w-xs text-center">No encontramos libros con esos filtros. Prueba a cambiar la búsqueda.</p>
               </div>
             )}
           </div>
@@ -501,10 +505,10 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
         {/* --- My Books Tab --- */}
         {activeTab === 'mybooks' && (
-           <div className="space-y-6 animate-fade-in">
-              <h2 className="text-2xl font-bold text-slate-800">Libros que estás leyendo</h2>
+           <div className="space-y-6 animate-fade-in-up">
+              <h2 className="text-2xl font-display font-bold text-slate-800">Libros que estás leyendo</h2>
               {myBooks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   {myBooks.map(book => {
                      // Calculate loan duration for visual cues
                      const tx = transactions.find(t => t.bookId === book.id && t.userId === currentUser.id && t.active);
@@ -551,12 +555,12 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   })}
                 </div>
               ) : (
-                <div className="glass-panel rounded-3xl p-10 text-center">
-                   <div className="w-20 h-20 bg-white/50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 shadow-inner">
-                      <BookOpen size={32} />
+                <div className="glass-panel rounded-3xl p-12 text-center animate-fade-in">
+                   <div className="w-24 h-24 bg-slate-100/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                      <BookOpen size={40} className="text-slate-300" />
                    </div>
-                   <h3 className="text-xl font-bold text-slate-700 mb-2">No tienes libros prestados</h3>
-                   <p className="text-slate-500 mb-6">¡Ve al catálogo y elige tu próxima aventura!</p>
+                   <h3 className="text-xl font-display font-bold text-slate-700 mb-2">No tienes libros prestados</h3>
+                   <p className="text-slate-400 text-sm mb-8">¡Ve al catálogo y elige tu próxima aventura!</p>
                    <Button onClick={() => setActiveTab('catalog')}>Ir al Catálogo</Button>
                 </div>
               )}
@@ -565,9 +569,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
         {/* --- History Tab --- */}
         {activeTab === 'history' && (
-           <div className="space-y-6 animate-fade-in">
-              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                 <History size={24} className="text-slate-400"/>
+           <div className="space-y-6 animate-fade-in-up">
+              <h2 className="text-2xl font-display font-bold text-slate-800 flex items-center gap-2">
+                 <History size={24} className="text-slate-300"/>
                  Historial de Lecturas
               </h2>
               {myHistoryTransactions.length > 0 ? (
@@ -577,7 +581,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                        if (!book) return null; // Should not happen
 
                        return (
-                          <div key={tx.id} className={`glass-card p-4 rounded-2xl flex gap-4 items-center transition-all hover:shadow-lg ${tx.active ? 'ring-2 ring-brand-200 bg-brand-50/30' : 'opacity-80 hover:opacity-100'}`}>
+                          <div key={tx.id} className={`glass-card p-4 rounded-2xl flex gap-4 items-center transition-all ${tx.active ? 'ring-2 ring-brand-200 bg-brand-50/30' : 'opacity-80 hover:opacity-100'}`}>
                              <div className="w-14 h-20 flex-shrink-0 bg-slate-100/50 rounded-lg overflow-hidden shadow-sm">
                                 {book.coverUrl ? (
                                    <img src={book.coverUrl} className="w-full h-full object-cover" alt="cover"/>
@@ -611,9 +615,12 @@ export const StudentView: React.FC<StudentViewProps> = ({
                     })}
                  </div>
               ) : (
-                 <div className="p-10 text-center text-slate-400 bg-white rounded-3xl border border-slate-100">
-                    <History size={48} className="mx-auto mb-4 opacity-50"/>
-                    <p>Aún no has sacado ningún libro. ¡Tu historia empieza hoy!</p>
+                 <div className="glass-panel rounded-3xl p-12 text-center animate-fade-in">
+                    <div className="w-24 h-24 bg-slate-100/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                       <History size={40} className="text-slate-300"/>
+                    </div>
+                    <h3 className="font-display font-bold text-xl text-slate-700 mb-2">Sin historial</h3>
+                    <p className="text-slate-400 text-sm">Aún no has sacado ningún libro. ¡Tu historia empieza hoy!</p>
                  </div>
               )}
            </div>
@@ -621,13 +628,13 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
         {/* --- Ranking Tab --- */}
         {activeTab === 'ranking' && (
-           <div className="space-y-8 animate-fade-in">
+           <div className="space-y-8 animate-fade-in-up">
               <div className="text-center space-y-2 mb-8">
                  <h2 className="text-3xl font-display font-bold text-slate-800 flex items-center justify-center gap-3">
-                   <Trophy className="text-fun-yellow w-10 h-10 drop-shadow-sm" fill="currentColor"/> 
+                   <Trophy className="text-accent-amber w-10 h-10 drop-shadow-sm" fill="currentColor"/>
                    Salón de la Fama
                  </h2>
-                 <p className="text-slate-500">¡Descubre quién lee más y cuáles son los mejores libros!</p>
+                 <p className="text-slate-400 text-sm">¡Descubre quién lee más y cuáles son los mejores libros!</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -741,45 +748,45 @@ export const StudentView: React.FC<StudentViewProps> = ({
       </div>
 
       {/* --- FLOATING CHAT WIDGET --- */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
+      <div className="fixed bottom-20 md:bottom-4 right-4 z-50 flex flex-col items-end">
          {/* Chat Window */}
          {isChatOpen && (
-            <div className="glass-panel !bg-white/95 rounded-2xl shadow-2xl w-80 sm:w-96 mb-4 overflow-hidden flex flex-col animate-scale-in origin-bottom-right h-[500px]">
+            <div className="bg-white rounded-3xl shadow-glass-xl w-80 sm:w-96 mb-4 overflow-hidden flex flex-col animate-slide-up origin-bottom-right h-[500px] border border-slate-200/50">
                {/* Header */}
-               <div className="bg-brand-600/90 backdrop-blur p-4 flex justify-between items-center text-white">
-                  <div className="flex items-center gap-2">
-                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+               <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-4 flex justify-between items-center text-white">
+                  <div className="flex items-center gap-3">
+                     <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                         <Sparkles size={16} />
                      </div>
                      <div>
-                        <h3 className="font-bold text-sm">BiblioChat</h3>
-                        <p className="text-[10px] opacity-80">Tu bibliotecario virtual</p>
+                        <h3 className="font-display font-bold text-sm">BiblioChat</h3>
+                        <p className="text-[10px] text-white/70">Tu bibliotecario virtual</p>
                      </div>
                   </div>
-                  <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/20 p-1 rounded-lg">
+                  <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/20 p-1.5 rounded-xl transition-colors">
                      <X size={18} />
                   </button>
                </div>
-               
+
                {/* Messages Area */}
-               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/80">
                   {messages.map((msg) => (
-                     <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                     <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
                         <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${
-                           msg.sender === 'user' 
-                              ? 'bg-brand-500 text-white rounded-tr-none' 
-                              : 'bg-white text-slate-700 shadow-sm rounded-tl-none border border-slate-100'
+                           msg.sender === 'user'
+                              ? 'bg-gradient-to-br from-brand-500 to-brand-600 text-white rounded-tr-sm shadow-brand'
+                              : 'bg-white text-slate-700 shadow-glass-sm rounded-tl-sm border border-slate-100'
                         }`}>
                            {msg.text}
                         </div>
                      </div>
                   ))}
                   {isTyping && (
-                     <div className="flex justify-start">
-                        <div className="bg-white text-slate-400 shadow-sm rounded-2xl rounded-tl-none p-3 text-xs border border-slate-100 flex gap-1">
+                     <div className="flex justify-start animate-fade-in">
+                        <div className="bg-white text-slate-400 shadow-glass-sm rounded-2xl rounded-tl-sm p-3 text-xs border border-slate-100 flex gap-1">
                            <span className="animate-bounce">●</span>
-                           <span className="animate-bounce delay-100">●</span>
-                           <span className="animate-bounce delay-200">●</span>
+                           <span className="animate-bounce" style={{animationDelay: '0.1s'}}>●</span>
+                           <span className="animate-bounce" style={{animationDelay: '0.2s'}}>●</span>
                         </div>
                      </div>
                   )}
@@ -787,18 +794,18 @@ export const StudentView: React.FC<StudentViewProps> = ({
                </div>
 
                {/* Input Area */}
-               <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100 flex gap-2">
-                  <input 
-                     type="text" 
-                     className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white text-slate-900"
+               <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100/50 flex gap-2">
+                  <input
+                     type="text"
+                     className="flex-1 glass-input rounded-xl px-3 py-2.5 text-sm focus:outline-none text-slate-900"
                      placeholder="Escribe aquí..."
                      value={chatInput}
                      onChange={(e) => setChatInput(e.target.value)}
                   />
-                  <button 
-                     type="submit" 
+                  <button
+                     type="submit"
                      disabled={!chatInput.trim() || isTyping}
-                     className="bg-brand-600 text-white p-2 rounded-xl hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     className="bg-gradient-to-b from-brand-500 to-brand-600 text-white p-2.5 rounded-xl hover:from-brand-500 hover:to-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-brand press-effect"
                   >
                      <Send size={18} />
                   </button>
@@ -807,24 +814,24 @@ export const StudentView: React.FC<StudentViewProps> = ({
          )}
 
          {/* Trigger Button */}
-         <button 
+         <button
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className={`${isChatOpen ? 'bg-slate-700' : 'bg-brand-600 animate-bounce-slow'} text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center gap-2`}
+            className={`${isChatOpen ? 'bg-slate-800' : 'bg-gradient-to-b from-brand-500 to-brand-600 animate-bounce-slow shadow-brand-lg'} text-white p-4 rounded-2xl shadow-glass-lg hover:shadow-glass-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 press-effect`}
          >
-            {isChatOpen ? <X size={24} /> : <MessageCircle size={28} />}
-            {!isChatOpen && <span className="font-bold pr-2">¡Pregúntame!</span>}
+            {isChatOpen ? <X size={24} /> : <MessageCircle size={26} />}
+            {!isChatOpen && <span className="font-display font-bold pr-1 text-sm">¡Pregúntame!</span>}
          </button>
       </div>
 
       {/* --- BOOK DETAILS MODAL --- */}
       {viewingBook && (
-         <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="glass-panel !bg-white/95 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row overflow-hidden relative animate-scale-in">
-               <button 
+         <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-glass-xl flex flex-col md:flex-row overflow-hidden relative animate-modal-in">
+               <button
                   onClick={() => setViewingBook(null)}
-                  className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white p-2 rounded-full shadow-sm backdrop-blur transition-all"
+                  className="absolute top-4 right-4 z-10 glass-panel hover:bg-white p-2 rounded-xl shadow-glass-sm transition-all press-effect"
                >
-                  <X size={20} className="text-slate-500"/>
+                  <X size={18} className="text-slate-400"/>
                </button>
 
                <div className="w-full md:w-1/3 h-64 md:h-auto relative bg-slate-100">
@@ -902,13 +909,13 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
       {/* --- REVIEW MODAL --- */}
       {reviewingBook && (
-         <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="glass-panel !bg-white/95 rounded-3xl w-full max-w-md p-6 shadow-2xl relative animate-scale-in">
-               <button 
+         <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-glass-xl relative animate-modal-in">
+               <button
                   onClick={() => setReviewingBook(null)}
-                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                  className="absolute top-4 right-4 text-slate-300 hover:text-slate-500 transition-colors p-1 rounded-xl hover:bg-slate-50"
                >
-                  <X size={24} />
+                  <X size={22} />
                </button>
                
                <div className="text-center mb-6">
@@ -953,41 +960,41 @@ export const StudentView: React.FC<StudentViewProps> = ({
       )}
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 p-2 pb-safe flex justify-around items-center z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 glass-bottom-nav p-2 pb-safe flex justify-around items-center z-40">
         <button
           onClick={() => setActiveTab('catalog')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'catalog' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'catalog' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <LayoutGrid size={24} className={activeTab === 'catalog' ? 'fill-current' : ''} />
-          <span className="text-[10px] font-bold mt-1">Catálogo</span>
+          <LayoutGrid size={22} strokeWidth={activeTab === 'catalog' ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Catálogo</span>
         </button>
         <button
           onClick={() => setActiveTab('mybooks')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 relative ${activeTab === 'mybooks' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 relative press-effect ${activeTab === 'mybooks' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
           <div className="relative">
-            <BookOpen size={24} className={activeTab === 'mybooks' ? 'fill-current' : ''} />
+            <BookOpen size={22} strokeWidth={activeTab === 'mybooks' ? 2.5 : 1.5} />
             {myBooks.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+              <span className="absolute -top-1 -right-1.5 bg-brand-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full ring-2 ring-white">
                 {myBooks.length}
               </span>
             )}
           </div>
-          <span className="text-[10px] font-bold mt-1">Mis Libros</span>
+          <span className="text-[10px] font-bold mt-0.5">Mis Libros</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'history' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'history' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <Clock size={24} className={activeTab === 'history' ? 'fill-current' : ''} />
-          <span className="text-[10px] font-bold mt-1">Historial</span>
+          <Clock size={22} strokeWidth={activeTab === 'history' ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Historial</span>
         </button>
         <button
           onClick={() => setActiveTab('ranking')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'ranking' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'ranking' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <Trophy size={24} className={activeTab === 'ranking' ? 'fill-current' : ''} />
-          <span className="text-[10px] font-bold mt-1">Rankings</span>
+          <Trophy size={22} strokeWidth={activeTab === 'ranking' ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Rankings</span>
         </button>
       </div>
     </div>
