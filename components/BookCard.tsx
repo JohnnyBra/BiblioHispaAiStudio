@@ -56,40 +56,40 @@ export const BookCard: React.FC<BookCardProps> = ({
     : null;
 
   return (
-    <div className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group">
-      <div className="relative h-48 overflow-hidden bg-slate-100/50">
+    <div className="glass-card rounded-3xl overflow-hidden flex flex-col h-full group hover-glow">
+      <div className="relative h-52 overflow-hidden bg-slate-100/50">
         {book.coverUrl ? (
-            <img 
-            src={book.coverUrl} 
+            <img
+            src={book.coverUrl}
             alt={book.title}
-            className={`w-full h-full object-cover transform transition-transform duration-700 ease-in-out group-hover:scale-110 ${!isAvailable ? 'grayscale' : ''}`}
+            className={`w-full h-full object-cover transform transition-transform duration-700 ease-in-out will-change-transform group-hover:scale-105 ${!isAvailable ? 'grayscale' : ''}`}
             loading="lazy"
             />
         ) : (
-            // CSS GENERATED COVER (Fallback)
-            <div className={`w-full h-full bg-gradient-to-br ${getCoverGradient(book.title)} p-4 flex flex-col justify-center items-center text-center group-hover:scale-110 transition-transform duration-700`}>
-                 <div className="border-2 border-white/30 p-4 w-full h-full flex flex-col justify-center rounded-lg backdrop-blur-sm">
+            <div className={`w-full h-full bg-gradient-to-br ${getCoverGradient(book.title)} p-4 flex flex-col justify-center items-center text-center group-hover:scale-105 transition-transform duration-700 will-change-transform`}>
+                 <div className="border-2 border-white/30 p-4 w-full h-full flex flex-col justify-center rounded-xl backdrop-blur-sm">
                     <BookOpen size={24} className="text-white/50 mx-auto mb-2"/>
                     <h3 className="font-display font-bold text-white text-lg leading-tight line-clamp-3 drop-shadow-md">{book.title}</h3>
                     <p className="text-white/80 text-xs mt-2 font-medium truncate">{book.author}</p>
                  </div>
             </div>
         )}
-        
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold text-slate-700 shadow-sm flex items-center gap-1 z-10">
-           <Star size={12} className="text-fun-yellow fill-fun-yellow"/> {book.readCount} leídos
+
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/15 to-transparent pointer-events-none z-[5]"></div>
+
+        <div className="absolute top-3 right-3 glass-panel !bg-white/90 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 flex items-center gap-1 z-10 shadow-glass-sm">
+           <Star size={11} className="text-accent-amber fill-accent-amber"/> {book.readCount}
         </div>
         {!isAvailable && (
-          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-[2px] flex flex-col items-center justify-center z-20 p-4 text-center">
-            <span className="text-white font-display font-black text-2xl tracking-widest bg-fun-red px-6 py-2 rounded-2xl transform -rotate-12 border-4 border-white shadow-2xl uppercase mb-3">
-              AGOTADO
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] flex flex-col items-center justify-center z-20 p-4 text-center">
+            <span className="text-white/90 font-display font-bold text-sm tracking-wider uppercase bg-white/10 px-5 py-2.5 rounded-full border border-white/20 backdrop-blur-md shadow-lg">
+              No disponible
             </span>
             {formattedReturnDate && (
-               <div className="flex flex-col items-center animate-pulse">
-                  <span className="text-slate-300 text-[10px] font-bold uppercase tracking-wider">Disponible aprox.</span>
-                  <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white font-bold text-sm mt-1 border border-white/30">
-                     <Clock size={14} />
-                     {formattedReturnDate}
+               <div className="flex flex-col items-center mt-3">
+                  <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-full text-white/90 font-medium text-xs border border-white/20">
+                     <Clock size={13} />
+                     Aprox. {formattedReturnDate}
                   </div>
                </div>
             )}
@@ -97,43 +97,42 @@ export const BookCard: React.FC<BookCardProps> = ({
         )}
       </div>
 
-      <div className="p-4 flex flex-col flex-grow bg-white/30 backdrop-blur-sm">
-        <div className="flex justify-between items-start mb-2 gap-2">
-          <div className="flex gap-1 flex-wrap">
-             <span className="text-xs font-bold text-brand-600 uppercase tracking-wider bg-brand-50 px-2 py-0.5 rounded-md">
+      <div className="p-5 flex flex-col flex-grow bg-white/30 backdrop-blur-sm">
+        <div className="flex justify-between items-start mb-2.5 gap-2">
+          <div className="flex gap-1.5 flex-wrap">
+             <span className="text-[10px] font-bold text-brand-600 uppercase tracking-wide bg-brand-50 px-2.5 py-1 rounded-full">
                {book.genre}
              </span>
              {book.recommendedAge && (
-               <span className="text-xs font-bold text-fun-purple uppercase tracking-wider bg-purple-50 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+               <span className="text-[10px] font-bold text-accent-violet uppercase tracking-wide bg-purple-50 px-2.5 py-1 rounded-full flex items-center gap-0.5">
                   <User size={10} /> {book.recommendedAge}
                </span>
              )}
           </div>
           {showShelf && (
-            <span className="text-xs text-slate-500 flex items-center gap-1 whitespace-nowrap">
+            <span className="text-[11px] text-slate-400 flex items-center gap-1 whitespace-nowrap">
               <Archive size={12}/> {book.shelf}
             </span>
           )}
         </div>
-        
+
         <h3 className="font-display font-bold text-lg text-slate-800 leading-tight mb-1 line-clamp-2">{book.title}</h3>
-        <p className="text-sm text-slate-500 mb-2">{book.author}</p>
-        
-        {/* Rating Stars */}
+        <p className="text-sm text-slate-400 mb-2.5">{book.author}</p>
+
         <div className="flex items-center gap-0.5 mb-3">
            {[1, 2, 3, 4, 5].map((star) => (
-              <Star 
-                 key={star} 
-                 size={14} 
-                 className={star <= Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"}
+              <Star
+                 key={star}
+                 size={14}
+                 className={star <= Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-slate-200/60 fill-slate-200/60"}
               />
            ))}
-           {rating > 0 && <span className="text-xs text-slate-400 ml-1">({rating.toFixed(1)})</span>}
+           {rating > 0 && <span className="text-[11px] text-slate-400 ml-1">({rating.toFixed(1)})</span>}
         </div>
-        
-        <div className="mt-auto pt-3 border-t border-slate-100">
+
+        <div className="mt-auto pt-4 border-t border-slate-100/50">
           <div className="flex justify-between items-center mb-3">
-             <span className={`text-sm font-medium ${isAvailable ? 'text-fun-green' : 'text-fun-red font-bold'}`}>
+             <span className={`text-sm font-medium ${isAvailable ? 'text-accent-emerald' : 'text-accent-coral font-bold'}`}>
                {isAvailable ? `${book.unitsAvailable} de ${book.unitsTotal} disp.` : 'Sin unidades'}
              </span>
           </div>
@@ -141,8 +140,8 @@ export const BookCard: React.FC<BookCardProps> = ({
           <div className="space-y-2">
              <div className="flex gap-2">
                {canBorrow && onBorrow && (
-                 <Button 
-                   onClick={() => onBorrow(book)} 
+                 <Button
+                   onClick={() => onBorrow(book)}
                    disabled={!isAvailable}
                    className="w-full"
                    size="sm"
@@ -152,8 +151,8 @@ export const BookCard: React.FC<BookCardProps> = ({
                  </Button>
                )}
                {canReturn && onReturn && (
-                 <Button 
-                   onClick={() => onReturn(book)} 
+                 <Button
+                   onClick={() => onReturn(book)}
                    className="w-full"
                    size="sm"
                    variant="success"
@@ -162,9 +161,9 @@ export const BookCard: React.FC<BookCardProps> = ({
                  </Button>
                )}
              </div>
-             
+
              {onViewDetails && (
-               <Button 
+               <Button
                   onClick={() => onViewDetails(book)}
                   variant="secondary"
                   size="sm"

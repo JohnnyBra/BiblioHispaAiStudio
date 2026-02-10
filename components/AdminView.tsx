@@ -634,39 +634,39 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // --- Render ---
 
   return (
-    <div className="h-[100dvh] flex flex-col w-full max-w-7xl mx-auto overflow-hidden bg-slate-50">
+    <div className="h-[100dvh] flex flex-col w-full max-w-7xl mx-auto overflow-hidden">
 
       {/* HEADER - Fixed */}
       <div className="flex-none p-4 md:p-6 pb-0 z-30">
-          <header className="glass-header flex flex-col md:flex-row justify-between items-center gap-4 p-4 md:p-6 rounded-3xl shadow-sm no-print mb-4">
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-400 hover:text-brand-600 transition-colors" title="Volver a Prisma">
-                <ArrowLeft size={24} />
+          <header className="glass-header flex flex-col md:flex-row justify-between items-start md:items-center gap-3 p-4 md:p-5 rounded-3xl shadow-glass-sm no-print mb-3">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <a href="https://prisma.bibliohispa.es/" className="text-slate-300 hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
+                <ArrowLeft size={22} />
               </a>
-              <div className="w-12 h-12 md:w-16 md:h-16 p-2 border border-slate-100/50 rounded-xl flex items-center justify-center bg-white/50 backdrop-blur-sm">
+              <div className="w-12 h-12 md:w-14 md:h-14 p-1.5 rounded-2xl flex items-center justify-center bg-white shadow-glass-sm ring-1 ring-slate-100">
                 <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-800">Panel de Administración</h1>
+                <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Panel de Administración</h1>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <p className="text-slate-600 text-xs md:text-sm">
-                    {settings.schoolName} • <span className="text-brand-600 font-bold">
+                  <p className="text-slate-400 text-xs md:text-sm">
+                    {settings.schoolName} • <span className="text-brand-500 font-bold">
                         {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
                         {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
                     </span>
                   </p>
 
                   {isTechnical && (
-                      <div className="flex bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
+                      <div className="flex bg-slate-100/60 backdrop-blur-sm p-0.5 rounded-xl self-start sm:self-auto border border-white/30">
                           <button
                               onClick={() => setViewScope('global')}
-                              className={`px-2 py-1 rounded-md text-xs transition-all ${viewScope === 'global' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                              className={`px-2.5 py-1 rounded-lg text-xs transition-all duration-200 ${viewScope === 'global' ? 'bg-white shadow-glass-sm font-bold text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}
                           >
                               Global
                           </button>
                           <button
                               onClick={() => setViewScope('class')}
-                              className={`px-2 py-1 rounded-md text-xs transition-all ${viewScope === 'class' ? 'bg-white shadow-sm font-bold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                              className={`px-2.5 py-1 rounded-lg text-xs transition-all duration-200 ${viewScope === 'class' ? 'bg-white shadow-glass-sm font-bold text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}
                           >
                               Mi Clase
                           </button>
@@ -675,35 +675,35 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </div>
               </div>
             </div>
-            <div className="hidden md:flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar mask-gradient-right">
+            <div className="hidden md:flex gap-1.5 overflow-x-auto pb-1 w-full md:w-auto no-scrollbar mask-gradient-right flex-wrap">
               {isSuperAdmin && (
-                <Button variant={activeTab === 'teachers' ? 'primary' : 'outline'} onClick={() => setActiveTab('teachers')}>
-                  <Shield size={18} /> Profesores
-                </Button>
+                <button onClick={() => setActiveTab('teachers')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'teachers' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                  <Shield size={16} /> Profesores
+                </button>
               )}
-              <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')}>
-                <Users size={18} /> Alumnos
-              </Button>
-              <Button variant={activeTab === 'books' ? 'primary' : 'outline'} onClick={() => setActiveTab('books')}>
-                <BookOpen size={18} /> Libros
-              </Button>
-              <Button variant={activeTab === 'reviews' ? 'primary' : 'outline'} onClick={() => setActiveTab('reviews')}>
-                <MessageSquare size={18} /> Opiniones
-              </Button>
-              <Button variant={activeTab === 'history' ? 'primary' : 'outline'} onClick={() => setActiveTab('history')}>
-                <Clock size={18} /> Historial
-              </Button>
-              <Button variant={activeTab === 'stats' ? 'primary' : 'outline'} onClick={() => setActiveTab('stats')}>
-                <BarChart3 size={18} /> Estadísticas
-              </Button>
-              <Button variant={activeTab === 'cards' ? 'primary' : 'outline'} onClick={() => setActiveTab('cards')}>
-                <CreditCard size={18} /> Carnets
-              </Button>
+              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'users' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                <Users size={16} /> Alumnos
+              </button>
+              <button onClick={() => setActiveTab('books')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'books' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                <BookOpen size={16} /> Libros
+              </button>
+              <button onClick={() => setActiveTab('reviews')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'reviews' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                <MessageSquare size={16} /> Opiniones
+              </button>
+              <button onClick={() => setActiveTab('history')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                <Clock size={16} /> Historial
+              </button>
+              <button onClick={() => setActiveTab('stats')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'stats' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                <BarChart3 size={16} /> Estadísticas
+              </button>
+              <button onClick={() => setActiveTab('cards')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'cards' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                <CreditCard size={16} /> Carnets
+              </button>
 
               {isTechnical && viewScope === 'global' && (
-              <Button variant={activeTab === 'settings' ? 'primary' : 'outline'} onClick={() => { setActiveTab('settings'); setTempSettings(settings); }}>
-                <Settings size={18} />
-              </Button>
+              <button onClick={() => { setActiveTab('settings'); setTempSettings(settings); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'settings' ? 'bg-brand-500 text-white shadow-brand' : 'text-slate-400 hover:text-slate-600 hover:bg-white/60'}`}>
+                <Settings size={16} />
+              </button>
               )}
             </div>
           </header>
@@ -717,19 +717,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
            <div className="h-full flex flex-col lg:grid lg:grid-cols-3 gap-6">
               {/* Left/Bottom: List */}
               <div className="flex-1 lg:col-span-2 h-full flex flex-col order-2 lg:order-1 min-h-0">
-                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full overflow-hidden">
+                  <div className="glass-panel p-6 rounded-3xl shadow-glass-sm flex flex-col h-full overflow-hidden">
                       {/* Fixed Header */}
                       <div className="flex-none flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold font-display text-slate-700">Listado de Alumnos</h2>
-                        <div className="relative">
+                        <div className="relative group">
                           <input
                             type="text"
                             placeholder="Buscar alumno..."
-                            className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white text-slate-900"
+                            className="pl-9 pr-4 py-2.5 glass-input rounded-xl focus:outline-none text-sm text-slate-900"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                           />
-                          <Search size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                          <Search size={16} className="absolute left-3 top-3 text-slate-300 group-focus-within:text-brand-500 transition-colors"/>
                         </div>
                       </div>
 
@@ -739,7 +739,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                               <thead>
-                                <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                                <tr className="border-b border-slate-100/50 text-slate-400 text-sm">
                                   <th className="p-3">Nombre</th>
                                   <th className="p-3">Clase</th>
                                   <th className="p-3">Usuario (Login)</th>
@@ -752,7 +752,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   .filter(u => u.role === UserRole.STUDENT)
                                   .filter(u => u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || u.lastName.toLowerCase().includes(searchTerm.toLowerCase()))
                                   .map(user => (
-                                  <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                  <tr key={user.id} className="border-b border-slate-50 hover:bg-brand-50/30 transition-colors duration-150">
                                     <td className="p-3 font-medium text-slate-700">{user.firstName} {user.lastName}</td>
                                     <td className="p-3 text-slate-500">{user.className}</td>
                                     <td className="p-3"><span className="font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-xs">{user.username}</span></td>
@@ -809,7 +809,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <MobileActionsToggle label="Añadir / Importar Alumnos" />
                 <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
                     {/* Add Single User */}
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                         <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Alumno</h3>
                         <form onSubmit={handleAddSingleUser} className="space-y-3">
                           <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
@@ -893,12 +893,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
               {activeTab === 'teachers' && isSuperAdmin && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                         <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Profesores Administradores</h2>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                                    <tr className="border-b border-slate-100/50 text-slate-400 text-sm">
                                         <th className="p-3">Nombre</th>
                                         <th className="p-3">Usuario</th>
                                         <th className="p-3">Contraseña</th>
@@ -940,7 +940,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <div className="order-1 lg:order-2">
                       <MobileActionsToggle label="Añadir Profesor" />
                       <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
-                          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                          <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <h3 className="font-bold text-lg mb-4 text-slate-700">Nuevo Profesor</h3>
                             <form onSubmit={handleAddTeacher} className="space-y-3">
                                 <input className="w-full p-2 border border-slate-200 rounded-xl bg-white text-slate-900" placeholder="Nombre (ej: Profe Juan)" value={newTeacher.name} onChange={e => setNewTeacher({...newTeacher, name: e.target.value})} />
@@ -958,12 +958,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
               {/* Reviews Tab */}
               {activeTab === 'reviews' && (
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                   <h2 className="text-xl font-bold font-display text-slate-700 mb-4">Opiniones de Lectores</h2>
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                        <tr className="border-b border-slate-100/50 text-slate-400 text-sm">
                           <th className="p-3">Fecha</th>
                           <th className="p-3">Libro</th>
                           <th className="p-3">Alumno</th>
@@ -1027,7 +1027,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
               {/* History Tab */}
               {activeTab === 'history' && (
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                   <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                       <h2 className="text-xl font-bold font-display text-slate-700">Historial de Préstamos</h2>
                       <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
@@ -1047,7 +1047,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-100 text-slate-500 text-sm">
+                        <tr className="border-b border-slate-100/50 text-slate-400 text-sm">
                           <th className="p-3">Fecha Préstamo</th>
                           <th className="p-3">Libro</th>
                           <th className="p-3">Alumno</th>
@@ -1136,26 +1136,26 @@ export const AdminView: React.FC<AdminViewProps> = ({
               {activeTab === 'stats' && (
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <div className="text-slate-400 text-xs font-bold uppercase mb-1">Total Alumnos</div>
                             <div className="text-3xl font-display font-bold text-slate-800">{visibleUsers.filter(u => u.role === UserRole.STUDENT).length}</div>
                         </div>
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <div className="text-slate-400 text-xs font-bold uppercase mb-1">Libros en Catálogo</div>
                             <div className="text-3xl font-display font-bold text-slate-800">{books.length}</div>
                         </div>
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <div className="text-slate-400 text-xs font-bold uppercase mb-1">Préstamos Activos</div>
                             <div className="text-3xl font-display font-bold text-brand-500">{visibleTransactions.filter(t => t.active).length}</div>
                         </div>
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <div className="text-slate-400 text-xs font-bold uppercase mb-1">Opiniones</div>
                             <div className="text-3xl font-display font-bold text-fun-orange">{visibleReviews.length}</div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <h3 className="font-bold text-lg mb-4 text-slate-700">Lectores Top 🏆</h3>
                             <ul className="space-y-3">
                                 {visibleUsers
@@ -1175,7 +1175,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             </ul>
                         </div>
 
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <h3 className="font-bold text-lg mb-4 text-slate-700">Libros Más Leídos 📖</h3>
                             <ul className="space-y-3">
                                 {books
@@ -1211,7 +1211,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               {/* Cards Tab */}
               {activeTab === 'cards' && (
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 no-print">
+                    <div className="glass-panel p-6 rounded-3xl shadow-glass-sm no-print">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
                                 <h2 className="text-xl font-bold font-display text-slate-800">Generador de Carnets</h2>
@@ -1390,7 +1390,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               {activeTab === 'settings' && isTechnical && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Configuración General</h2>
                             <form onSubmit={handleSaveSettings} className="space-y-6">
                                 <div>
@@ -1439,7 +1439,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             </form>
                         </div>
 
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <h2 className="text-xl font-bold font-display text-slate-700 mb-6">Seguridad</h2>
                             <form onSubmit={handlePasswordChange} className="space-y-4">
                                 <div className="flex gap-4 items-start bg-yellow-50 p-4 rounded-xl mb-4">
@@ -1478,7 +1478,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </div>
 
                     <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                             <h2 className="text-xl font-bold font-display text-slate-700 mb-4 flex items-center gap-2">
                                 <RefreshCcw size={20} className="text-brand-500"/> Copias de Seguridad
                             </h2>
@@ -1584,7 +1584,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                  <MobileActionsToggle label="Añadir / Importar Libros" />
                  <div className={`space-y-6 ${isMobileActionsOpen ? 'block' : 'hidden'} lg:block`}>
                      {/* Add Book Panel */}
-                     <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                     <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                         <h3 className="font-bold text-lg mb-4 text-slate-700">Añadir Libro</h3>
 
                     <form onSubmit={handleSaveBook} className="space-y-3">
@@ -1844,8 +1844,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Edit User Modal */}
       {editingUser && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
-            <div className="glass-panel rounded-3xl p-6 w-full max-w-md shadow-2xl !bg-white/95 animate-scale-in">
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="glass-panel rounded-3xl p-6 w-full max-w-md shadow-glass-xl !bg-white/98 animate-modal-in">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Editar Usuario</h3>
                     <button onClick={() => setEditingUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
@@ -1882,7 +1882,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Manage Points Modal */}
       {managingPointsUser && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4 animate-fade-in">
             <div className="glass-panel rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] flex flex-col !bg-white/95 animate-scale-in">
                 <div className="flex justify-between items-center mb-4">
                     <div>
@@ -1940,7 +1940,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Edit Book Modal */}
       {editingBook && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4 animate-fade-in">
             <div className="glass-panel rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto !bg-white/95 animate-scale-in">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Editar Libro</h3>
@@ -2014,8 +2014,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Report Selection Modal */}
       {reportUser && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
-            <div className="glass-panel rounded-3xl p-6 w-full max-w-sm shadow-2xl !bg-white/95 animate-scale-in">
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="glass-panel rounded-3xl p-6 w-full max-w-sm shadow-glass-xl !bg-white/98 animate-modal-in">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold font-display text-slate-800">Informe de Préstamos</h3>
                     <button onClick={() => setReportUser(null)} className="p-2 hover:bg-slate-100 rounded-full"><X size={20}/></button>
@@ -2041,83 +2041,83 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Mobile Menu Overlay */}
       {activeTab === 'menu' && (
-        <div className="md:hidden fixed inset-0 z-40 bg-slate-50/95 backdrop-blur-sm pt-20 px-6 animate-fade-in overflow-y-auto pb-24">
+        <div className="md:hidden fixed inset-0 z-40 bg-white/98 backdrop-blur-xl pt-20 px-6 animate-slide-in-bottom overflow-y-auto pb-24">
             <h2 className="text-2xl font-bold font-display text-slate-800 mb-6">Más Opciones</h2>
             <div className="grid grid-cols-2 gap-4">
                 {isSuperAdmin && (
-                    <button onClick={() => setActiveTab('teachers')} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
-                        <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
+                    <button onClick={() => setActiveTab('teachers')} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
+                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
                             <Shield size={24} />
                         </div>
                         <span className="font-bold text-slate-700 text-sm">Profesores</span>
                     </button>
                 )}
-                <button onClick={() => setActiveTab('reviews')} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
-                    <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center text-orange-600">
+                <button onClick={() => setActiveTab('reviews')} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl flex items-center justify-center text-orange-600">
                         <MessageSquare size={24} />
                     </div>
                     <span className="font-bold text-slate-700 text-sm">Opiniones</span>
                 </button>
-                <button onClick={() => setActiveTab('cards')} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
-                    <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+                <button onClick={() => setActiveTab('cards')} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
                         <CreditCard size={24} />
                     </div>
                     <span className="font-bold text-slate-700 text-sm">Carnets</span>
                 </button>
                 {isTechnical && (
-                    <button onClick={() => { setActiveTab('settings'); setTempSettings(settings); }} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-2 active:scale-95 transition-transform">
-                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
+                    <button onClick={() => { setActiveTab('settings'); setTempSettings(settings); }} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
+                        <div className="w-12 h-12 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl flex items-center justify-center text-slate-600">
                             <Settings size={24} />
                         </div>
                         <span className="font-bold text-slate-700 text-sm">Ajustes</span>
                     </button>
                 )}
-                <button onClick={onLogout} className="bg-red-50 p-4 rounded-2xl shadow-sm border border-red-100 flex flex-col items-center gap-2 active:scale-95 transition-transform col-span-2 mt-4">
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                <button onClick={onLogout} className="bg-red-50/80 backdrop-blur-sm p-5 rounded-3xl border border-red-100/50 flex flex-col items-center gap-3 press-effect col-span-2 mt-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center text-red-600">
                         <LogOut size={24} />
                     </div>
-                    <span className="font-bold text-red-700 text-sm">Cerrar Sesión</span>
+                    <span className="font-bold text-red-600 text-sm">Cerrar Sesión</span>
                 </button>
             </div>
         </div>
       )}
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 p-2 pb-safe flex justify-around items-center z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 glass-bottom-nav p-2 pb-safe flex justify-around items-center z-50">
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'users' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'users' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <Users size={24} className={activeTab === 'users' ? 'fill-current' : ''} />
-          <span className="text-[10px] font-bold mt-1">Alumnos</span>
+          <Users size={22} strokeWidth={activeTab === 'users' ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Alumnos</span>
         </button>
         <button
           onClick={() => setActiveTab('books')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'books' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'books' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <BookOpen size={24} className={activeTab === 'books' ? 'fill-current' : ''} />
-          <span className="text-[10px] font-bold mt-1">Libros</span>
+          <BookOpen size={22} strokeWidth={activeTab === 'books' ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Libros</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'history' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'history' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <Clock size={24} className={activeTab === 'history' ? 'fill-current' : ''} />
-          <span className="text-[10px] font-bold mt-1">Historial</span>
+          <Clock size={22} strokeWidth={activeTab === 'history' ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Historial</span>
         </button>
         <button
           onClick={() => setActiveTab('stats')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'stats' ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'stats' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <BarChart3 size={24} className={activeTab === 'stats' ? 'fill-current' : ''} />
-          <span className="text-[10px] font-bold mt-1">Stats</span>
+          <BarChart3 size={22} strokeWidth={activeTab === 'stats' ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Stats</span>
         </button>
         <button
           onClick={() => setActiveTab('menu')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all w-16 ${activeTab === 'menu' || ['teachers', 'reviews', 'cards', 'settings'].includes(activeTab) ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'menu' || ['teachers', 'reviews', 'cards', 'settings'].includes(activeTab) ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
         >
-          <Menu size={24} />
-          <span className="text-[10px] font-bold mt-1">Menú</span>
+          <Menu size={22} strokeWidth={activeTab === 'menu' || ['teachers', 'reviews', 'cards', 'settings'].includes(activeTab) ? 2.5 : 1.5} />
+          <span className="text-[10px] font-bold mt-0.5">Menú</span>
         </button>
       </div>
 
