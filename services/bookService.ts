@@ -1,5 +1,5 @@
 
-import { getAIRecommendedAge } from './geminiService';
+import { getAIRecommendedAge, identifyBook } from './geminiService';
 import { Book } from '../types';
 
 export interface BookDetails {
@@ -85,6 +85,34 @@ const validateImageUrl = (url: string): Promise<boolean> => {
     });
 };
 
+// --- OPEN LIBRARY COVER SEARCH ---
+const searchOpenLibraryCover = async (isbn?: string, title?: string): Promise<string | null> => {
+    // Try ISBN first (most precise)
+    if (isbn) {
+        const url = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+        try {
+            const res = await fetch(url, { method: 'HEAD' });
+            if (res.ok) return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+        } catch { /* ignore */ }
+    }
+
+    // Fallback: search by text
+    if (title) {
+        try {
+            const q = encodeURIComponent(cleanSearchText(title));
+            const res = await fetch(`https://openlibrary.org/search.json?q=${q}&fields=cover_i,isbn&limit=1`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.docs?.[0]?.cover_i) {
+                    return `https://covers.openlibrary.org/b/id/${data.docs[0].cover_i}-L.jpg`;
+                }
+            }
+        } catch { /* ignore */ }
+    }
+
+    return null;
+};
+
 export const searchBookCover = async (title: string, author: string): Promise<string | null> => {
     const meta = await searchBookMetadata(title);
     return meta.coverUrl || null;
@@ -112,72 +140,126 @@ export const determineBookAge = async (title: string, author: string): Promise<s
    return await getAIRecommendedAge(title, author);
 };
 
-export const searchBookCandidates = async (query: string): Promise<Partial<Book>[]> => {
-    const cleanQuery = cleanSearchText(query);
-    const encodedQuery = encodeURIComponent(cleanQuery);
+// Parse a Google Books API response into candidate Book partials
+const parseGoogleBooksItems = (items: any[], fallbackTitle: string): Partial<Book>[] => {
+    return items.map((item: any) => {
+        const info = item.volumeInfo;
 
+        // Extract best image
+        let coverUrl: string | undefined = undefined;
+        if (info.imageLinks) {
+             const bestImage = info.imageLinks.extraLarge || info.imageLinks.large || info.imageLinks.medium || info.imageLinks.thumbnail || info.imageLinks.smallThumbnail;
+             if (bestImage) {
+                 const url = bestImage.replace('http://', 'https://').replace('&zoom=1', '');
+                 if (!url.includes('gbs_preview_button')) {
+                     coverUrl = url;
+                 }
+             }
+        }
+
+        // Extract ISBN
+        let isbn = undefined;
+        if (info.industryIdentifiers) {
+            const isbnObj = info.industryIdentifiers.find((id: any) => id.type === 'ISBN_13') ||
+                            info.industryIdentifiers.find((id: any) => id.type === 'ISBN_10');
+            if (isbnObj) isbn = isbnObj.identifier;
+        }
+
+        // Map Genre (Categories)
+        let genre = 'General';
+        if (info.categories && info.categories.length > 0) {
+            const cat = info.categories[0].toLowerCase();
+            if (cat.includes('fiction') || cat.includes('ficción')) genre = 'Ficción';
+            else if (cat.includes('fantasy') || cat.includes('fantasía')) genre = 'Fantasía';
+            else if (cat.includes('adventure') || cat.includes('aventura')) genre = 'Aventuras';
+            else if (cat.includes('science') || cat.includes('ciencia')) genre = 'Ciencia';
+            else if (cat.includes('biography') || cat.includes('biografía')) genre = 'Biografía';
+            else if (cat.includes('history') || cat.includes('historia')) genre = 'Historia';
+            else if (cat.includes('horror') || cat.includes('miedo')) genre = 'Miedo';
+            else genre = info.categories[0];
+        }
+
+        return {
+            title: info.title || fallbackTitle,
+            author: info.authors ? info.authors.join(', ') : 'Desconocido',
+            description: cleanSynopsisText(info.description),
+            coverUrl: coverUrl,
+            genre: genre,
+            pageCount: info.pageCount,
+            publisher: info.publisher,
+            publishedDate: info.publishedDate,
+            isbn: isbn,
+            recommendedAge: '6-8' // Will be augmented by AI later if selected
+        };
+    });
+};
+
+// Fetch candidates from Google Books API
+const fetchGoogleBooks = async (query: string, maxResults = 10): Promise<Partial<Book>[]> => {
     try {
-        // Fetch up to 10 candidates
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=10&printType=books`);
+        const encoded = encodeURIComponent(query);
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encoded}&maxResults=${maxResults}&printType=books`);
         if (res.ok) {
             const data = await res.json();
-            if (!data.items) return [];
-
-            return data.items.map((item: any) => {
-                const info = item.volumeInfo;
-
-                // Extract best image
-                let coverUrl: string | undefined = undefined;
-                if (info.imageLinks) {
-                     const bestImage = info.imageLinks.extraLarge || info.imageLinks.large || info.imageLinks.medium || info.imageLinks.thumbnail || info.imageLinks.smallThumbnail;
-                     if (bestImage) {
-                         const url = bestImage.replace('http://', 'https://').replace('&zoom=1', '');
-                         if (!url.includes('gbs_preview_button')) {
-                             coverUrl = url;
-                         }
-                     }
-                }
-
-                // Extract ISBN
-                let isbn = undefined;
-                if (info.industryIdentifiers) {
-                    const isbnObj = info.industryIdentifiers.find((id: any) => id.type === 'ISBN_13') ||
-                                    info.industryIdentifiers.find((id: any) => id.type === 'ISBN_10');
-                    if (isbnObj) isbn = isbnObj.identifier;
-                }
-
-                // Map Genre (Categories)
-                let genre = 'General';
-                if (info.categories && info.categories.length > 0) {
-                    const cat = info.categories[0].toLowerCase();
-                    if (cat.includes('fiction') || cat.includes('ficción')) genre = 'Ficción';
-                    else if (cat.includes('fantasy') || cat.includes('fantasía')) genre = 'Fantasía';
-                    else if (cat.includes('adventure') || cat.includes('aventura')) genre = 'Aventuras';
-                    else if (cat.includes('science') || cat.includes('ciencia')) genre = 'Ciencia';
-                    else if (cat.includes('biography') || cat.includes('biografía')) genre = 'Biografía';
-                    else if (cat.includes('history') || cat.includes('historia')) genre = 'Historia';
-                    else if (cat.includes('horror') || cat.includes('miedo')) genre = 'Miedo';
-                    else genre = info.categories[0];
-                }
-
-                return {
-                    title: info.title || query,
-                    author: info.authors ? info.authors.join(', ') : 'Desconocido',
-                    description: cleanSynopsisText(info.description),
-                    coverUrl: coverUrl,
-                    genre: genre,
-                    pageCount: info.pageCount,
-                    publisher: info.publisher,
-                    publishedDate: info.publishedDate,
-                    isbn: isbn,
-                    recommendedAge: '6-8' // Will be augmented by AI later if selected
-                };
-            });
+            if (data.items) return parseGoogleBooksItems(data.items, query);
         }
     } catch (e) {
-        console.error("Error searching Google Books:", e);
+        console.error("Error fetching Google Books:", e);
     }
     return [];
+};
+
+export const searchBookCandidates = async (query: string): Promise<Partial<Book>[]> => {
+    const cleanQuery = cleanSearchText(query);
+
+    // Step 1: Run Gemini identification and Google Books search in parallel
+    const [geminiResult, googleCandidates] = await Promise.all([
+        identifyBook(query).catch(() => null),
+        fetchGoogleBooks(cleanQuery)
+    ]);
+
+    let candidates = [...googleCandidates];
+
+    // Step 2: If Gemini returned an ISBN, do a precise Google Books search
+    if (geminiResult?.isbn) {
+        const isbnCandidates = await fetchGoogleBooks(`isbn:${geminiResult.isbn}`, 1);
+        if (isbnCandidates.length > 0) {
+            const precise = isbnCandidates[0];
+            // Insert at front if not already present (by ISBN or title match)
+            const isDuplicate = candidates.some(c =>
+                (c.isbn && c.isbn === precise.isbn) ||
+                (c.title?.toLowerCase() === precise.title?.toLowerCase())
+            );
+            if (!isDuplicate) {
+                candidates.unshift(precise);
+            }
+        }
+    } else if (geminiResult?.title) {
+        // Gemini identified the book but no ISBN — try a more precise Google search
+        const preciseQuery = `${geminiResult.title} ${geminiResult.author}`.trim();
+        if (preciseQuery.toLowerCase() !== cleanQuery.toLowerCase()) {
+            const preciseCandidates = await fetchGoogleBooks(preciseQuery, 3);
+            if (preciseCandidates.length > 0) {
+                const precise = preciseCandidates[0];
+                const isDuplicate = candidates.some(c =>
+                    c.title?.toLowerCase() === precise.title?.toLowerCase()
+                );
+                if (!isDuplicate) {
+                    candidates.unshift(precise);
+                }
+            }
+        }
+    }
+
+    // Step 3: For candidates without covers, try Open Library
+    await Promise.all(candidates.map(async (candidate) => {
+        if (!candidate.coverUrl) {
+            const olCover = await searchOpenLibraryCover(candidate.isbn, candidate.title);
+            if (olCover) candidate.coverUrl = olCover;
+        }
+    }));
+
+    return candidates;
 }
 
 // Kept for backward compatibility and simple usage (returns top result)

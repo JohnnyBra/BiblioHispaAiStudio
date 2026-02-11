@@ -100,3 +100,42 @@ export const getBookRecommendation = async (
 ): Promise<string> => {
   return chatWithLibrarian(`Me interesan cosas como: ${userInterests}. ¿Qué me recomiendas?`, userAgeGroup, availableBooks);
 };
+
+export const identifyBook = async (query: string): Promise<{title: string, author: string, isbn: string} | null> => {
+  try {
+    const ai = getAIClient();
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `
+        Identifica el libro exacto a partir de esta búsqueda: "${query}"
+
+        Responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks) con este formato:
+        {"title": "Título exacto del libro", "author": "Nombre del autor", "isbn": "ISBN-13 de 13 dígitos"}
+
+        Instrucciones:
+        - El título debe ser el título original o el más conocido en español si existe traducción.
+        - El ISBN debe ser el ISBN-13. Si no lo conoces con certeza, pon "".
+        - Si no puedes identificar el libro, responde exactamente: null
+      `,
+    });
+
+    const text = response.text?.trim() || '';
+    if (!text || text === 'null') return null;
+
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+
+    if (parsed && parsed.title) {
+      return {
+        title: parsed.title,
+        author: parsed.author || '',
+        isbn: parsed.isbn || ''
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error identifying book with Gemini:", error);
+    return null;
+  }
+};
