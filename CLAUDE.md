@@ -61,8 +61,8 @@ Copy `.env.example` to `.env`. Required variables:
 | `components/StudentView.tsx` | Student-facing catalog and borrowing UI |
 | `services/storageService.ts` | HTTP client wrapping all `/api/*` endpoints |
 | `services/gamificationService.ts` | Points, badges, streak logic |
-| `services/bookService.ts` | Google Books API integration |
-| `services/geminiService.ts` | Google Gemini AI integration (lazy-loaded) |
+| `services/bookService.ts` | Book cover search (Google Books + Open Library + Gemini), metadata |
+| `services/geminiService.ts` | Google Gemini AI integration (lazy-loaded): chat, age rating, book identification |
 | `services/reportService.ts` | PDF generation with jsPDF |
 | `prismaImportService.js` | Prisma EDU API sync for students/teachers |
 
@@ -83,11 +83,38 @@ Copy `.env.example` to `.env`. Required variables:
 
 All backend routes are in `server.js`. Pattern: `/api/{resource}` for collections, `/api/{resource}/:id` for individual items, `/api/actions/{action}` for operations (checkout, return, review).
 
+### Book Cover Search Flow (`bookService.ts`)
+
+`searchBookCandidates(query)` is the main entry point, called when adding books or searching alternative covers:
+
+1. **Parallel**: `identifyBook(query)` via Gemini + `fetchGoogleBooks(query)` via Google Books API
+2. **Precise search**: If Gemini returned ISBN → search Google Books with `isbn:{isbn}` and insert at front. If only title/author → refined Google Books search
+3. **Open Library fallback**: For candidates still missing covers, try `covers.openlibrary.org` by ISBN, then by text search
+4. Returns candidates with best available covers
+
+Key design decisions:
+- **Gemini `identifyBook()`** returns `{title, author, isbn}` from vague queries. Falls back to `null` gracefully if API key missing or error
+- **`searchOpenLibraryCover()`** tries ISBN first (`/b/isbn/{isbn}-L.jpg?default=false` with HEAD check), then Open Library search API for `cover_i`
+- **`validateImageUrl()`** exists (line ~72) but is NOT called — it was found to reject valid Google Books/Open Library URLs via `new Image()` browser loading. Do not reactivate without thorough testing
+- **Covers are stored in `db.json`** once found. The search only runs when adding books or explicitly clicking "Buscar Portada Alternativa"
+- **`handleStartEditing()`** in AdminView does NOT pre-load candidates (was causing slowness). Candidates load on-demand only
+
+### Broken Image Pattern
+
+All `<img>` tags for book covers use a fallback pattern to avoid broken image icons:
+```tsx
+<div className="... relative overflow-hidden">
+  <span>{title}</span>
+  {coverUrl && <img src={coverUrl} className="absolute inset-0 ..." onError={(e) => { e.currentTarget.style.display = 'none'; }}/>}
+</div>
+```
+Title text sits behind the image. If image fails to load, `onError` hides it and the title shows through. This pattern is used in: book list, edit modal, candidate grid, and candidate list.
+
 ## Conventions
 
 - All UI text is in Spanish
 - Date formatting uses `es-ES` locale
 - String comparison uses `normalizeString()` from `services/utils.ts` (strips accents)
-- Book covers fetched from Google Books API with image validation (rejects 1x1 tracking pixels)
+- Book covers: multi-source (Google Books → Open Library), stored in db.json. No runtime image validation
 - Gemini model used: `gemini-2.5-flash`
 - Production deployment uses PM2 + Nginx on Ubuntu (see `install.sh`)
