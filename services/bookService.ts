@@ -1,5 +1,5 @@
 
-import { getAIRecommendedAge, identifyBook } from './geminiService';
+import { getAIRecommendedAge, identifyBook, identifyBooksBatch } from './geminiService';
 import { Book } from '../types';
 
 export interface BookDetails {
@@ -83,6 +83,24 @@ const validateImageUrl = (url: string): Promise<boolean> => {
         img.onerror = () => resolve(false);
         img.src = url;
     });
+};
+
+// --- LIBRARIO COVER SEARCH (stub — requires API key) ---
+// Endpoint: GET https://api.librario.dev/v1/book/{isbn}/cover
+// Auth: Authorization: Bearer librario_xxx
+// Activate when VITE_LIBRARIO_API_KEY is set in .env
+const searchLibrarioCover = async (isbn?: string): Promise<string | null> => {
+    if (!isbn) return null;
+    const apiKey = (import.meta as any).env?.VITE_LIBRARIO_API_KEY;
+    if (!apiKey) return null;
+    try {
+        const res = await fetch(`https://api.librario.dev/v1/book/${isbn}/cover`, {
+            method: 'HEAD',
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        if (res.ok) return `https://api.librario.dev/v1/book/${isbn}/cover`;
+    } catch { /* Librario not available */ }
+    return null;
 };
 
 // --- OPEN LIBRARY COVER SEARCH ---
@@ -251,12 +269,23 @@ export const searchBookCandidates = async (query: string): Promise<Partial<Book>
         }
     }
 
-    // Step 3: For candidates without covers, try Open Library
+    // Step 3: Upgrade covers — priority: Librario > Open Library > Google Books
+    // For each candidate, try higher-quality sources and replace Google Books cover if found
     await Promise.all(candidates.map(async (candidate) => {
-        if (!candidate.coverUrl) {
-            const olCover = await searchOpenLibraryCover(candidate.isbn, candidate.title);
-            if (olCover) candidate.coverUrl = olCover;
+        const googleCover = candidate.coverUrl; // Save original Google Books cover as fallback
+
+        // Try Librario first (requires API key — stub until configured)
+        if (candidate.isbn) {
+            const librarioCover = await searchLibrarioCover(candidate.isbn);
+            if (librarioCover) { candidate.coverUrl = librarioCover; return; }
         }
+
+        // Try Open Library (by ISBN first, then by text)
+        const olCover = await searchOpenLibraryCover(candidate.isbn, candidate.title);
+        if (olCover) { candidate.coverUrl = olCover; return; }
+
+        // Keep Google Books cover as last resort (already set if available)
+        if (!candidate.coverUrl) candidate.coverUrl = googleCover;
     }));
 
     return candidates;
@@ -286,6 +315,80 @@ export const searchBookMetadata = async (query: string): Promise<Partial<Book>> 
     return bestMatch;
 };
 
+
+// --- BATCH METADATA (minimizes Gemini calls) ---
+// One Gemini call identifies all books + ages, then covers fetched via Google Books/Open Library
+export const searchBookMetadataBatch = async (
+    books: { title: string; author: string }[],
+    onProgress?: (current: number, total: number, title: string) => void
+): Promise<Partial<Book>[]> => {
+    if (books.length === 0) return [];
+
+    // Step 1: Single Gemini call for all books (ISBN + age)
+    onProgress?.(0, books.length, 'Identificando libros con IA...');
+    const geminiResults = await identifyBooksBatch(books);
+
+    // Step 2: For each book, fetch cover + metadata from Google Books / Open Library
+    const results: Partial<Book>[] = [];
+    for (let i = 0; i < books.length; i++) {
+        const original = books[i];
+        const gemini = geminiResults[i];
+        onProgress?.(i + 1, books.length, original.title);
+
+        let coverUrl: string | undefined;
+        let description: string | undefined;
+        let genre = 'General';
+        let pageCount: number | undefined;
+        let publisher: string | undefined;
+        let publishedDate: string | undefined;
+        const isbn = gemini?.isbn || undefined;
+
+        // Try Google Books for full metadata (no Gemini call, just HTTP)
+        try {
+            const query = isbn ? `isbn:${isbn}` : `${original.title} ${original.author}`;
+            const googleResults = await fetchGoogleBooks(query, 1);
+            if (googleResults.length > 0) {
+                const gb = googleResults[0];
+                coverUrl = gb.coverUrl;
+                description = gb.description;
+                genre = gb.genre || genre;
+                pageCount = gb.pageCount;
+                publisher = gb.publisher;
+                publishedDate = gb.publishedDate;
+            }
+        } catch { /* ignore */ }
+
+        // Upgrade cover: Librario > Open Library > Google Books
+        const googleCover = coverUrl;
+        if (isbn) {
+            const librarioCover = await searchLibrarioCover(isbn);
+            if (librarioCover) { coverUrl = librarioCover; }
+            else {
+                const olCover = await searchOpenLibraryCover(isbn, original.title);
+                if (olCover) coverUrl = olCover;
+            }
+        } else if (!coverUrl) {
+            const olCover = await searchOpenLibraryCover(undefined, original.title);
+            if (olCover) coverUrl = olCover;
+        }
+        if (!coverUrl) coverUrl = googleCover;
+
+        results.push({
+            title: original.title,
+            author: gemini?.author || original.author || 'Desconocido',
+            genre,
+            coverUrl,
+            description,
+            isbn,
+            pageCount,
+            publisher,
+            publishedDate,
+            recommendedAge: gemini?.recommendedAge || '6-8'
+        });
+    }
+
+    return results;
+};
 
 // --- CRUD operations ---
 

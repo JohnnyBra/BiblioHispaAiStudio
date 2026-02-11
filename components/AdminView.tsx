@@ -3,7 +3,7 @@ import * as React from 'react';
 import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
 import { compareClassNames, compareStudents } from '../services/utils';
-import { searchBookCover, determineBookAge, searchBookMetadata, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
+import { searchBookCover, determineBookAge, searchBookMetadata, searchBookMetadataBatch, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
 import { syncStudents } from '../services/userService';
 import { generateStudentLoanReport } from '../services/reportService';
 import { Button } from './Button';
@@ -69,6 +69,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [candidates, setCandidates] = React.useState<Partial<Book>[]>([]);
   const [showCandidates, setShowCandidates] = React.useState(false);
   const [isCoverSelectionMode, setIsCoverSelectionMode] = React.useState(false);
+  const [coverSearchQuery, setCoverSearchQuery] = React.useState('');
+  const [isSearchingCovers, setIsSearchingCovers] = React.useState(false);
 
   // Edit Book State
   const [editingBook, setEditingBook] = React.useState<Book | null>(null);
@@ -276,62 +278,62 @@ export const AdminView: React.FC<AdminViewProps> = ({
       const text = event.target?.result as string;
       const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
       const startIndex = lines[0].toLowerCase().includes('titulo') ? 1 : 0;
-      const totalToProcess = lines.length - startIndex;
-      const parsedBooks: Book[] = [];
-      
+
+      // Parse CSV rows first
+      const csvRows: { title: string; author: string; genre: string; units: number; shelf: string; ageFromCsv: string }[] = [];
       for (let i = startIndex; i < lines.length; i++) {
         const parts = lines[i].split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
-        
-        if (parts.length >= 2) { 
-          const title = parts[0];
-          const author = parts[1];
-          const genre = parts[2] || 'General';
-          const units = parseInt(parts[3]) || 1;
-          const shelf = parts[4] || 'Recepción';
-          const ageFromCsv = parts[5] || '';
-
-          if (title) {
-            setLoadingProgress(Math.round(((i - startIndex) / totalToProcess) * 100));
-            setLoadingMessage(`Procesando (${i - startIndex + 1}/${totalToProcess}): "${title}"`);
-            
-            try {
-                // If Author or Genre are missing or generic, we try to fetch metadata
-                // But we always fetch to get Cover/Synopsis if possible.
-                const meta = await searchBookMetadata(title);
-                
-                parsedBooks.push({
-                  id: `book-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
-                  title: title, // Always trust CSV title
-                  author: (!author || author === 'Desconocido') ? (meta.author || 'Desconocido') : author,
-                  genre: (!genre || genre === 'General') ? (meta.genre || 'General') : genre,
-                  unitsTotal: units,
-                  unitsAvailable: units,
-                  shelf,
-                  coverUrl: meta.coverUrl || undefined,
-                  readCount: 0,
-                  recommendedAge: ageFromCsv || meta.recommendedAge || '6-8',
-                  description: meta.description,
-                  isbn: meta.isbn,
-                  pageCount: meta.pageCount,
-                  publisher: meta.publisher,
-                  publishedDate: meta.publishedDate
-                });
-            } catch (err) {
-                console.error(`Error processing ${title}`, err);
-                // Fallback basic
-                parsedBooks.push({
-                    id: `book-${Date.now()}-${i}`,
-                    title, author, genre, unitsTotal: units, unitsAvailable: units, shelf, readCount: 0
-                });
-            }
-          }
+        if (parts.length >= 2 && parts[0]) {
+          csvRows.push({
+            title: parts[0],
+            author: parts[1] || '',
+            genre: parts[2] || 'General',
+            units: parseInt(parts[3]) || 1,
+            shelf: parts[4] || 'Recepción',
+            ageFromCsv: parts[5] || ''
+          });
         }
       }
+
+      if (csvRows.length === 0) {
+        setIsImportingBooks(false);
+        onShowToast("No se encontraron libros en el archivo.", "error");
+        return;
+      }
+
+      // Batch: one Gemini call for all books (ISBN + age), then covers one by one
+      const batchInput = csvRows.map(r => ({ title: r.title, author: r.author }));
+      const metadataResults = await searchBookMetadataBatch(batchInput, (current, total, title) => {
+        setLoadingProgress(Math.round((current / total) * 100));
+        setLoadingMessage(current === 0 ? title : `Buscando portadas (${current}/${total}): "${title}"`);
+      });
+
+      const parsedBooks: Book[] = csvRows.map((row, i) => {
+        const meta = metadataResults[i] || {};
+        return {
+          id: `book-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
+          title: row.title,
+          author: (!row.author || row.author === 'Desconocido') ? (meta.author || 'Desconocido') : row.author,
+          genre: (!row.genre || row.genre === 'General') ? (meta.genre || 'General') : row.genre,
+          unitsTotal: row.units,
+          unitsAvailable: row.units,
+          shelf: row.shelf,
+          coverUrl: meta.coverUrl || undefined,
+          readCount: 0,
+          recommendedAge: row.ageFromCsv || meta.recommendedAge || '6-8',
+          description: meta.description,
+          isbn: meta.isbn,
+          pageCount: meta.pageCount,
+          publisher: meta.publisher,
+          publishedDate: meta.publishedDate
+        };
+      });
+
       setIsImportingBooks(false);
       setLoadingProgress(100);
       setLoadingMessage("¡Completado!");
       onAddBooks(parsedBooks);
-      onShowToast(`✅ Se han importado ${parsedBooks.length} libros correctamente.`, "success");
+      onShowToast(`Se han importado ${parsedBooks.length} libros correctamente.`, "success");
     };
     reader.readAsText(file, csvEncoding);
     if (bookFileInputRef.current) bookFileInputRef.current.value = '';
@@ -487,16 +489,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
       setCandidates([]);
   };
 
-  const handleSearchAlternativeCovers = async () => {
+  const handleSearchAlternativeCovers = async (customQuery?: string) => {
       if (!editingBook) return;
+      const query = customQuery || `${editingBook.title} ${editingBook.author}`;
       setIsCoverSelectionMode(true);
       setShowCandidates(true);
       setCandidates([]);
+      setIsSearchingCovers(true);
+      if (!customQuery) setCoverSearchQuery(query);
       try {
-          const results = await searchBookCandidates(`${editingBook.title} ${editingBook.author}`);
+          const results = await searchBookCandidates(query);
           setCandidates(results);
       } catch {
           onShowToast("Error buscando portadas.", "error");
+      } finally {
+          setIsSearchingCovers(false);
       }
   };
 
@@ -1730,7 +1737,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
             
             {isCoverSelectionMode ? (
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    <p className="text-sm text-slate-500 mb-3">Selecciona una imagen para usarla como portada:</p>
+                    <p className="text-sm text-slate-500 mb-2">Selecciona una imagen para usarla como portada:</p>
+                    <form onSubmit={(e) => { e.preventDefault(); if (coverSearchQuery.trim()) handleSearchAlternativeCovers(coverSearchQuery.trim()); }} className="flex gap-2 mb-3">
+                        <input
+                            type="text"
+                            value={coverSearchQuery}
+                            onChange={(e) => setCoverSearchQuery(e.target.value)}
+                            placeholder="Buscar por título, autor..."
+                            className="flex-1 p-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-brand-300 outline-none"
+                        />
+                        <Button type="submit" size="sm" variant="secondary" disabled={!coverSearchQuery.trim() || isSearchingCovers}>
+                            {isSearchingCovers ? <Loader2 size={14} className="animate-spin"/> : <Search size={14}/>}
+                        </Button>
+                    </form>
                     {candidates.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                             <Loader2 className="animate-spin mb-3" size={32}/>

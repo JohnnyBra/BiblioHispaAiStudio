@@ -101,6 +101,78 @@ export const getBookRecommendation = async (
   return chatWithLibrarian(`Me interesan cosas como: ${userInterests}. ¿Qué me recomiendas?`, userAgeGroup, availableBooks);
 };
 
+// --- BATCH: Identify multiple books + age in a single Gemini call ---
+export interface BatchBookResult {
+  title: string;
+  author: string;
+  isbn: string;
+  recommendedAge: string;
+}
+
+export const identifyBooksBatch = async (
+  books: { title: string; author: string }[]
+): Promise<BatchBookResult[]> => {
+  if (books.length === 0) return [];
+
+  const CHUNK_SIZE = 30;
+  const results: BatchBookResult[] = [];
+
+  for (let i = 0; i < books.length; i += CHUNK_SIZE) {
+    const chunk = books.slice(i, i + CHUNK_SIZE);
+    const bookList = chunk.map((b, idx) => `${idx + 1}. "${b.title}" de "${b.author}"`).join('\n');
+
+    try {
+      const ai = getAIClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `
+          Para cada libro de la siguiente lista, proporciona:
+          - El título exacto (original o el más conocido en español)
+          - El autor correcto
+          - El ISBN-13 (13 dígitos). Si no lo conoces con certeza, pon ""
+          - La edad recomendada: uno de estos rangos exactos: "0-5", "6-8", "9-11", "12-14", "+15"
+
+          Lista de libros:
+          ${bookList}
+
+          Responde ÚNICAMENTE con un JSON array válido (sin markdown, sin backticks), ejemplo:
+          [{"title":"...","author":"...","isbn":"...","recommendedAge":"6-8"},...]
+
+          IMPORTANTE:
+          - El array debe tener exactamente ${chunk.length} elementos, uno por cada libro, en el mismo orden.
+          - Si no puedes identificar un libro, devuelve el título y autor tal cual, isbn "" y recommendedAge "6-8".
+          - No añadas texto fuera del JSON.
+        `,
+      });
+
+      const text = response.text?.trim() || '[]';
+      const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+
+      if (Array.isArray(parsed)) {
+        const validRanges = ['0-5', '6-8', '9-11', '12-14', '+15'];
+        for (let j = 0; j < chunk.length; j++) {
+          const item = parsed[j];
+          if (item && item.title) {
+            const age = validRanges.find(r => (item.recommendedAge || '').includes(r)) || '6-8';
+            results.push({ title: item.title, author: item.author || chunk[j].author, isbn: item.isbn || '', recommendedAge: age });
+          } else {
+            results.push({ title: chunk[j].title, author: chunk[j].author, isbn: '', recommendedAge: '6-8' });
+          }
+        }
+      } else {
+        // Fallback: use original data
+        chunk.forEach(b => results.push({ title: b.title, author: b.author, isbn: '', recommendedAge: '6-8' }));
+      }
+    } catch (error) {
+      console.error("Error in batch identify:", error);
+      chunk.forEach(b => results.push({ title: b.title, author: b.author, isbn: '', recommendedAge: '6-8' }));
+    }
+  }
+
+  return results;
+};
+
 export const identifyBook = async (query: string): Promise<{title: string, author: string, isbn: string} | null> => {
   try {
     const ai = getAIClient();
