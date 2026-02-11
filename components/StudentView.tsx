@@ -5,6 +5,7 @@ import { BookCard } from './BookCard';
 import { Button } from './Button';
 import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
+import { proxyCoverUrl } from '../services/utils';
 import { getBookDetails, BookDetails } from '../services/bookService';
 import { fetchBadges } from '../services/gamificationService';
 
@@ -432,7 +433,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                        <div key={book.id} className="glass-card p-4 rounded-2xl flex gap-4 transition-all">
                           {/* Image */}
                           <div className="w-20 h-28 flex-shrink-0 bg-slate-200/50 rounded-lg overflow-hidden relative shadow-sm">
-                             <img src={book.coverUrl} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} alt={book.title}/>
+                             <img src={proxyCoverUrl(book.coverUrl)} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} alt={book.title} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                              {!isAvailable && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
                                    <span className="text-[10px] font-black text-white bg-red-500 px-1 py-0.5 rounded uppercase rotate-12 mb-1">Agotado</span>
@@ -584,7 +585,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                           <div key={tx.id} className={`glass-card p-4 rounded-2xl flex gap-4 items-center transition-all ${tx.active ? 'ring-2 ring-brand-200 bg-brand-50/30' : 'opacity-80 hover:opacity-100'}`}>
                              <div className="w-14 h-20 flex-shrink-0 bg-slate-100/50 rounded-lg overflow-hidden shadow-sm">
                                 {book.coverUrl ? (
-                                   <img src={book.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                                   <img src={proxyCoverUrl(book.coverUrl)} className="w-full h-full object-cover" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 ) : (
                                    <div className="w-full h-full bg-slate-200 flex items-center justify-center text-[10px] p-1 text-center font-bold text-slate-400">{book.title}</div>
                                 )}
@@ -706,7 +707,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                          .map((book, index) => (
                             <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                                 <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
-                                <img src={book.coverUrl} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                                <img src={proxyCoverUrl(book.coverUrl)} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 <div className="flex-1 ml-3 min-w-0">
                                     <h4 className="font-bold text-slate-800 text-sm truncate" title={book.title}>{book.title}</h4>
                                     <p className="text-xs text-slate-500">{book.readCount} lecturas</p>
@@ -729,7 +730,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                          .map((book, index) => (
                             <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                                 <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
-                                <img src={book.coverUrl} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
+                                <img src={proxyCoverUrl(book.coverUrl)} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 <div className="flex-1 ml-3 min-w-0">
                                     <h4 className="font-bold text-slate-800 text-sm truncate" title={book.title}>{book.title}</h4>
                                     <div className="flex items-center gap-1">
@@ -835,7 +836,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                </button>
 
                <div className="w-full md:w-1/3 h-64 md:h-auto relative bg-slate-100">
-                  <img src={viewingBook.coverUrl} className="w-full h-full object-cover" alt={viewingBook.title} />
+                  <img src={proxyCoverUrl(viewingBook.coverUrl)} className="w-full h-full object-cover" alt={viewingBook.title} onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col justify-end p-4">
                      <span className="text-white font-bold bg-brand-500 px-2 py-0.5 rounded text-xs self-start mb-2 shadow-sm">{viewingBook.genre}</span>
                      {viewingBook.recommendedAge && (
@@ -920,7 +921,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                
                <div className="text-center mb-6">
                   <div className="w-16 h-24 mx-auto mb-3 rounded-lg overflow-hidden shadow-sm bg-slate-100">
-                     <img src={reviewingBook.coverUrl} className="w-full h-full object-cover" alt="cover"/>
+                     <img src={proxyCoverUrl(reviewingBook.coverUrl)} className="w-full h-full object-cover" alt="cover" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                   </div>
                   <h3 className="font-bold text-lg text-slate-800 leading-tight">{reviewingBook.title}</h3>
                   <p className="text-sm text-slate-500">¿Qué te ha parecido?</p>

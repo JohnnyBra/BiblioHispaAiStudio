@@ -1,5 +1,18 @@
 import { User } from '../types';
 
+// Proxy external cover URLs through local server cache
+const PROXY_HOSTS = ['covers.openlibrary.org', 'books.google.com', 'api.librario.dev'];
+export function proxyCoverUrl(url?: string): string | undefined {
+    if (!url) return undefined;
+    try {
+        const parsed = new URL(url);
+        if (PROXY_HOSTS.some(h => parsed.hostname.endsWith(h))) {
+            return `/api/cover-proxy?url=${encodeURIComponent(url)}`;
+        }
+    } catch { /* not a valid URL, return as-is */ }
+    return url;
+}
+
 export function compareClassNames(a: string, b: string): number {
     const getWeight = (name: string): number => {
         const n = name.toUpperCase();

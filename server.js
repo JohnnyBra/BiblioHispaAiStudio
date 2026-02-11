@@ -54,6 +54,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(process.cwd(), 'data', 'db.json');
+const COVERS_DIR = path.join(process.cwd(), 'data', 'covers');
 
 // Middleware
 app.use(cors());
@@ -989,6 +990,70 @@ app.post('/api/pointHistory', async (req, res) => {
 app.post('/api/settings', async (req, res) => {
   await saveDB(req.body, 'settings');
   res.json({ success: true });
+});
+
+// --- COVER IMAGE PROXY WITH LOCAL CACHE ---
+// Serves covers from local cache or fetches from external URL and caches
+app.get('/api/cover-proxy', async (req, res) => {
+  const url = req.query.url;
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+
+  // Only allow known image hosts
+  const allowed = ['covers.openlibrary.org', 'books.google.com', 'api.librario.dev'];
+  try {
+    const parsed = new URL(url);
+    if (!allowed.some(host => parsed.hostname.endsWith(host))) {
+      return res.status(403).json({ error: 'Host not allowed' });
+    }
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL' });
+  }
+
+  // Hash the URL to create a unique filename
+  const hash = crypto.createHash('md5').update(url).digest('hex');
+  const ext = '.jpg'; // Most covers are JPEG
+  const cachedPath = path.join(COVERS_DIR, `${hash}${ext}`);
+
+  try {
+    // Check if already cached
+    await fs.access(cachedPath);
+    const stat = await fs.stat(cachedPath);
+    if (stat.size > 0) {
+      res.set('Content-Type', 'image/jpeg');
+      res.set('Cache-Control', 'public, max-age=2592000'); // 30 days browser cache
+      const data = await fs.readFile(cachedPath);
+      return res.send(data);
+    }
+  } catch {
+    // Not cached yet — fetch from external source
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'BiblioHispa-Server/1.0' },
+      timeout: 10000
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'External fetch failed' });
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    // Save to cache (non-blocking)
+    await fs.mkdir(COVERS_DIR, { recursive: true });
+    fs.writeFile(cachedPath, buffer).catch(err => console.error('Cover cache write error:', err));
+
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=2592000'); // 30 days
+    res.send(buffer);
+  } catch (err) {
+    console.error('Cover proxy error:', err.message);
+    res.status(502).json({ error: 'Failed to fetch cover' });
+  }
 });
 
 // Cualquier otra ruta devuelve el index.html (para React Router si lo usáramos, o refresh)

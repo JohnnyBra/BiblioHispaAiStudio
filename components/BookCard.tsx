@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Book, UserRole } from '../types';
 import { Button } from './Button';
 import { BookOpen, Star, Archive, Eye, Clock, User } from 'lucide-react';
+import { proxyCoverUrl } from '../services/utils';
 
 interface BookCardProps {
   book: Book;
@@ -60,7 +61,7 @@ export const BookCard: React.FC<BookCardProps> = ({
       <div className="relative h-52 overflow-hidden bg-slate-100/50">
         {book.coverUrl ? (
             <img
-            src={book.coverUrl}
+            src={proxyCoverUrl(book.coverUrl)}
             alt={book.title}
             className={`w-full h-full object-cover transform transition-transform duration-700 ease-in-out will-change-transform group-hover:scale-105 ${!isAvailable ? 'grayscale' : ''}`}
             loading="lazy"

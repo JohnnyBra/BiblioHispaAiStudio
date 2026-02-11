@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings, PointHistory, Transaction, BackupData } from '../types';
 import { normalizeString } from '../services/storageService';
-import { compareClassNames, compareStudents } from '../services/utils';
+import { compareClassNames, compareStudents, proxyCoverUrl } from '../services/utils';
 import { searchBookCover, determineBookAge, searchBookMetadata, searchBookMetadataBatch, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
 import { syncStudents } from '../services/userService';
 import { generateStudentLoanReport } from '../services/reportService';
@@ -1500,7 +1500,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   <div className="w-16 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded shadow-sm flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center relative overflow-hidden flex-shrink-0">
                                      <span>{book.title.substring(0, 30)}</span>
                                      {book.coverUrl && (
-                                        <img src={book.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                        <img src={proxyCoverUrl(book.coverUrl)} className="absolute inset-0 w-full h-full object-cover" alt="" loading="lazy"
                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                      )}
                                   </div>
@@ -1538,7 +1538,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <form onSubmit={handleSaveBook} className="space-y-3">
                         <div className="flex gap-2 mb-2">
                             {newBook.coverUrl && (
-                                <img src={newBook.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="Cover"/>
+                                <img src={proxyCoverUrl(newBook.coverUrl)} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="Cover"/>
                             )}
                             <div className="flex-1">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase">Título *</label>
@@ -1765,7 +1765,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             >
                                 <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 p-2 text-center">{cand.title || 'Sin imagen'}</div>
                                 {cand.coverUrl && (
-                                    <img src={cand.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                    <img src={proxyCoverUrl(cand.coverUrl)} className="absolute inset-0 w-full h-full object-cover" alt=""
                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 )}
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
@@ -1784,7 +1784,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             <div className="w-16 h-24 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden relative">
                                 <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 text-center p-1">{cand.title?.substring(0, 30) || 'Sin imagen'}</div>
                                 {cand.coverUrl && (
-                                    <img src={cand.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                    <img src={proxyCoverUrl(cand.coverUrl)} className="absolute inset-0 w-full h-full object-cover" alt=""
                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 )}
                             </div>
@@ -1918,7 +1918,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <div className="w-20 h-32 bg-gradient-to-br from-slate-200 to-slate-300 rounded flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center relative overflow-hidden flex-shrink-0">
                             <span>{editingBook.title.substring(0, 30)}</span>
                             {editingBook.coverUrl && (
-                                <img src={editingBook.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                <img src={proxyCoverUrl(editingBook.coverUrl)} className="absolute inset-0 w-full h-full object-cover" alt=""
                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                             )}
                         </div>
