@@ -32,6 +32,7 @@ Both `npm run dev` and `node server.js` must run simultaneously during developme
 Copy `.env.example` to `.env`. Required variables:
 - `VITE_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_ID` — Google OAuth (server falls back to VITE_ prefix)
 - `VITE_API_KEY` — Google Gemini API key (injected at build time as `process.env.API_KEY`)
+- `VITE_LIBRARIO_API_KEY` — Optional, Librario API Bearer token for high-quality book covers (stub until configured)
 - `PRISMA_API_SECRET` (or `API_SECRET`) — Optional, for Prisma EDU student sync
 - `PORT` — Backend port (default 3000)
 
@@ -48,7 +49,7 @@ Copy `.env.example` to `.env`. Required variables:
 
 - **Entry:** `server.js` — single file, all API routes
 - **Database:** JSON file at `data/db.json` with automatic backups in `data/backups/`
-- **External APIs:** Google Books API (book metadata search), Google Gemini (AI features), Prisma EDU (student sync)
+- **External APIs:** Google Books API (book metadata search), Open Library (covers), Librario (covers, stub), Google Gemini (AI features), Prisma EDU (student sync)
 
 ### Key Files
 
@@ -61,8 +62,8 @@ Copy `.env.example` to `.env`. Required variables:
 | `components/StudentView.tsx` | Student-facing catalog and borrowing UI |
 | `services/storageService.ts` | HTTP client wrapping all `/api/*` endpoints |
 | `services/gamificationService.ts` | Points, badges, streak logic |
-| `services/bookService.ts` | Book cover search (Google Books + Open Library + Gemini), metadata |
-| `services/geminiService.ts` | Google Gemini AI integration (lazy-loaded): chat, age rating, book identification |
+| `services/bookService.ts` | Book cover search (Librario + Open Library + Google Books), metadata, batch import |
+| `services/geminiService.ts` | Google Gemini AI integration (lazy-loaded): chat, age rating, book identification, batch identification |
 | `services/reportService.ts` | PDF generation with jsPDF |
 | `prismaImportService.js` | Prisma EDU API sync for students/teachers |
 
@@ -105,6 +106,16 @@ Key design decisions:
 - **Alternative cover search** allows typing a custom text query to search by title/author when default results aren't satisfactory
 - **`handleStartEditing()`** in AdminView does NOT pre-load candidates (was causing slowness). Candidates load on-demand only
 
+### Batch Book Import Flow (`geminiService.ts` + `bookService.ts`)
+
+CSV batch imports use `searchBookMetadataBatch()` to minimize Gemini API calls:
+
+1. **Single Gemini call**: `identifyBooksBatch(books[])` sends all titles/authors in one request (chunked in groups of 30). Returns ISBN, author, and `recommendedAge` for each book
+2. **Per-book metadata**: For each book, fetches Google Books metadata (HTTP, no Gemini) using ISBN from step 1
+3. **Cover upgrade**: Same priority as single search (Librario → Open Library → Google Books)
+
+This reduces Gemini calls from ~2N (one `identifyBook` + one `getAIRecommendedAge` per book) to ~ceil(N/30) calls total. For 100 books: from ~200 calls down to 4.
+
 ### Broken Image Pattern
 
 All `<img>` tags for book covers use a fallback pattern to avoid broken image icons:
@@ -122,5 +133,6 @@ Title text sits behind the image. If image fails to load, `onError` hides it and
 - Date formatting uses `es-ES` locale
 - String comparison uses `normalizeString()` from `services/utils.ts` (strips accents)
 - Book covers: multi-source (Librario → Open Library → Google Books), stored in db.json. No runtime image validation
-- Gemini model used: `gemini-2.5-flash`
+- Gemini model used: `gemini-2.5-flash`. Free tier: 20 RPD / 5 RPM — batch functions mitigate this
+- Gemini API key (`VITE_API_KEY`) must have billing enabled for production use; free tier is too restrictive for batch imports
 - Production deployment uses PM2 + Nginx on Ubuntu (see `install.sh`)
