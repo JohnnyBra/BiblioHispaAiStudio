@@ -1744,10 +1744,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 onClick={() => handleSelectCandidate(cand)}
                                 className="aspect-[2/3] bg-slate-100 rounded-lg cursor-pointer hover:ring-4 hover:ring-brand-200 transition-all overflow-hidden relative group"
                             >
-                                {cand.coverUrl ? (
-                                    <img src={cand.coverUrl} className="w-full h-full object-cover" alt={cand.title} />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 p-2 text-center">Sin imagen</div>
+                                <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 p-2 text-center">{cand.title || 'Sin imagen'}</div>
+                                {cand.coverUrl && (
+                                    <img src={cand.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                       onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 )}
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                             </div>
@@ -1762,11 +1762,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             className="flex gap-4 p-3 border border-slate-200 rounded-xl hover:bg-brand-50 cursor-pointer transition-colors group"
                             onClick={() => handleSelectCandidate(cand)}
                         >
-                            <div className="w-16 h-24 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden">
-                                {cand.coverUrl ? (
-                                    <img src={cand.coverUrl} className="w-full h-full object-cover" alt="cover"/>
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 text-center p-1">Sin imagen</div>
+                            <div className="w-16 h-24 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden relative">
+                                <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 text-center p-1">{cand.title?.substring(0, 30) || 'Sin imagen'}</div>
+                                {cand.coverUrl && (
+                                    <img src={cand.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                       onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
