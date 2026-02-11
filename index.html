@@ -339,7 +339,7 @@
           size: A4;
           margin: 10mm;
         }
-        
+
         body {
           margin: 0;
           padding: 0;
@@ -350,45 +350,79 @@
           display: none !important;
         }
 
-        /* Hide everything by default */
+        /* Hide all content by default */
         body * {
           visibility: hidden;
-          height: 0;
-          overflow: hidden;
         }
 
-        /* Show only the printable area and its children */
-        #printable-area, #printable-area * {
-          visibility: visible;
-          height: auto;
-          overflow: visible;
+        /*
+         * MOBILE FIX: Override overflow:hidden on the entire ancestor chain
+         * from body to #printable-area. Mobile browsers (iOS Safari, Chrome
+         * Android) clip position:absolute children when ancestors have
+         * overflow:hidden + height:0. We restore height and overflow on
+         * every container level so #printable-area is never clipped.
+         */
+        html, body,
+        #root,
+        #root > *,
+        #root > * > *,
+        #root > * > * > *,
+        #root > * > * > * > *,
+        #root > * > * > * > * > * {
+          overflow: visible !important;
+          height: auto !important;
+          max-height: none !important;
+          max-width: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        /* Show only the printable area and all its descendants */
+        #printable-area,
+        #printable-area * {
+          visibility: visible !important;
+          height: auto !important;
+          overflow: visible !important;
         }
 
         /* Position the printable area at the top-left of the page */
         #printable-area {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          z-index: 999999 !important;
+          width: 190mm !important;
+          min-width: 190mm !important;
+          max-width: 190mm !important;
           display: grid !important;
-          grid-template-columns: repeat(2, 1fr); /* 2 Columns exactly */
-          grid-gap: 10mm; /* Space between cards */
-          /* Critical fixes to prevent stretching */
-          align-items: start !important; 
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 5mm !important;
+          align-items: start !important;
           justify-items: center !important;
-          padding: 0;
-          margin: 0;
+          padding: 0 !important;
+          margin: 0 !important;
           background: white !important;
+        }
+
+        /* Ensure wrapper divs inside printable area flex-center the cards */
+        #printable-area > div {
+          display: flex !important;
+          justify-content: center !important;
+          align-items: flex-start !important;
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
 
         /* Ensure cards don't get split between pages */
         .id-card-print {
           break-inside: avoid;
           page-break-inside: avoid;
+          position: relative !important;
           margin: 0 auto;
+          border: 1px solid #ddd !important;
         }
 
-        /* Force background colors */
+        /* Force background colors and images to print */
         * {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
