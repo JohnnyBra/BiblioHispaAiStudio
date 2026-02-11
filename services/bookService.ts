@@ -259,14 +259,6 @@ export const searchBookCandidates = async (query: string): Promise<Partial<Book>
         }
     }));
 
-    // Step 4: Validate all cover URLs in parallel
-    await Promise.all(candidates.map(async (candidate) => {
-        if (candidate.coverUrl) {
-            const isValid = await validateImageUrl(candidate.coverUrl);
-            if (!isValid) candidate.coverUrl = undefined;
-        }
-    }));
-
     return candidates;
 }
 
