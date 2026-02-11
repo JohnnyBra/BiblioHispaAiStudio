@@ -1061,6 +1061,62 @@ app.get(/^(.*)$/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// --- PRE-CACHE COVERS IN BACKGROUND ---
+const PROXY_HOSTS = ['covers.openlibrary.org', 'books.google.com', 'api.librario.dev'];
+
+async function preCacheCovers() {
+  try {
+    const data = JSON.parse(await fs.readFile(DB_FILE, 'utf-8'));
+    const books = data.books || [];
+    const withCovers = books.filter(b => b.coverUrl);
+
+    if (withCovers.length === 0) {
+      console.log('[COVERS] No hay portadas que cachear.');
+      return;
+    }
+
+    await fs.mkdir(COVERS_DIR, { recursive: true });
+
+    let cached = 0, skipped = 0, failed = 0;
+
+    for (const book of withCovers) {
+      const url = book.coverUrl;
+
+      // Only proxy known external hosts
+      try {
+        const parsed = new URL(url);
+        if (!PROXY_HOSTS.some(h => parsed.hostname.endsWith(h))) { skipped++; continue; }
+      } catch { skipped++; continue; }
+
+      const hash = crypto.createHash('md5').update(url).digest('hex');
+      const cachedPath = path.join(COVERS_DIR, `${hash}.jpg`);
+
+      // Skip if already cached
+      try {
+        const stat = await fs.stat(cachedPath);
+        if (stat.size > 0) { skipped++; continue; }
+      } catch { /* not cached yet */ }
+
+      // Download and cache
+      try {
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'BiblioHispa-Server/1.0' },
+          timeout: 10000
+        });
+        if (response.ok) {
+          const buffer = Buffer.from(await response.arrayBuffer());
+          await fs.writeFile(cachedPath, buffer);
+          cached++;
+        } else { failed++; }
+      } catch { failed++; }
+    }
+
+    console.log(`[COVERS] Pre-caché completado: ${cached} descargadas, ${skipped} ya en caché, ${failed} fallidas (de ${withCovers.length} total).`);
+  } catch (err) {
+    console.error('[COVERS] Error en pre-caché:', err.message);
+  }
+}
+
 // --- SISTEMA DE COPIAS DE SEGURIDAD ---
 async function performBackup() {
   const backupDir = path.join(process.cwd(), 'data', 'backups');
@@ -1105,5 +1161,8 @@ initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor BiblioHispa corriendo en http://localhost:${PORT}`);
     console.log(`📁 Base de datos en: ${DB_FILE}`);
+
+    // Pre-cache covers in background (non-blocking)
+    preCacheCovers();
   });
 });
