@@ -102,7 +102,7 @@ Key design decisions:
 - **`searchOpenLibraryCover()`** tries ISBN first (`/b/isbn/{isbn}-L.jpg?default=false` with HEAD check), then Open Library search API for `cover_i`
 - **`searchLibrarioCover()`** uses `api.librario.dev/v1/book/{isbn}/cover` with Bearer auth. Returns `null` if no API key set
 - **`validateImageUrl()`** exists (line ~72) but is NOT called — it was found to reject valid Google Books/Open Library URLs via `new Image()` browser loading. Do not reactivate without thorough testing
-- **Covers are stored in `db.json`** once found. The search only runs when adding books or explicitly clicking "Buscar Portada Alternativa"
+- **Covers are stored in `db.json`** as external URLs. The search only runs when adding books or explicitly clicking "Buscar Portada Alternativa"
 - **Alternative cover search** allows typing a custom text query to search by title/author when default results aren't satisfactory
 - **`handleStartEditing()`** in AdminView does NOT pre-load candidates (was causing slowness). Candidates load on-demand only
 
@@ -115,6 +115,20 @@ CSV batch imports use `searchBookMetadataBatch()` to minimize Gemini API calls:
 3. **Cover upgrade**: Same priority as single search (Librario → Open Library → Google Books)
 
 This reduces Gemini calls from ~2N (one `identifyBook` + one `getAIRecommendedAge` per book) to ~ceil(N/30) calls total. For 100 books: from ~200 calls down to 4.
+
+### Cover Image Proxy & Cache (`server.js` + `services/utils.ts`)
+
+Cover images are proxied through the local server to avoid slow/unreliable external requests:
+
+- **Proxy endpoint**: `GET /api/cover-proxy?url=<encoded-external-url>` in `server.js`
+  - Downloads the image from the external source, saves to `data/covers/<md5-hash>.jpg`, and serves it
+  - Subsequent requests served directly from disk (instant)
+  - `Cache-Control: public, max-age=2592000` (30 days browser cache)
+  - Host whitelist: `covers.openlibrary.org`, `books.google.com`, `api.librario.dev`
+- **`proxyCoverUrl(url)`** in `services/utils.ts` wraps external cover URLs with the proxy endpoint at render time. Used in all `<img>` tags across AdminView, StudentView, and BookCard
+- **Pre-cache on startup**: `preCacheCovers()` runs automatically when the server starts — reads all books from `db.json` and downloads any uncached covers in the background. No user interaction needed
+- **All `<img>` cover tags** use `loading="lazy"` and `onError` handlers to hide broken images
+- `index.html` includes `dns-prefetch` and `preconnect` for `covers.openlibrary.org` and `books.google.com`
 
 ### Broken Image Pattern
 
@@ -132,7 +146,7 @@ Title text sits behind the image. If image fails to load, `onError` hides it and
 - All UI text is in Spanish
 - Date formatting uses `es-ES` locale
 - String comparison uses `normalizeString()` from `services/utils.ts` (strips accents)
-- Book covers: multi-source (Librario → Open Library → Google Books), stored in db.json. No runtime image validation
+- Book covers: multi-source (Librario → Open Library → Google Books), URLs stored in db.json, images cached locally via `/api/cover-proxy` in `data/covers/`
 - Gemini model used: `gemini-2.5-flash`. Free tier: 20 RPD / 5 RPM — batch functions mitigate this
 - Gemini API key (`VITE_API_KEY`) must have billing enabled for production use; free tier is too restrictive for batch imports
 - Production deployment uses PM2 + Nginx on Ubuntu (see `install.sh`)
