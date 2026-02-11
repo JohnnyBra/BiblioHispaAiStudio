@@ -484,8 +484,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   const handleStartEditing = (book: Book) => {
       setEditingBook({ ...book });
-      // Pre-load candidates in background
-      searchBookCandidates(`${book.title} ${book.author}`).then(setCandidates);
+      setCandidates([]);
+  };
+
+  const handleSearchAlternativeCovers = async () => {
+      if (!editingBook) return;
+      setIsCoverSelectionMode(true);
+      setShowCandidates(true);
+      setCandidates([]);
+      try {
+          const results = await searchBookCandidates(`${editingBook.title} ${editingBook.author}`);
+          setCandidates(results);
+      } catch {
+          onShowToast("Error buscando portadas.", "error");
+      }
   };
 
   const handleSaveEdit = async () => {
@@ -1478,13 +1490,13 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             .filter(b => shelfFilter === 'all' || (b.shelf || 'Recepción') === shelfFilter)
                             .map(book => (
                                <div key={book.id} className="flex gap-3 items-start p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group">
-                                  {book.coverUrl ? (
-                                     <img src={book.coverUrl} className="w-16 h-24 object-cover rounded shadow-sm bg-slate-200" alt="cover"/>
-                                  ) : (
-                                     <div className="w-16 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded shadow-sm flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center">
-                                        {book.title.substring(0, 10)}...
-                                     </div>
-                                  )}
+                                  <div className="w-16 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded shadow-sm flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center relative overflow-hidden flex-shrink-0">
+                                     <span>{book.title.substring(0, 30)}</span>
+                                     {book.coverUrl && (
+                                        <img src={book.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                           onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
+                                     )}
+                                  </div>
                                   <div className="flex-1 min-w-0">
                                      <h4 className="font-bold text-slate-800 truncate text-sm" title={book.title}>{book.title}</h4>
                                      <p className="text-xs text-slate-500 mb-1">{book.author}</p>
@@ -1719,6 +1731,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
             {isCoverSelectionMode ? (
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <p className="text-sm text-slate-500 mb-3">Selecciona una imagen para usarla como portada:</p>
+                    {candidates.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                            <Loader2 className="animate-spin mb-3" size={32}/>
+                            <p className="text-sm">Buscando portadas...</p>
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {candidates.map((cand, idx) => (
                             <div
@@ -1878,11 +1896,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                 <div className="space-y-3">
                     <div className="flex gap-4">
-                        {editingBook.coverUrl && <img src={editingBook.coverUrl} className="w-20 h-32 object-cover rounded bg-slate-200"/>}
+                        <div className="w-20 h-32 bg-gradient-to-br from-slate-200 to-slate-300 rounded flex items-center justify-center text-xs text-slate-500 font-bold p-1 text-center relative overflow-hidden flex-shrink-0">
+                            <span>{editingBook.title.substring(0, 30)}</span>
+                            {editingBook.coverUrl && (
+                                <img src={editingBook.coverUrl} className="absolute inset-0 w-full h-full object-cover" alt=""
+                                   onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
+                            )}
+                        </div>
                         <div className="flex-1 space-y-2">
                             <input className="w-full p-2 border rounded" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} placeholder="Título" />
                             <input className="w-full p-2 border rounded" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} placeholder="Autor" />
-                            <Button size="sm" variant="outline" onClick={() => { setIsCoverSelectionMode(true); setShowCandidates(true); }}><Wand2 size={14} className="mr-2"/> Buscar Portada Alternativa</Button>
+                            <Button size="sm" variant="outline" onClick={handleSearchAlternativeCovers}><Wand2 size={14} className="mr-2"/> Buscar Portada Alternativa</Button>
                         </div>
                     </div>
 
