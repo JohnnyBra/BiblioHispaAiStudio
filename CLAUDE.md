@@ -89,14 +89,20 @@ All backend routes are in `server.js`. Pattern: `/api/{resource}` for collection
 
 1. **Parallel**: `identifyBook(query)` via Gemini + `fetchGoogleBooks(query)` via Google Books API
 2. **Precise search**: If Gemini returned ISBN → search Google Books with `isbn:{isbn}` and insert at front. If only title/author → refined Google Books search
-3. **Open Library fallback**: For candidates still missing covers, try `covers.openlibrary.org` by ISBN, then by text search
+3. **Cover upgrade** (priority: Librario > Open Library > Google Books):
+   - For candidates with ISBN → try `searchLibrarioCover(isbn)` (requires `VITE_LIBRARIO_API_KEY` in `.env`, stub until configured)
+   - Then try `searchOpenLibraryCover()` by ISBN, then by text search
+   - Google Books cover kept only as last resort
 4. Returns candidates with best available covers
 
 Key design decisions:
+- **Cover source priority**: Librario (highest quality, aggregates multiple sources) → Open Library → Google Books. Librario is a stub until API key is configured via `VITE_LIBRARIO_API_KEY`
 - **Gemini `identifyBook()`** returns `{title, author, isbn}` from vague queries. Falls back to `null` gracefully if API key missing or error
 - **`searchOpenLibraryCover()`** tries ISBN first (`/b/isbn/{isbn}-L.jpg?default=false` with HEAD check), then Open Library search API for `cover_i`
+- **`searchLibrarioCover()`** uses `api.librario.dev/v1/book/{isbn}/cover` with Bearer auth. Returns `null` if no API key set
 - **`validateImageUrl()`** exists (line ~72) but is NOT called — it was found to reject valid Google Books/Open Library URLs via `new Image()` browser loading. Do not reactivate without thorough testing
 - **Covers are stored in `db.json`** once found. The search only runs when adding books or explicitly clicking "Buscar Portada Alternativa"
+- **Alternative cover search** allows typing a custom text query to search by title/author when default results aren't satisfactory
 - **`handleStartEditing()`** in AdminView does NOT pre-load candidates (was causing slowness). Candidates load on-demand only
 
 ### Broken Image Pattern
@@ -115,6 +121,6 @@ Title text sits behind the image. If image fails to load, `onError` hides it and
 - All UI text is in Spanish
 - Date formatting uses `es-ES` locale
 - String comparison uses `normalizeString()` from `services/utils.ts` (strips accents)
-- Book covers: multi-source (Google Books → Open Library), stored in db.json. No runtime image validation
+- Book covers: multi-source (Librario → Open Library → Google Books), stored in db.json. No runtime image validation
 - Gemini model used: `gemini-2.5-flash`
 - Production deployment uses PM2 + Nginx on Ubuntu (see `install.sh`)
