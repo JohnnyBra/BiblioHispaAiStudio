@@ -105,9 +105,6 @@ export const identifyBook = async (query: string): Promise<{title: string, autho
   try {
     const ai = getAIClient();
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `
@@ -122,8 +119,6 @@ export const identifyBook = async (query: string): Promise<{title: string, autho
         - Si no puedes identificar el libro, responde exactamente: null
       `,
     });
-
-    clearTimeout(timeout);
 
     const text = response.text?.trim() || '';
     if (!text || text === 'null') return null;
