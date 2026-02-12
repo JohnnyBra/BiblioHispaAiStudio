@@ -43,7 +43,10 @@ const App: React.FC = () => {
   // --- Theme State ---
   const [theme, setTheme] = React.useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('biblio_theme');
-    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+    if (saved === 'light' || saved === 'dark') return saved;
+    // Auto-detect from device preference
+    if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light';
+    return 'dark';
   });
 
   React.useEffect(() => {

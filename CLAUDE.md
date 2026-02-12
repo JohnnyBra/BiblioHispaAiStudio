@@ -1,10 +1,3 @@
-## ESTADO DEL REDISEÑO "PRISMATIC GLASS"
-- **Plan Maestro:** Seguir `.claude/plans/polished-pondering-toast.md`
-- **Estética:** Glassmorphism (backdrop-blur), Gradient Mesh por rol, fuentes Outfit/Jakarta.
-- **Regla de Oro:** NO tocar lógica de negocio ni DataContext.tsx. Solo estilos Tailwind/CSS.
-- **Progreso actual:** Ibas a empezar la Fase 2: Rediseño TutorDashboard
-
-
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -50,7 +43,19 @@ Copy `.env.example` to `.env`. Required variables:
 - **Entry:** `index.tsx` → `App.tsx` (main container, holds all global state)
 - **State management:** React hooks in App.tsx. State passed via props to views. Persistence via useEffect hooks that auto-save to backend on change.
 - **Session:** `currentUser` stored in localStorage key `biblio_session_user`
-- **Styling:** Tailwind CSS (loaded via CDN in `index.html`), custom glassmorphism design system (`.glass-panel`, `.glass-card`, `.glass-input`), fonts Fredoka (headings) + Inter (body)
+- **Styling:** Tailwind CSS (loaded via CDN in `index.html`), "Prismatic Glass" design system with dual dark/light theme, glassmorphism (`.glass-panel`, `.glass-card`, `.glass-input`), gradient mesh backgrounds per role, fonts Outfit (headings) + Plus Jakarta Sans (body)
+
+### Theme System ("Prismatic Glass")
+
+- **Dual theme:** Dark (default) + Light, toggled via `data-theme` attribute on `<html>`
+- **Auto-detection:** On first visit (no localStorage), reads `prefers-color-scheme` from the device. After user toggles manually, their choice persists in `localStorage('biblio_theme')`
+- **CSS variables:** All colors defined as CSS custom properties in `index.html` `<style>` block (`:root` for dark, `html[data-theme="light"]` for light overrides)
+- **Gradient mesh backgrounds** per role: `--mesh-auth` (login), `--mesh-tutor` (ADMIN/SUPERADMIN), `--mesh-student` (STUDENT)
+- **Bridge classes:** `text-themed`, `text-themed-secondary`, `text-themed-muted`, `modal-glass`, `bg-themed-raised`, `input-themed` — respond to theme automatically
+- **Glass classes redefined:** `.glass-panel`, `.glass-card`, `.glass-input`, `.glass-header`, `.glass-bottom-nav`, `.modal-backdrop` all use CSS variables
+- **Toggle location:** Desktop header tabs (AdminView + StudentView), mobile "Más Opciones" menu (AdminView), login screen top-right corner
+- **Dark-safe colors:** Use `bg-*-500/15` instead of `bg-*-100`, `text-*-300/400` instead of `text-*-700/800`
+- **IDCard.tsx is excluded** from theming (print artifact, uses hardcoded colors)
 
 ### Backend (Express 5 + Node.js)
 
