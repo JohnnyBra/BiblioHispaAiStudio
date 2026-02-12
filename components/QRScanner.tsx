@@ -102,22 +102,22 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
 
   return (
     <div className="fixed inset-0 z-50 modal-backdrop flex items-end sm:items-center justify-center animate-fade-in">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 w-full sm:max-w-md relative shadow-glass-xl flex flex-col items-center animate-slide-up sm:animate-modal-in">
+      <div className="modal-glass rounded-t-3xl sm:rounded-3xl p-6 w-full sm:max-w-md relative shadow-glass-xl flex flex-col items-center animate-slide-up sm:animate-modal-in">
         <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-300 hover:text-slate-500 z-10 bg-slate-50 rounded-xl p-2 hover:bg-slate-100 transition-all press-effect"
+            className="absolute top-4 right-4 text-themed-muted hover:text-themed-secondary z-10 bg-[var(--surface-raised)] rounded-xl p-2 hover:bg-[var(--surface-overlay)] transition-all press-effect"
         >
             <X size={20} />
         </button>
 
         <div className="text-center mb-6">
-            <h3 className="text-xl font-display font-bold text-slate-800 flex items-center justify-center gap-2">
+            <h3 className="text-xl font-display font-bold text-themed flex items-center justify-center gap-2">
                 <Camera className="text-brand-500" /> Escanear Carnet
             </h3>
-            <p className="text-xs text-slate-400 mt-1">Enfoca el código QR de tu carnet</p>
+            <p className="text-xs text-themed-muted mt-1">Enfoca el código QR de tu carnet</p>
         </div>
 
-        <div className="relative w-full aspect-square bg-slate-900 rounded-2xl overflow-hidden ring-4 ring-slate-100 shadow-inner">
+        <div className="relative w-full aspect-square bg-slate-900 rounded-2xl overflow-hidden ring-4 ring-[var(--glass-border)] shadow-inner">
             {/* The library mounts the video element here */}
             <div id={readerId} className="w-full h-full"></div>
 
@@ -126,21 +126,21 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black/50 backdrop-blur-sm z-10">
                     <Loader2 size={48} className="animate-spin mb-4 text-brand-400" />
                     <p className="font-display font-bold text-sm">Iniciando cámara...</p>
-                    <p className="text-xs text-slate-300 mt-2">Por favor, acepta los permisos.</p>
+                    <p className="text-xs text-white/60 mt-2">Por favor, acepta los permisos.</p>
                 </div>
             )}
 
             {/* Error State */}
             {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 p-6 z-20 text-center">
-                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--surface-base)] p-6 z-20 text-center">
+                    <div className="w-16 h-16 bg-red-500/15 rounded-2xl flex items-center justify-center mb-4">
                         <AlertTriangle className="text-accent-coral" size={32} />
                     </div>
-                    <h4 className="font-display font-bold text-slate-800 mb-2">Error de Cámara</h4>
+                    <h4 className="font-display font-bold text-themed mb-2">Error de Cámara</h4>
                     <p className="text-sm text-accent-coral font-medium">{error}</p>
                     <button
                         onClick={onClose}
-                        className="mt-6 bg-gradient-to-b from-slate-800 to-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-bold press-effect shadow-glass"
+                        className="mt-6 bg-gradient-to-b from-brand-500 to-brand-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold press-effect shadow-brand"
                     >
                         Cerrar
                     </button>
@@ -161,8 +161,8 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onScanFailu
             )}
         </div>
 
-        <p className="mt-5 text-[10px] text-slate-300 text-center max-w-xs">
-            Si tienes problemas, asegúrate de estar accediendo mediante <strong className="text-slate-400">HTTPS</strong> y de haber dado permisos al navegador.
+        <p className="mt-5 text-[10px] text-themed-muted text-center max-w-xs">
+            Si tienes problemas, asegúrate de estar accediendo mediante <strong className="text-themed-secondary">HTTPS</strong> y de haber dado permisos al navegador.
         </p>
       </div>
     </div>
