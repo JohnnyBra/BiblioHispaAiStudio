@@ -25,9 +25,9 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onClose }) => {
   }, [toast.id, onClose]);
 
   const variants = {
-    success: "glass-panel !bg-white/95 border-l-4 border-accent-emerald text-slate-800",
-    error: "glass-panel !bg-white/95 border-l-4 border-accent-coral text-slate-800",
-    info: "glass-panel !bg-white/95 border-l-4 border-brand-500 text-slate-800"
+    success: "glass-panel modal-glass border-l-4 border-accent-emerald text-themed",
+    error: "glass-panel modal-glass border-l-4 border-accent-coral text-themed",
+    info: "glass-panel modal-glass border-l-4 border-brand-500 text-themed"
   };
 
   const icons = {
@@ -44,7 +44,7 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onClose }) => {
       <p className="flex-1 text-sm font-medium font-sans">{toast.message}</p>
       <button
         onClick={() => onClose(toast.id)}
-        className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-100/50"
+        className="text-themed-muted hover:text-themed-secondary transition-colors p-1.5 rounded-lg hover:bg-[var(--surface-raised)]"
       >
         <X size={16} />
       </button>

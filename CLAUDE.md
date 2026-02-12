@@ -1,3 +1,10 @@
+## ESTADO DEL REDISEÑO "PRISMATIC GLASS"
+- **Plan Maestro:** Seguir `.claude/plans/polished-pondering-toast.md`
+- **Estética:** Glassmorphism (backdrop-blur), Gradient Mesh por rol, fuentes Outfit/Jakarta.
+- **Regla de Oro:** NO tocar lógica de negocio ni DataContext.tsx. Solo estilos Tailwind/CSS.
+- **Progreso actual:** Ibas a empezar la Fase 2: Rediseño TutorDashboard
+
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.

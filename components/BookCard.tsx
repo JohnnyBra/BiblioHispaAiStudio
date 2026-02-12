@@ -58,7 +58,7 @@ export const BookCard: React.FC<BookCardProps> = ({
 
   return (
     <div className="glass-card rounded-3xl overflow-hidden flex flex-col h-full group hover-glow">
-      <div className="relative h-52 overflow-hidden bg-slate-100/50">
+      <div className="relative h-52 overflow-hidden bg-[var(--surface-raised)]">
         {book.coverUrl ? (
             <img
             src={proxyCoverUrl(book.coverUrl)}
@@ -78,7 +78,7 @@ export const BookCard: React.FC<BookCardProps> = ({
 
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/15 to-transparent pointer-events-none z-[5]"></div>
 
-        <div className="absolute top-3 right-3 glass-panel !bg-white/90 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-600 flex items-center gap-1 z-10 shadow-glass-sm">
+        <div className="absolute top-3 right-3 glass-panel px-2.5 py-1 rounded-full text-[11px] font-bold text-themed-secondary flex items-center gap-1 z-10 shadow-glass-sm">
            <Star size={11} className="text-accent-amber fill-accent-amber"/> {book.readCount}
         </div>
         {!isAvailable && (
@@ -98,40 +98,40 @@ export const BookCard: React.FC<BookCardProps> = ({
         )}
       </div>
 
-      <div className="p-5 flex flex-col flex-grow bg-white/30 backdrop-blur-sm">
+      <div className="p-5 flex flex-col flex-grow">
         <div className="flex justify-between items-start mb-2.5 gap-2">
           <div className="flex gap-1.5 flex-wrap">
-             <span className="text-[10px] font-bold text-brand-600 uppercase tracking-wide bg-brand-50 px-2.5 py-1 rounded-full">
+             <span className="text-[10px] font-bold text-brand-400 uppercase tracking-wide bg-brand-500/15 px-2.5 py-1 rounded-full">
                {book.genre}
              </span>
              {book.recommendedAge && (
-               <span className="text-[10px] font-bold text-accent-violet uppercase tracking-wide bg-purple-50 px-2.5 py-1 rounded-full flex items-center gap-0.5">
+               <span className="text-[10px] font-bold text-accent-violet uppercase tracking-wide bg-purple-500/15 px-2.5 py-1 rounded-full flex items-center gap-0.5">
                   <User size={10} /> {book.recommendedAge}
                </span>
              )}
           </div>
           {showShelf && (
-            <span className="text-[11px] text-slate-400 flex items-center gap-1 whitespace-nowrap">
+            <span className="text-[11px] text-themed-muted flex items-center gap-1 whitespace-nowrap">
               <Archive size={12}/> {book.shelf}
             </span>
           )}
         </div>
 
-        <h3 className="font-display font-bold text-lg text-slate-800 leading-tight mb-1 line-clamp-2">{book.title}</h3>
-        <p className="text-sm text-slate-400 mb-2.5">{book.author}</p>
+        <h3 className="font-display font-bold text-lg text-themed leading-tight mb-1 line-clamp-2">{book.title}</h3>
+        <p className="text-sm text-themed-muted mb-2.5">{book.author}</p>
 
         <div className="flex items-center gap-0.5 mb-3">
            {[1, 2, 3, 4, 5].map((star) => (
               <Star
                  key={star}
                  size={14}
-                 className={star <= Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-slate-200/60 fill-slate-200/60"}
+                 className={star <= Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-[var(--text-muted)]/30 fill-[var(--text-muted)]/30"}
               />
            ))}
-           {rating > 0 && <span className="text-[11px] text-slate-400 ml-1">({rating.toFixed(1)})</span>}
+           {rating > 0 && <span className="text-[11px] text-themed-muted ml-1">({rating.toFixed(1)})</span>}
         </div>
 
-        <div className="mt-auto pt-4 border-t border-slate-100/50">
+        <div className="mt-auto pt-4 border-t border-[var(--glass-border)]">
           <div className="flex justify-between items-center mb-3">
              <span className={`text-sm font-medium ${isAvailable ? 'text-accent-emerald' : 'text-accent-coral font-bold'}`}>
                {isAvailable ? `${book.unitsAvailable} de ${book.unitsTotal} disp.` : 'Sin unidades'}
