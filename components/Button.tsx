@@ -20,10 +20,10 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variants = {
     primary: "bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-500 hover:to-brand-700 text-white shadow-brand hover:shadow-brand-lg",
-    secondary: "bg-white hover:bg-slate-50 text-slate-700 shadow-glass-sm hover:shadow-glass border border-slate-200/80",
+    secondary: "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] text-themed shadow-glass-sm hover:shadow-glass border border-[var(--glass-border)]",
     danger: "bg-gradient-to-b from-red-500 to-red-600 hover:from-red-500 hover:to-red-700 text-white shadow-danger",
     success: "bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-700 text-white shadow-success",
-    outline: "border-[1.5px] border-slate-200 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 text-slate-600 bg-white/50 backdrop-blur-sm"
+    outline: "border-[1.5px] border-[var(--glass-border)] hover:border-brand-400 hover:text-brand-400 hover:bg-brand-500/10 text-themed-secondary bg-[var(--glass-bg)] backdrop-blur-sm"
   };
 
   const sizes = {

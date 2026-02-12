@@ -11,7 +11,7 @@ import { StudentView } from './components/StudentView';
 import { Button } from './components/Button';
 import { QRScanner } from './components/QRScanner';
 import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
-import { QrCode, WifiOff, Loader2, ArrowLeft } from 'lucide-react';
+import { QrCode, WifiOff, Loader2, ArrowLeft, Sun, Moon } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 const App: React.FC = () => {
@@ -39,6 +39,19 @@ const App: React.FC = () => {
   // --- Toast State ---
   const [toasts, setToasts] = React.useState<ToastMessage[]>([]);
   const isGoogleConfigured = import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID";
+
+  // --- Theme State ---
+  const [theme, setTheme] = React.useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('biblio_theme');
+    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+  });
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('biblio_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   // --- Initialization (Load from Server) ---
   React.useEffect(() => {
@@ -450,13 +463,13 @@ const App: React.FC = () => {
   // --- Loading / Error States ---
   if (connectionError) {
       return (
-          <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--mesh-auth)' }}>
               <div className="glass-panel p-10 rounded-4xl text-center max-w-md shadow-glass-lg animate-modal-in">
-                  <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-5 text-accent-coral animate-float">
+                  <div className="w-20 h-20 bg-red-500/15 rounded-3xl flex items-center justify-center mx-auto mb-5 text-accent-coral animate-float">
                       <WifiOff size={36} />
                   </div>
-                  <h1 className="text-2xl font-display font-bold text-slate-800 mb-2">Error de Conexión</h1>
-                  <p className="text-slate-400 mb-8 text-sm leading-relaxed">No podemos conectar con el servidor de la biblioteca. Asegúrate de que el servidor está encendido.</p>
+                  <h1 className="text-2xl font-display font-bold text-themed mb-2">Error de Conexión</h1>
+                  <p className="text-themed-muted mb-8 text-sm leading-relaxed">No podemos conectar con el servidor de la biblioteca. Asegúrate de que el servidor está encendido.</p>
                   <Button onClick={() => window.location.reload()} className="w-full" size="lg">Reintentar</Button>
               </div>
           </div>
@@ -465,7 +478,7 @@ const App: React.FC = () => {
 
   if (!isLoaded) {
       return (
-          <div className="min-h-screen flex items-center justify-center">
+          <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--mesh-auth)' }}>
               <div className="text-center space-y-5 animate-fade-in">
                   <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-brand animate-glow">
                       <img src={settings.logoUrl || "/vite.svg"} className="w-10 h-10 brightness-0 invert" alt="logo"/>
@@ -484,33 +497,33 @@ const App: React.FC = () => {
   if (!currentUser) {
     return (
      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
-      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-        <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 glass-panel hover:bg-white/90 p-3 rounded-2xl shadow-glass-sm text-slate-400 hover:text-brand-500 transition-all duration-300 hover:shadow-glass hover:scale-105 press-effect" title="Volver a Prisma">
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'var(--mesh-auth)' }}>
+        <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 glass-panel hover:bg-[var(--surface-raised)] p-3 rounded-2xl shadow-glass-sm text-themed-muted hover:text-brand-400 transition-all duration-300 hover:shadow-glass hover:scale-105 press-effect" title="Volver a Prisma">
           <ArrowLeft size={22} />
         </a>
+        <button onClick={toggleTheme} className="theme-toggle absolute top-4 right-4 z-50" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
         <ToastContainer toasts={toasts} removeToast={removeToast} />
-        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-accent-amber/10 rounded-full blur-[100px] animate-float"></div>
-        <div className="absolute bottom-[-15%] right-[-10%] w-[50%] h-[50%] bg-accent-violet/10 rounded-full blur-[100px] animate-float" style={{animationDelay: '2s'}}></div>
-        <div className="absolute top-[40%] right-[20%] w-[30%] h-[30%] bg-brand-500/8 rounded-full blur-[80px] animate-float" style={{animationDelay: '4s'}}></div>
 
         <div className="glass-panel max-w-md w-full rounded-4xl p-8 md:p-10 relative z-10 animate-modal-in shadow-glass-lg">
           <div className="text-center mb-8">
-            <div className="inline-block p-4 bg-white/60 backdrop-blur-sm rounded-3xl mb-5 shadow-glass-sm ring-1 ring-white/50">
+            <div className="inline-block p-4 bg-[var(--surface-raised)] backdrop-blur-sm rounded-3xl mb-5 shadow-glass-sm ring-1 ring-[var(--glass-border)]">
                <img src={settings.logoUrl || "https://cdn-icons-png.flaticon.com/512/3413/3413535.png"} alt="Logo" className="w-16 h-16 object-contain" />
             </div>
-            <h1 className="text-4xl font-display font-bold text-slate-800 mb-1">{settings.schoolName || 'Biblioteca'}</h1>
-            <p className="text-slate-400 font-medium text-sm">Tu puerta a mil aventuras</p>
+            <h1 className="text-4xl font-display font-bold text-themed mb-1">{settings.schoolName || 'Biblioteca'}</h1>
+            <p className="text-themed-muted font-medium text-sm">Tu puerta a mil aventuras</p>
           </div>
 
-          <div className="flex bg-slate-100/60 backdrop-blur-sm p-1 rounded-2xl mb-8 border border-white/30">
+          <div className="flex bg-[var(--surface-raised)] backdrop-blur-sm p-1 rounded-2xl mb-8 border border-[var(--glass-border)]">
             <button
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${!isAdminMode ? 'bg-white shadow-glass-sm text-brand-600' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${!isAdminMode ? 'bg-[var(--tab-active-bg)] shadow-glass-sm text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
               onClick={() => { setIsAdminMode(false); setAuthError(''); }}
             >
               ACCESO ALUMNOS
             </button>
             <button
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${isAdminMode ? 'bg-white shadow-glass-sm text-brand-600' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${isAdminMode ? 'bg-[var(--tab-active-bg)] shadow-glass-sm text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
               onClick={() => { setIsAdminMode(true); setAuthError(''); setIsManualLogin(false); }}
             >
               ACCESO PROFESORES
@@ -519,13 +532,13 @@ const App: React.FC = () => {
 
           {!isAdminMode && (
             <div className="mb-6">
-               <button onClick={() => setShowQRScanner(true)} className="w-full bg-gradient-to-b from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white flex items-center justify-center gap-3 py-3.5 rounded-2xl font-display font-semibold shadow-glass-lg hover-glow transition-all duration-300 press-effect">
+               <button onClick={() => setShowQRScanner(true)} className="w-full bg-gradient-to-b from-brand-500 to-brand-700 hover:from-brand-400 hover:to-brand-600 text-white flex items-center justify-center gap-3 py-3.5 rounded-2xl font-display font-semibold shadow-brand hover-glow transition-all duration-300 press-effect">
                   <QrCode size={20} /> Escanear Carnet
                </button>
                <div className="relative flex py-5 items-center">
-                  <div className="flex-grow border-t border-slate-200/40"></div>
-                  <span className="flex-shrink-0 mx-4 text-slate-300 text-[11px] font-bold uppercase tracking-wider">O entra con tu nombre</span>
-                  <div className="flex-grow border-t border-slate-200/40"></div>
+                  <div className="flex-grow border-t border-[var(--divider)]"></div>
+                  <span className="flex-shrink-0 mx-4 text-themed-muted text-[11px] font-bold uppercase tracking-wider">O entra con tu nombre</span>
+                  <div className="flex-grow border-t border-[var(--divider)]"></div>
                </div>
             </div>
           )}
@@ -534,7 +547,7 @@ const App: React.FC = () => {
           {isAdminMode ? (
              <div className="space-y-4">
                  {!isGoogleConfigured && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-bold mb-2">
+                    <div className="p-3 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-xl text-xs text-[var(--error-text)] font-bold mb-2">
                         ⚠️ Error: Google Client ID no configurado o inválido. Revisa .env y ejecuta 'npm run build'.
                     </div>
                  )}
@@ -548,13 +561,13 @@ const App: React.FC = () => {
                                 containerProps={{ className: 'w-full flex justify-center' }}
                             />
                             <div className="relative flex py-2 items-center">
-                                <div className="flex-grow border-t border-slate-200/50"></div>
-                                <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase">O</span>
-                                <div className="flex-grow border-t border-slate-200/50"></div>
+                                <div className="flex-grow border-t border-[var(--divider)]"></div>
+                                <span className="flex-shrink-0 mx-4 text-themed-muted text-xs font-bold uppercase">O</span>
+                                <div className="flex-grow border-t border-[var(--divider)]"></div>
                             </div>
                             <Button
                                 variant="secondary"
-                                className="w-full border border-slate-200 bg-white/50 backdrop-blur-sm"
+                                className="w-full"
                                 onClick={() => setIsManualLogin(true)}
                             >
                                 Usar Contraseña Manual
@@ -564,10 +577,10 @@ const App: React.FC = () => {
                  ) : (
                     <form onSubmit={handleLogin} className="space-y-4 animate-fadeIn">
                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Usuario Prisma</label>
+                            <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Usuario Prisma</label>
                             <input
                               type="text"
-                              className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium text-slate-900"
+                              className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
                               value={loginInput}
                               onChange={(e) => setLoginInput(e.target.value)}
                               autoFocus
@@ -575,10 +588,10 @@ const App: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña / PIN</label>
+                            <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Contraseña / PIN</label>
                             <input
                               type="password"
-                              className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium text-slate-900"
+                              className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
                               value={passwordInput}
                               onChange={(e) => setPasswordInput(e.target.value)}
                               placeholder="••••••••"
@@ -589,7 +602,7 @@ const App: React.FC = () => {
                           </Button>
                           <button
                              type="button"
-                             className="text-xs text-brand-500 font-bold hover:text-brand-600 w-full text-center transition-colors py-2"
+                             className="text-xs text-brand-400 font-bold hover:text-brand-300 w-full text-center transition-colors py-2"
                              onClick={() => setIsManualLogin(false)}
                           >
                              Volver a Google Login
@@ -601,10 +614,10 @@ const App: React.FC = () => {
              /* STUDENT MANUAL LOGIN */
              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tu nombre (ej: juan.garcia)</label>
+                  <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Tu nombre (ej: juan.garcia)</label>
                   <input
                     type="text"
-                    className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium text-slate-900"
+                    className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
                     value={loginInput}
                     onChange={(e) => setLoginInput(e.target.value)}
                     placeholder="juan.garcia"
@@ -616,13 +629,13 @@ const App: React.FC = () => {
              </form>
           )}
 
-          {authError && <div className="mt-4 text-accent-coral text-sm font-medium text-center bg-red-50/80 p-3 rounded-2xl animate-fade-in">{authError}</div>}
+          {authError && <div className="mt-4 text-accent-coral text-sm font-medium text-center bg-[var(--error-bg)] p-3 rounded-2xl animate-fade-in">{authError}</div>}
 
-          <div className="mt-8 text-center border-t border-slate-100/50 pt-5">
-             <p className="text-[11px] text-slate-300">Creado por <span className="font-semibold text-slate-400">Javi Barrero</span></p>
+          <div className="mt-8 text-center border-t border-[var(--divider)] pt-5">
+             <p className="text-[11px] text-themed-muted">Creado por <span className="font-semibold text-themed-secondary">Javi Barrero</span></p>
           </div>
         </div>
-        
+
         {showQRScanner && (
            <QRScanner onScanSuccess={handleQRLogin} onClose={() => setShowQRScanner(false)} />
         )}
@@ -635,9 +648,9 @@ const App: React.FC = () => {
 
   if (currentUser.role === UserRole.SUPERADMIN || currentUser.role === UserRole.ADMIN) {
      return (
-        <div className="min-h-screen font-sans text-slate-900">
+        <div className="min-h-screen font-sans text-themed" style={{ background: 'var(--mesh-tutor)' }}>
            <ToastContainer toasts={toasts} removeToast={removeToast} />
-           <AdminView 
+           <AdminView
              currentUser={currentUser}
              users={users}
              books={books}
@@ -658,6 +671,8 @@ const App: React.FC = () => {
              onDeletePointEntry={handleDeletePointEntry}
              onRestoreBackup={handleRestoreBackup}
              onLogout={handleLogout}
+             theme={theme}
+             toggleTheme={toggleTheme}
            />
            <div className="hidden md:block fixed bottom-6 right-6 z-50 no-print">
               <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-glass-lg press-effect">Cerrar Sesión</Button>
@@ -667,9 +682,9 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen font-sans text-slate-900">
+    <div className="min-h-screen font-sans text-themed" style={{ background: 'var(--mesh-student)' }}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <StudentView 
+      <StudentView
         currentUser={currentUser}
         books={books}
         transactions={transactions}
@@ -680,6 +695,8 @@ const App: React.FC = () => {
         onReturn={handleReturn}
         onAddReview={handleAddReview}
         onLogout={handleLogout}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
     </div>
   );

@@ -3,7 +3,7 @@ import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft, Sun, Moon } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 import { proxyCoverUrl } from '../services/utils';
 import { getBookDetails, BookDetails } from '../services/bookService';
@@ -13,13 +13,15 @@ interface StudentViewProps {
   currentUser: User;
   books: Book[];
   transactions: Transaction[];
-  users: User[]; 
+  users: User[];
   reviews?: Review[];
   settings: AppSettings;
   onBorrow: (book: Book) => void;
   onReturn: (book: Book) => void;
   onLogout: () => void;
   onAddReview?: (review: Review) => void;
+  theme?: 'dark' | 'light';
+  toggleTheme?: () => void;
 }
 
 interface ChatMessage {
@@ -38,7 +40,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
   onBorrow,
   onReturn,
   onLogout,
-  onAddReview
+  onAddReview,
+  theme,
+  toggleTheme
 }) => {
   const [activeTab, setActiveTab] = React.useState<'catalog' | 'mybooks' | 'ranking' | 'history'>('catalog');
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -211,25 +215,25 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="glass-header">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-             <a href="https://prisma.bibliohispa.es/" className="mr-2 text-slate-300 hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
+             <a href="https://prisma.bibliohispa.es/" className="mr-2 text-themed-muted hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
                 <ArrowLeft size={20} />
              </a>
              <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
              <div className="hidden sm:block">
-                 <h1 className="font-display font-bold text-slate-800 text-lg leading-none">{settings.schoolName}</h1>
-                 <p className="text-[11px] text-slate-400 font-medium">Biblioteca</p>
+                 <h1 className="font-display font-bold text-themed text-lg leading-none">{settings.schoolName}</h1>
+                 <p className="text-[11px] text-themed-muted font-medium">Biblioteca</p>
              </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3 glass-panel px-4 py-2 rounded-2xl cursor-default group relative hover-glow">
-               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white shadow-sm">
+               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-[var(--surface-base)] shadow-sm">
                   {currentUser.firstName[0]}
                </div>
                <div className="flex flex-col">
-                  <span className="font-bold text-xs text-slate-700 leading-none">{currentUser.firstName}</span>
+                  <span className="font-bold text-xs text-themed leading-none">{currentUser.firstName}</span>
                   <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-0.5 text-[10px] font-bold gradient-text">
+                      <span className="student-points-pill flex items-center gap-0.5 text-[10px] font-bold gradient-text">
                          <Star size={10} className="text-accent-amber" fill="currentColor" /> {currentUser.points} XP
                       </span>
                       {currentUser.currentStreak && currentUser.currentStreak > 0 && (
@@ -242,25 +246,30 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
                {/* Badges Preview Tooltip/Dropdown */}
                <div className="absolute top-full right-0 mt-2 w-64 glass-panel rounded-2xl shadow-glass-lg p-4 hidden group-hover:block z-50 animate-fade-in-down">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-3 flex items-center gap-1"><Award size={12}/> Insignias</h4>
+                  <h4 className="text-[10px] font-bold text-themed-muted uppercase mb-3 flex items-center gap-1"><Award size={12}/> Insignias</h4>
                   <div className="grid grid-cols-4 gap-2">
                      {currentUser.badges && currentUser.badges.length > 0 ? (
                         currentUser.badges.map(bId => {
                            const badgeDef = badges.find(b => b.id === bId);
                            if (!badgeDef) return null;
                            return (
-                              <div key={bId} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-xl border border-slate-100 hover:scale-110 transition-transform" title={badgeDef.name + ': ' + badgeDef.description}>
+                              <div key={bId} className="w-10 h-10 bg-[var(--surface-raised)] rounded-xl flex items-center justify-center text-xl border border-[var(--glass-border)] hover:scale-110 transition-transform" title={badgeDef.name + ': ' + badgeDef.description}>
                                  {badgeDef.icon}
                               </div>
                            );
                         })
                      ) : (
-                        <p className="col-span-4 text-xs text-slate-400">Aún no tienes insignias.</p>
+                        <p className="col-span-4 text-xs text-themed-muted">Aún no tienes insignias.</p>
                      )}
                   </div>
                </div>
             </div>
-            <Button variant="outline" size="sm" onClick={onLogout} className="border-slate-200 hover:border-red-200 hover:bg-red-50 hover:text-red-500 press-effect">
+            {toggleTheme && (
+              <button onClick={toggleTheme} className="theme-toggle" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+            )}
+            <Button variant="outline" size="sm" onClick={onLogout} className="border-[var(--glass-border)] hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 press-effect">
                <span className="text-xs">Salir</span>
             </Button>
           </div>
@@ -274,26 +283,26 @@ export const StudentView: React.FC<StudentViewProps> = ({
           <div className="glass-panel p-1.5 rounded-2xl inline-flex whitespace-nowrap gap-1">
             <button
               onClick={() => setActiveTab('catalog')}
-              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'catalog' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-themed-muted hover:text-brand-400 hover:bg-[var(--tab-inactive-hover)]'}`}
             >
               Catálogo
             </button>
             <button
               onClick={() => setActiveTab('mybooks')}
-              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeTab === 'mybooks' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeTab === 'mybooks' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-themed-muted hover:text-brand-400 hover:bg-[var(--tab-inactive-hover)]'}`}
             >
               Mis Libros
-              {myBooks.length > 0 && <span className={`text-xs px-1.5 rounded-full font-bold ${activeTab === 'mybooks' ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-600'}`}>{myBooks.length}</span>}
+              {myBooks.length > 0 && <span className={`text-xs px-1.5 rounded-full font-bold ${activeTab === 'mybooks' ? 'bg-white/20 text-white' : 'bg-brand-500/15 text-brand-400'}`}>{myBooks.length}</span>}
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-themed-muted hover:text-brand-400 hover:bg-[var(--tab-inactive-hover)]'}`}
             >
               Historial
             </button>
             <button
               onClick={() => setActiveTab('ranking')}
-              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'ranking' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-slate-400 hover:text-brand-600 hover:bg-white/50'}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'ranking' ? 'bg-brand-500 text-white shadow-brand animate-tab-indicator' : 'text-themed-muted hover:text-brand-400 hover:bg-[var(--tab-inactive-hover)]'}`}
             >
               Rankings
             </button>
@@ -313,17 +322,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
                     placeholder="Busca por título o autor..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl glass-input focus:outline-none text-slate-900 text-sm placeholder:text-slate-400"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl glass-input focus:outline-none text-themed text-sm placeholder:text-themed-muted"
                   />
-                  <Search className="absolute left-3.5 top-4 text-slate-300 group-focus-within:text-brand-500 transition-colors duration-200" size={18} />
+                  <Search className="absolute left-3.5 top-4 text-themed-muted group-focus-within:text-brand-500 transition-colors duration-200" size={18} />
                 </div>
                 
                 {/* Controls */}
                 <div className="flex gap-3 w-full md:w-auto">
                    <div className="flex items-center gap-2 glass-panel px-3 py-2.5 rounded-2xl flex-1 md:flex-none">
-                      <ArrowUpDown size={15} className="text-slate-300"/>
+                      <ArrowUpDown size={15} className="text-themed-muted"/>
                       <select
-                        className="bg-transparent text-sm font-medium text-slate-600 outline-none w-full"
+                        className="bg-transparent text-sm font-medium text-themed-secondary outline-none w-full"
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as any)}
                       >
@@ -337,14 +346,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
                    <div className="glass-panel p-1 rounded-2xl flex gap-0.5">
                       <button
                          onClick={() => setViewMode('grid')}
-                         className={`p-2.5 rounded-xl transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-brand-500 shadow-glass-sm' : 'text-slate-300 hover:text-slate-500'}`}
+                         className={`p-2.5 rounded-xl transition-all duration-200 ${viewMode === 'grid' ? 'bg-[var(--tab-active-bg)] text-brand-400 shadow-glass-sm' : 'text-themed-muted hover:text-themed-muted'}`}
                          title="Vista Cuadrícula"
                       >
                          <LayoutGrid size={18}/>
                       </button>
                       <button
                          onClick={() => setViewMode('list')}
-                         className={`p-2.5 rounded-xl transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-brand-500 shadow-glass-sm' : 'text-slate-300 hover:text-slate-500'}`}
+                         className={`p-2.5 rounded-xl transition-all duration-200 ${viewMode === 'list' ? 'bg-[var(--tab-active-bg)] text-brand-400 shadow-glass-sm' : 'text-themed-muted hover:text-themed-muted'}`}
                          title="Vista Lista"
                       >
                          <List size={18}/>
@@ -361,7 +370,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                       <button
                         key={g}
                         onClick={() => setSelectedGenre(g)}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 press-effect ${selectedGenre === g ? 'bg-slate-800 text-white shadow-glass-sm' : 'glass-panel text-slate-500 hover:text-slate-700'}`}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 press-effect ${selectedGenre === g ? 'bg-brand-600 text-white shadow-glass-sm' : 'glass-panel text-themed-muted hover:text-themed'}`}
                       >
                         {g}
                       </button>
@@ -371,9 +380,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   {/* Age Filter */}
                   <div className="flex items-center gap-2 glass-panel px-3 py-2 rounded-2xl flex-shrink-0">
                       <UserIcon size={15} className="text-accent-violet"/>
-                      <span className="text-[10px] font-bold text-slate-300 uppercase mr-1">Edad:</span>
+                      <span className="text-[10px] font-bold text-themed-muted uppercase mr-1">Edad:</span>
                       <select
-                        className="bg-transparent text-sm font-bold text-slate-600 outline-none"
+                        className="bg-transparent text-sm font-bold text-themed-secondary outline-none"
                         value={selectedAge}
                         onChange={(e) => setSelectedAge(e.target.value)}
                       >
@@ -386,9 +395,9 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   {/* Shelf Filter */}
                   <div className="flex items-center gap-2 glass-panel px-3 py-2 rounded-2xl flex-shrink-0">
                       <Archive size={15} className="text-brand-500"/>
-                      <span className="text-[10px] font-bold text-slate-300 uppercase mr-1">Espacio:</span>
+                      <span className="text-[10px] font-bold text-themed-muted uppercase mr-1">Espacio:</span>
                       <select
-                        className="bg-transparent text-sm font-bold text-slate-600 outline-none max-w-[150px]"
+                        className="bg-transparent text-sm font-bold text-themed-secondary outline-none max-w-[150px]"
                         value={selectedShelf}
                         onChange={(e) => setSelectedShelf(e.target.value)}
                       >
@@ -432,7 +441,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                     return (
                        <div key={book.id} className="glass-card p-4 rounded-2xl flex gap-4 transition-all">
                           {/* Image */}
-                          <div className="w-20 h-28 flex-shrink-0 bg-slate-200/50 rounded-lg overflow-hidden relative shadow-sm">
+                          <div className="w-20 h-28 flex-shrink-0 bg-[var(--surface-raised)]/50 rounded-lg overflow-hidden relative shadow-sm">
                              <img src={proxyCoverUrl(book.coverUrl)} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} alt={book.title} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                              {!isAvailable && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
@@ -450,17 +459,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
                           <div className="flex-1 min-w-0 flex flex-col justify-between">
                              <div>
                                 <div className="flex justify-between items-start">
-                                   <h3 className="font-display font-bold text-lg text-slate-800 truncate">{book.title}</h3>
+                                   <h3 className="font-display font-bold text-lg text-themed truncate">{book.title}</h3>
                                    <div className="flex gap-1">
-                                      <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded whitespace-nowrap ml-2">{book.genre}</span>
+                                      <span className="text-xs font-bold text-brand-400 bg-brand-500/15 px-2 py-0.5 rounded whitespace-nowrap ml-2">{book.genre}</span>
                                       {book.recommendedAge && (
-                                         <span className="text-[10px] font-bold text-fun-purple bg-purple-50 px-2 py-0.5 rounded whitespace-nowrap border border-purple-100">{book.recommendedAge}</span>
+                                         <span className="text-[10px] font-bold text-fun-purple bg-purple-500/15 px-2 py-0.5 rounded whitespace-nowrap border border-purple-500/20">{book.recommendedAge}</span>
                                       )}
                                    </div>
                                 </div>
-                                <p className="text-sm text-slate-500 font-medium mb-1">{book.author}</p>
+                                <p className="text-sm text-themed-muted font-medium mb-1">{book.author}</p>
                                 
-                                <div className="flex items-center gap-4 text-xs text-slate-400 mt-2">
+                                <div className="flex items-center gap-4 text-xs text-themed-muted mt-2">
                                    <span className="flex items-center gap-1"><Archive size={14}/> {book.shelf}</span>
                                    <span className="flex items-center gap-1"><TrendingUp size={14}/> {book.readCount} lecturas</span>
                                    {rating > 0 && (
@@ -469,7 +478,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                                 </div>
                              </div>
 
-                             <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-50">
+                             <div className="flex items-center justify-between pt-2 mt-2 border-t border-[var(--divider)]">
                                 <span className={`text-xs font-bold ${isAvailable ? 'text-green-600' : 'text-red-500'}`}>
                                    {isAvailable ? 'Disponible' : 'Sin stock'} ({book.unitsAvailable}/{book.unitsTotal})
                                 </span>
@@ -494,11 +503,11 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
             {filteredBooks.length === 0 && (
               <div className="col-span-full flex flex-col items-center justify-center py-20 animate-fade-in">
-                <div className="w-24 h-24 bg-slate-100/80 rounded-3xl flex items-center justify-center mb-6">
-                  <BookOpen size={40} className="text-slate-300"/>
+                <div className="w-24 h-24 bg-[var(--surface-raised)]/80 rounded-3xl flex items-center justify-center mb-6">
+                  <BookOpen size={40} className="text-themed-muted"/>
                 </div>
-                <h3 className="font-display font-bold text-xl text-slate-700 mb-2">Sin resultados</h3>
-                <p className="text-slate-400 text-sm max-w-xs text-center">No encontramos libros con esos filtros. Prueba a cambiar la búsqueda.</p>
+                <h3 className="font-display font-bold text-xl text-themed mb-2">Sin resultados</h3>
+                <p className="text-themed-muted text-sm max-w-xs text-center">No encontramos libros con esos filtros. Prueba a cambiar la búsqueda.</p>
               </div>
             )}
           </div>
@@ -507,7 +516,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
         {/* --- My Books Tab --- */}
         {activeTab === 'mybooks' && (
            <div className="space-y-6 animate-fade-in-up">
-              <h2 className="text-2xl font-display font-bold text-slate-800">Libros que estás leyendo</h2>
+              <h2 className="text-2xl font-display font-bold text-themed">Libros que estás leyendo</h2>
               {myBooks.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   {myBooks.map(book => {
@@ -519,7 +528,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                      const isLongLoan = daysHeld > 14; // More than 2 weeks
 
                      return (
-                        <div key={book.id} className={`flex flex-col h-full rounded-3xl p-2 transition-all duration-500 ${isNew ? 'bg-green-50/50 ring-2 ring-fun-green ring-offset-2' : ''} ${isLongLoan ? 'bg-red-50/50 ring-2 ring-fun-orange ring-offset-2' : ''}`}>
+                        <div key={book.id} className={`flex flex-col h-full rounded-3xl p-2 transition-all duration-500 ${isNew ? 'bg-green-500/10 ring-2 ring-fun-green ring-offset-2' : ''} ${isLongLoan ? 'bg-red-500/10 ring-2 ring-fun-orange ring-offset-2' : ''}`}>
                            
                            {/* Visual Cues */}
                            <div className="relative">
@@ -546,7 +555,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
                            <button 
                               onClick={() => setReviewingBook(book)}
-                              className="mt-2 text-sm font-bold text-brand-600 bg-white border border-brand-100 hover:bg-brand-50 py-2 rounded-xl w-full flex items-center justify-center gap-2 transition-colors shadow-sm"
+                              className="mt-2 text-sm font-bold text-brand-400 bg-[var(--surface-raised)] border border-[var(--glass-border)] hover:bg-[var(--tab-active-bg)] py-2 rounded-xl w-full flex items-center justify-center gap-2 transition-colors shadow-sm"
                            >
                               <Star size={14} className="fill-brand-600" />
                               Opinar
@@ -557,11 +566,11 @@ export const StudentView: React.FC<StudentViewProps> = ({
                 </div>
               ) : (
                 <div className="glass-panel rounded-3xl p-12 text-center animate-fade-in">
-                   <div className="w-24 h-24 bg-slate-100/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                      <BookOpen size={40} className="text-slate-300" />
+                   <div className="w-24 h-24 bg-[var(--surface-raised)]/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                      <BookOpen size={40} className="text-themed-muted" />
                    </div>
-                   <h3 className="text-xl font-display font-bold text-slate-700 mb-2">No tienes libros prestados</h3>
-                   <p className="text-slate-400 text-sm mb-8">¡Ve al catálogo y elige tu próxima aventura!</p>
+                   <h3 className="text-xl font-display font-bold text-themed mb-2">No tienes libros prestados</h3>
+                   <p className="text-themed-muted text-sm mb-8">¡Ve al catálogo y elige tu próxima aventura!</p>
                    <Button onClick={() => setActiveTab('catalog')}>Ir al Catálogo</Button>
                 </div>
               )}
@@ -571,8 +580,8 @@ export const StudentView: React.FC<StudentViewProps> = ({
         {/* --- History Tab --- */}
         {activeTab === 'history' && (
            <div className="space-y-6 animate-fade-in-up">
-              <h2 className="text-2xl font-display font-bold text-slate-800 flex items-center gap-2">
-                 <History size={24} className="text-slate-300"/>
+              <h2 className="text-2xl font-display font-bold text-themed flex items-center gap-2">
+                 <History size={24} className="text-themed-muted"/>
                  Historial de Lecturas
               </h2>
               {myHistoryTransactions.length > 0 ? (
@@ -582,31 +591,31 @@ export const StudentView: React.FC<StudentViewProps> = ({
                        if (!book) return null; // Should not happen
 
                        return (
-                          <div key={tx.id} className={`glass-card p-4 rounded-2xl flex gap-4 items-center transition-all ${tx.active ? 'ring-2 ring-brand-200 bg-brand-50/30' : 'opacity-80 hover:opacity-100'}`}>
-                             <div className="w-14 h-20 flex-shrink-0 bg-slate-100/50 rounded-lg overflow-hidden shadow-sm">
+                          <div key={tx.id} className={`glass-card p-4 rounded-2xl flex gap-4 items-center transition-all ${tx.active ? 'ring-2 ring-brand-500/30 bg-brand-500/10' : 'opacity-80 hover:opacity-100'}`}>
+                             <div className="w-14 h-20 flex-shrink-0 bg-[var(--surface-raised)]/50 rounded-lg overflow-hidden shadow-sm">
                                 {book.coverUrl ? (
                                    <img src={proxyCoverUrl(book.coverUrl)} className="w-full h-full object-cover" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 ) : (
-                                   <div className="w-full h-full bg-slate-200 flex items-center justify-center text-[10px] p-1 text-center font-bold text-slate-400">{book.title}</div>
+                                   <div className="w-full h-full bg-[var(--surface-raised)] flex items-center justify-center text-[10px] p-1 text-center font-bold text-themed-muted">{book.title}</div>
                                 )}
                              </div>
                              <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-slate-800 text-sm truncate">{book.title}</h4>
-                                <p className="text-xs text-slate-500 truncate mb-2">{book.author}</p>
+                                <h4 className="font-bold text-themed text-sm truncate">{book.title}</h4>
+                                <p className="text-xs text-themed-muted truncate mb-2">{book.author}</p>
                                 
                                 <div className="space-y-1">
                                    <div className="flex items-center gap-2 text-[10px]">
-                                      <span className="bg-green-50 text-green-700 font-bold px-1.5 py-0.5 rounded">Sacado:</span>
-                                      <span className="text-slate-600 font-mono">{new Date(tx.dateBorrowed).toLocaleDateString()}</span>
+                                      <span className="bg-green-500/15 text-green-400 font-bold px-1.5 py-0.5 rounded">Sacado:</span>
+                                      <span className="text-themed-secondary font-mono">{new Date(tx.dateBorrowed).toLocaleDateString()}</span>
                                    </div>
                                    {tx.active ? (
                                       <div className="flex items-center gap-2 text-[10px]">
-                                         <span className="bg-brand-50 text-brand-700 font-bold px-1.5 py-0.5 rounded animate-pulse">Leyendo...</span>
+                                         <span className="bg-brand-500/15 text-brand-300 font-bold px-1.5 py-0.5 rounded animate-pulse">Leyendo...</span>
                                       </div>
                                    ) : (
                                       <div className="flex items-center gap-2 text-[10px]">
-                                         <span className="bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">Devuelto:</span>
-                                         <span className="text-slate-600 font-mono">{tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}</span>
+                                         <span className="bg-[var(--surface-raised)] text-themed-muted font-bold px-1.5 py-0.5 rounded">Devuelto:</span>
+                                         <span className="text-themed-secondary font-mono">{tx.dateReturned ? new Date(tx.dateReturned).toLocaleDateString() : '-'}</span>
                                       </div>
                                    )}
                                 </div>
@@ -617,11 +626,11 @@ export const StudentView: React.FC<StudentViewProps> = ({
                  </div>
               ) : (
                  <div className="glass-panel rounded-3xl p-12 text-center animate-fade-in">
-                    <div className="w-24 h-24 bg-slate-100/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                       <History size={40} className="text-slate-300"/>
+                    <div className="w-24 h-24 bg-[var(--surface-raised)]/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                       <History size={40} className="text-themed-muted"/>
                     </div>
-                    <h3 className="font-display font-bold text-xl text-slate-700 mb-2">Sin historial</h3>
-                    <p className="text-slate-400 text-sm">Aún no has sacado ningún libro. ¡Tu historia empieza hoy!</p>
+                    <h3 className="font-display font-bold text-xl text-themed mb-2">Sin historial</h3>
+                    <p className="text-themed-muted text-sm">Aún no has sacado ningún libro. ¡Tu historia empieza hoy!</p>
                  </div>
               )}
            </div>
@@ -631,67 +640,67 @@ export const StudentView: React.FC<StudentViewProps> = ({
         {activeTab === 'ranking' && (
            <div className="space-y-8 animate-fade-in-up">
               <div className="text-center space-y-2 mb-8">
-                 <h2 className="text-3xl font-display font-bold text-slate-800 flex items-center justify-center gap-3">
+                 <h2 className="text-3xl font-display font-bold text-themed flex items-center justify-center gap-3">
                    <Trophy className="text-accent-amber w-10 h-10 drop-shadow-sm" fill="currentColor"/>
                    Salón de la Fama
                  </h2>
-                 <p className="text-slate-400 text-sm">¡Descubre quién lee más y cuáles son los mejores libros!</p>
+                 <p className="text-themed-muted text-sm">¡Descubre quién lee más y cuáles son los mejores libros!</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                   
                   {/* COL 1: TOP STUDENTS */}
                   <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
-                      <div className="bg-brand-50/50 backdrop-blur-sm p-4 border-b border-brand-100/50 flex items-center gap-2">
-                          <Trophy size={20} className="text-brand-600" />
-                          <h3 className="font-bold text-brand-800">Superlectores</h3>
+                      <div className="bg-brand-500/10 backdrop-blur-sm p-4 border-b border-brand-500/20 flex items-center gap-2">
+                          <Trophy size={20} className="text-brand-400" />
+                          <h3 className="font-bold text-brand-300">Superlectores</h3>
                       </div>
                      {users
                         .filter(u => u.role === 'STUDENT')
                         .sort((a, b) => b.points - a.points)
                         .slice(0, 5)
                         .map((user, index) => {
-                           let rankStyle = "text-slate-500";
-                           let bgStyle = "hover:bg-slate-50";
+                           let rankStyle = "text-themed-muted";
+                           let bgStyle = "hover:bg-[var(--surface-raised)]";
                            let icon = null;
 
                            if (index === 0) {
                               rankStyle = "text-yellow-500 text-xl";
-                              bgStyle = "bg-yellow-50/50 hover:bg-yellow-50";
+                              bgStyle = "bg-yellow-500/10 hover:bg-yellow-500/15";
                               icon = <Trophy size={16} fill="currentColor" className="text-yellow-400"/>;
                            } else if (index === 1) {
-                              rankStyle = "text-slate-400 text-lg";
-                              icon = <Trophy size={14} fill="currentColor" className="text-slate-300"/>;
+                              rankStyle = "text-themed-muted text-lg";
+                              icon = <Trophy size={14} fill="currentColor" className="text-themed-muted"/>;
                            } else if (index === 2) {
                               rankStyle = "text-orange-400 text-lg";
                               icon = <Trophy size={14} fill="currentColor" className="text-orange-300"/>;
                            }
 
                            return (
-                              <div key={user.id} className={`flex items-center p-4 border-b border-slate-100 last:border-0 transition-colors ${bgStyle}`}>
+                              <div key={user.id} className={`flex items-center p-4 border-b border-[var(--glass-border)] last:border-0 transition-colors animate-fade-in-up stagger-${index+1} ${bgStyle} ${index===0 ? 'animate-rainbow-glow' : ''}`}>
                                  <div className={`w-8 font-bold font-display text-center ${rankStyle}`}>
                                     {index + 1}
                                  </div>
                                  <div className="flex-1 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs">
+                                    <div className="w-8 h-8 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-themed-secondary font-bold text-xs">
                                        {user.firstName[0]}
                                     </div>
                                     <div className="min-w-0">
-                                       <div className="font-bold text-slate-800 text-sm flex items-center gap-1 truncate">
+                                       <div className="font-bold text-themed text-sm flex items-center gap-1 truncate">
                                           {user.firstName} {user.lastName}
                                           {icon}
                                        </div>
-                                       <div className="text-[10px] text-slate-500 font-medium">{user.className}</div>
+                                       <div className="text-[10px] text-themed-muted font-medium">{user.className}</div>
                                     </div>
                                  </div>
                                  <div className="text-right">
-                                    <div className="font-bold text-brand-600 text-sm">{user.points} XP</div>
+                                    <div className="font-bold text-brand-400 text-sm">{user.points} XP</div>
                                  </div>
                               </div>
                            );
                         })}
                         {users.filter(u => u.role === 'STUDENT').length === 0 && (
-                            <div className="p-8 text-center text-slate-400 text-sm">Aún no hay alumnos.</div>
+                            <div className="p-8 text-center text-themed-muted text-sm">Aún no hay alumnos.</div>
                         )}
                   </div>
 
@@ -699,48 +708,48 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
                       <div className="bg-fun-green/10 p-4 border-b border-fun-green/20 flex items-center gap-2">
                           <TrendingUp size={20} className="text-fun-green" />
-                          <h3 className="font-bold text-green-800">Más Leídos</h3>
+                          <h3 className="font-bold text-green-300">Más Leídos</h3>
                       </div>
                       {[...books]
                          .sort((a, b) => b.readCount - a.readCount)
                          .slice(0, 5)
                          .map((book, index) => (
-                            <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                                <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
-                                <img src={proxyCoverUrl(book.coverUrl)} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
+                            <div key={book.id} className="flex items-center p-3 border-b border-[var(--glass-border)] last:border-0 hover:bg-[var(--surface-raised)] transition-colors">
+                                <div className="w-8 font-bold text-themed-muted text-center mr-2">{index + 1}</div>
+                                <img src={proxyCoverUrl(book.coverUrl)} className="w-10 h-14 object-cover rounded shadow-sm bg-[var(--surface-raised)]" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 <div className="flex-1 ml-3 min-w-0">
-                                    <h4 className="font-bold text-slate-800 text-sm truncate" title={book.title}>{book.title}</h4>
-                                    <p className="text-xs text-slate-500">{book.readCount} lecturas</p>
+                                    <h4 className="font-bold text-themed text-sm truncate" title={book.title}>{book.title}</h4>
+                                    <p className="text-xs text-themed-muted">{book.readCount} lecturas</p>
                                 </div>
                             </div>
                          ))}
-                         {books.length === 0 && <div className="p-8 text-center text-slate-400 text-sm">No hay datos.</div>}
+                         {books.length === 0 && <div className="p-8 text-center text-themed-muted text-sm">No hay datos.</div>}
                   </div>
 
                   {/* COL 3: TOP RATED BOOKS */}
                   <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
                       <div className="bg-fun-purple/10 p-4 border-b border-fun-purple/20 flex items-center gap-2">
                           <Heart size={20} className="text-fun-purple" />
-                          <h3 className="font-bold text-purple-800">Mejores Valorados</h3>
+                          <h3 className="font-bold text-purple-300">Mejores Valorados</h3>
                       </div>
                       {[...books]
                          .filter(b => getBookRating(b.id) > 0)
                          .sort((a, b) => getBookRating(b.id) - getBookRating(a.id))
                          .slice(0, 5)
                          .map((book, index) => (
-                            <div key={book.id} className="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                                <div className="w-8 font-bold text-slate-300 text-center mr-2">{index + 1}</div>
-                                <img src={proxyCoverUrl(book.coverUrl)} className="w-10 h-14 object-cover rounded shadow-sm bg-slate-200" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
+                            <div key={book.id} className="flex items-center p-3 border-b border-[var(--glass-border)] last:border-0 hover:bg-[var(--surface-raised)] transition-colors">
+                                <div className="w-8 font-bold text-themed-muted text-center mr-2">{index + 1}</div>
+                                <img src={proxyCoverUrl(book.coverUrl)} className="w-10 h-14 object-cover rounded shadow-sm bg-[var(--surface-raised)]" alt="cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                                 <div className="flex-1 ml-3 min-w-0">
-                                    <h4 className="font-bold text-slate-800 text-sm truncate" title={book.title}>{book.title}</h4>
+                                    <h4 className="font-bold text-themed text-sm truncate" title={book.title}>{book.title}</h4>
                                     <div className="flex items-center gap-1">
                                         <Star size={10} className="text-yellow-400 fill-yellow-400"/>
-                                        <span className="text-xs font-bold text-slate-600">{getBookRating(book.id).toFixed(1)}</span>
+                                        <span className="text-xs font-bold text-themed-secondary">{getBookRating(book.id).toFixed(1)}</span>
                                     </div>
                                 </div>
                             </div>
                          ))}
-                         {books.filter(b => getBookRating(b.id) > 0).length === 0 && <div className="p-8 text-center text-slate-400 text-sm">Aún no hay valoraciones.</div>}
+                         {books.filter(b => getBookRating(b.id) > 0).length === 0 && <div className="p-8 text-center text-themed-muted text-sm">Aún no hay valoraciones.</div>}
                   </div>
               </div>
            </div>
@@ -752,7 +761,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="fixed bottom-20 md:bottom-4 right-4 z-50 flex flex-col items-end">
          {/* Chat Window */}
          {isChatOpen && (
-            <div className="bg-white rounded-3xl shadow-glass-xl w-80 sm:w-96 mb-4 overflow-hidden flex flex-col animate-slide-up origin-bottom-right h-[500px] border border-slate-200/50">
+            <div className="glass-panel rounded-3xl shadow-glass-xl w-80 sm:w-96 mb-4 overflow-hidden flex flex-col animate-slide-up origin-bottom-right h-[500px]">
                {/* Header */}
                <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-4 flex justify-between items-center text-white">
                   <div className="flex items-center gap-3">
@@ -764,19 +773,19 @@ export const StudentView: React.FC<StudentViewProps> = ({
                         <p className="text-[10px] text-white/70">Tu bibliotecario virtual</p>
                      </div>
                   </div>
-                  <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/20 p-1.5 rounded-xl transition-colors">
+                  <button onClick={() => setIsChatOpen(false)} className="hover:bg-[var(--surface-raised)] p-1.5 rounded-xl transition-colors">
                      <X size={18} />
                   </button>
                </div>
 
                {/* Messages Area */}
-               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/80">
+               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--surface-raised)]/80">
                   {messages.map((msg) => (
                      <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
                         <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${
                            msg.sender === 'user'
                               ? 'bg-gradient-to-br from-brand-500 to-brand-600 text-white rounded-tr-sm shadow-brand'
-                              : 'bg-white text-slate-700 shadow-glass-sm rounded-tl-sm border border-slate-100'
+                              : 'glass-card text-themed shadow-glass-sm rounded-tl-sm border border-[var(--glass-border)]'
                         }`}>
                            {msg.text}
                         </div>
@@ -784,7 +793,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   ))}
                   {isTyping && (
                      <div className="flex justify-start animate-fade-in">
-                        <div className="bg-white text-slate-400 shadow-glass-sm rounded-2xl rounded-tl-sm p-3 text-xs border border-slate-100 flex gap-1">
+                        <div className="glass-card text-themed-muted shadow-glass-sm rounded-2xl rounded-tl-sm p-3 text-xs border border-[var(--glass-border)] flex gap-1">
                            <span className="animate-bounce">●</span>
                            <span className="animate-bounce" style={{animationDelay: '0.1s'}}>●</span>
                            <span className="animate-bounce" style={{animationDelay: '0.2s'}}>●</span>
@@ -795,10 +804,10 @@ export const StudentView: React.FC<StudentViewProps> = ({
                </div>
 
                {/* Input Area */}
-               <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100/50 flex gap-2">
+               <form onSubmit={handleSendMessage} className="p-3 bg-[var(--glass-bg-heavy)] border-t border-[var(--glass-border)] flex gap-2">
                   <input
                      type="text"
-                     className="flex-1 glass-input rounded-xl px-3 py-2.5 text-sm focus:outline-none text-slate-900"
+                     className="flex-1 glass-input rounded-xl px-3 py-2.5 text-sm focus:outline-none text-themed"
                      placeholder="Escribe aquí..."
                      value={chatInput}
                      onChange={(e) => setChatInput(e.target.value)}
@@ -817,7 +826,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
          {/* Trigger Button */}
          <button
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className={`${isChatOpen ? 'bg-slate-800' : 'bg-gradient-to-b from-brand-500 to-brand-600 animate-bounce-slow shadow-brand-lg'} text-white p-4 rounded-2xl shadow-glass-lg hover:shadow-glass-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 press-effect`}
+            className={`${isChatOpen ? 'bg-brand-600' : 'bg-gradient-to-b from-brand-500 to-brand-600 animate-bounce-slow shadow-brand-lg'} text-white p-4 rounded-2xl shadow-glass-lg hover:shadow-glass-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 press-effect`}
          >
             {isChatOpen ? <X size={24} /> : <MessageCircle size={26} />}
             {!isChatOpen && <span className="font-display font-bold pr-1 text-sm">¡Pregúntame!</span>}
@@ -827,15 +836,15 @@ export const StudentView: React.FC<StudentViewProps> = ({
       {/* --- BOOK DETAILS MODAL --- */}
       {viewingBook && (
          <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-glass-xl flex flex-col md:flex-row overflow-hidden relative animate-modal-in">
+            <div className="modal-glass rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-glass-xl flex flex-col md:flex-row overflow-hidden relative animate-modal-in">
                <button
                   onClick={() => setViewingBook(null)}
-                  className="absolute top-4 right-4 z-10 glass-panel hover:bg-white p-2 rounded-xl shadow-glass-sm transition-all press-effect"
+                  className="absolute top-4 right-4 z-10 glass-panel hover:bg-[var(--surface-raised)] p-2 rounded-xl shadow-glass-sm transition-all press-effect"
                >
-                  <X size={18} className="text-slate-400"/>
+                  <X size={18} className="text-themed-muted"/>
                </button>
 
-               <div className="w-full md:w-1/3 h-64 md:h-auto relative bg-slate-100">
+               <div className="w-full md:w-1/3 h-64 md:h-auto relative bg-[var(--surface-raised)]">
                   <img src={proxyCoverUrl(viewingBook.coverUrl)} className="w-full h-full object-cover" alt={viewingBook.title} onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col justify-end p-4">
                      <span className="text-white font-bold bg-brand-500 px-2 py-0.5 rounded text-xs self-start mb-2 shadow-sm">{viewingBook.genre}</span>
@@ -847,45 +856,45 @@ export const StudentView: React.FC<StudentViewProps> = ({
 
                <div className="p-8 md:w-2/3 space-y-4">
                   <div>
-                     <h2 className="text-2xl font-display font-bold text-slate-800 leading-tight mb-1">{viewingBook.title}</h2>
-                     <p className="text-slate-500 font-medium">{viewingBook.author}</p>
+                     <h2 className="text-2xl font-display font-bold text-themed leading-tight mb-1">{viewingBook.title}</h2>
+                     <p className="text-themed-muted font-medium">{viewingBook.author}</p>
                   </div>
 
-                  <div className="flex gap-4 border-y border-slate-100 py-3">
+                  <div className="flex gap-4 border-y border-[var(--glass-border)] py-3">
                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Estante</span>
-                        <span className="text-sm font-bold text-slate-700 flex items-center gap-1"><Archive size={14}/> {viewingBook.shelf}</span>
+                        <span className="text-[10px] uppercase font-bold text-themed-muted">Estante</span>
+                        <span className="text-sm font-bold text-themed flex items-center gap-1"><Archive size={14}/> {viewingBook.shelf}</span>
                      </div>
                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Ejemplares</span>
+                        <span className="text-[10px] uppercase font-bold text-themed-muted">Ejemplares</span>
                         <span className={`text-sm font-bold flex items-center gap-1 ${viewingBook.unitsAvailable > 0 ? 'text-green-600' : 'text-red-500'}`}>
                            <BookOpen size={14}/> {viewingBook.unitsAvailable}/{viewingBook.unitsTotal}
                         </span>
                      </div>
                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Páginas</span>
-                        <span className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                        <span className="text-[10px] uppercase font-bold text-themed-muted">Páginas</span>
+                        <span className="text-sm font-bold text-themed flex items-center gap-1">
                            <FileText size={14}/> {isLoadingDetails ? '...' : bookDetails?.pages || '?'}
                         </span>
                      </div>
                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Publicado</span>
-                        <span className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                        <span className="text-[10px] uppercase font-bold text-themed-muted">Publicado</span>
+                        <span className="text-sm font-bold text-themed flex items-center gap-1">
                            <Calendar size={14}/> {isLoadingDetails ? '...' : bookDetails?.publishedDate?.split('-')[0] || '?'}
                         </span>
                      </div>
                   </div>
 
                   <div>
-                     <h3 className="text-sm font-bold text-slate-700 uppercase mb-2">Sinopsis</h3>
+                     <h3 className="text-sm font-bold text-themed uppercase mb-2">Sinopsis</h3>
                      {isLoadingDetails ? (
                         <div className="space-y-2 animate-pulse">
-                           <div className="h-2 bg-slate-100 rounded w-full"></div>
-                           <div className="h-2 bg-slate-100 rounded w-5/6"></div>
-                           <div className="h-2 bg-slate-100 rounded w-4/6"></div>
+                           <div className="h-2 bg-[var(--surface-raised)] rounded w-full"></div>
+                           <div className="h-2 bg-[var(--surface-raised)] rounded w-5/6"></div>
+                           <div className="h-2 bg-[var(--surface-raised)] rounded w-4/6"></div>
                         </div>
                      ) : (
-                        <p className="text-sm text-slate-600 leading-relaxed max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                        <p className="text-sm text-themed-secondary leading-relaxed max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                            {bookDetails?.description || "No hay descripción disponible."}
                         </p>
                      )}
@@ -898,7 +907,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                            <Bookmark size={18} /> ¡Quiero leerlo!
                         </Button>
                      ) : (
-                         <div className="text-center text-sm font-bold text-slate-400 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                         <div className="text-center text-sm font-bold text-themed-muted bg-[var(--surface-raised)] p-3 rounded-xl border border-[var(--glass-border)]">
                             {myActiveTransactionIds.includes(viewingBook.id) ? 'Ya tienes este libro' : 'No disponible para préstamo'}
                          </div>
                      )}
@@ -911,20 +920,20 @@ export const StudentView: React.FC<StudentViewProps> = ({
       {/* --- REVIEW MODAL --- */}
       {reviewingBook && (
          <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-glass-xl relative animate-modal-in">
+            <div className="modal-glass rounded-3xl w-full max-w-md p-8 shadow-glass-xl relative animate-modal-in">
                <button
                   onClick={() => setReviewingBook(null)}
-                  className="absolute top-4 right-4 text-slate-300 hover:text-slate-500 transition-colors p-1 rounded-xl hover:bg-slate-50"
+                  className="absolute top-4 right-4 text-themed-muted hover:text-themed-muted transition-colors p-1 rounded-xl hover:bg-[var(--surface-raised)]"
                >
                   <X size={22} />
                </button>
                
                <div className="text-center mb-6">
-                  <div className="w-16 h-24 mx-auto mb-3 rounded-lg overflow-hidden shadow-sm bg-slate-100">
+                  <div className="w-16 h-24 mx-auto mb-3 rounded-lg overflow-hidden shadow-sm bg-[var(--surface-raised)]">
                      <img src={proxyCoverUrl(reviewingBook.coverUrl)} className="w-full h-full object-cover" alt="cover" onError={(e) => { e.currentTarget.style.display = 'none'; }}/>
                   </div>
-                  <h3 className="font-bold text-lg text-slate-800 leading-tight">{reviewingBook.title}</h3>
-                  <p className="text-sm text-slate-500">¿Qué te ha parecido?</p>
+                  <h3 className="font-bold text-lg text-themed leading-tight">{reviewingBook.title}</h3>
+                  <p className="text-sm text-themed-muted">¿Qué te ha parecido?</p>
                </div>
 
                <form onSubmit={handleSubmitReview} className="space-y-4">
@@ -938,14 +947,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
                         >
                            <Star 
                               size={32} 
-                              className={star <= reviewRating ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"}
+                              className={star <= reviewRating ? "text-yellow-400 fill-yellow-400" : "text-[var(--text-muted)] fill-[var(--text-muted)]"}
                            />
                         </button>
                      ))}
                   </div>
                   
                   <textarea 
-                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-slate-900"
+                     className="w-full p-3 bg-[var(--surface-raised)] border border-[var(--glass-border)] rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none resize-none text-themed"
                      rows={4}
                      placeholder="Escribe tu opinión aquí... (Opcional)"
                      value={reviewComment}
@@ -964,19 +973,19 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="md:hidden fixed bottom-0 left-0 right-0 glass-bottom-nav p-2 pb-safe flex justify-around items-center z-40">
         <button
           onClick={() => setActiveTab('catalog')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'catalog' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'catalog' ? 'text-brand-400 tab-active-dot' : 'text-themed-muted'}`}
         >
           <LayoutGrid size={22} strokeWidth={activeTab === 'catalog' ? 2.5 : 1.5} />
           <span className="text-[10px] font-bold mt-0.5">Catálogo</span>
         </button>
         <button
           onClick={() => setActiveTab('mybooks')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 relative press-effect ${activeTab === 'mybooks' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 relative press-effect ${activeTab === 'mybooks' ? 'text-brand-400 tab-active-dot' : 'text-themed-muted'}`}
         >
           <div className="relative">
             <BookOpen size={22} strokeWidth={activeTab === 'mybooks' ? 2.5 : 1.5} />
             {myBooks.length > 0 && (
-              <span className="absolute -top-1 -right-1.5 bg-brand-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full ring-2 ring-white">
+              <span className="absolute -top-1 -right-1.5 bg-brand-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full ring-2 ring-[var(--surface-base)]">
                 {myBooks.length}
               </span>
             )}
@@ -985,14 +994,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'history' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'history' ? 'text-brand-400 tab-active-dot' : 'text-themed-muted'}`}
         >
           <Clock size={22} strokeWidth={activeTab === 'history' ? 2.5 : 1.5} />
           <span className="text-[10px] font-bold mt-0.5">Historial</span>
         </button>
         <button
           onClick={() => setActiveTab('ranking')}
-          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'ranking' ? 'text-brand-600 tab-active-dot' : 'text-slate-400'}`}
+          className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 w-16 press-effect ${activeTab === 'ranking' ? 'text-brand-400 tab-active-dot' : 'text-themed-muted'}`}
         >
           <Trophy size={22} strokeWidth={activeTab === 'ranking' ? 2.5 : 1.5} />
           <span className="text-[10px] font-bold mt-0.5">Rankings</span>
