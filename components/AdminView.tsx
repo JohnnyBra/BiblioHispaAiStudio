@@ -2053,6 +2053,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <span className="font-bold text-themed text-sm">Ajustes</span>
                     </button>
                 )}
+                {toggleTheme && (
+                    <button onClick={toggleTheme} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
+                        <div className="w-12 h-12 bg-gradient-to-br from-brand-500/10 to-brand-500/15 rounded-2xl flex items-center justify-center text-themed-secondary">
+                            {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
+                        </div>
+                        <span className="font-bold text-themed text-sm">{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
+                    </button>
+                )}
                 <button onClick={onLogout} className="bg-red-500/15 backdrop-blur-sm p-5 rounded-3xl border border-red-500/20 flex flex-col items-center gap-3 press-effect col-span-2 mt-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center text-red-600">
                         <LogOut size={24} />
