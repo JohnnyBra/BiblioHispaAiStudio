@@ -432,6 +432,14 @@
         color: var(--text-primary);
       }
 
+      /* Native select dropdown — force dark color-scheme so browser renders options with dark bg */
+      :root select {
+        color-scheme: dark;
+      }
+      html[data-theme="light"] select {
+        color-scheme: light;
+      }
+
       /* Themed input (for inputs that don't use glass-input) */
       .input-themed {
         background: var(--input-bg);

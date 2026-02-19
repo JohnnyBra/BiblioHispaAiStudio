@@ -1729,7 +1729,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* CANDIDATES SELECTION MODAL */}
       {showCandidates && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[60] p-4 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4 animate-fade-in">
           <div className="glass-panel rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] modal-glass animate-scale-in">
             <div className="flex justify-between items-center mb-4">
                <div>
@@ -1932,8 +1932,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             )}
                         </div>
                         <div className="flex-1 space-y-2">
-                            <input className="w-full p-2 border rounded" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} placeholder="Título" />
-                            <input className="w-full p-2 border rounded" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} placeholder="Autor" />
+                            <input className="w-full p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed placeholder:text-themed-muted" value={editingBook.title} onChange={e => setEditingBook({...editingBook, title: e.target.value})} placeholder="Título" />
+                            <input className="w-full p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed placeholder:text-themed-muted" value={editingBook.author} onChange={e => setEditingBook({...editingBook, author: e.target.value})} placeholder="Autor" />
                             <Button size="sm" variant="outline" onClick={handleSearchAlternativeCovers}><Wand2 size={14} className="mr-2"/> Buscar Portada Alternativa</Button>
                         </div>
                     </div>
@@ -1941,7 +1941,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {editingBook.shelf === 'BIBLIOTECA' ? (
                             <select
-                                className="p-2 border rounded bg-[var(--input-bg)] text-themed"
+                                className="p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed"
                                 value={editingBook.genre || ''}
                                 onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
                             >
@@ -1952,14 +1952,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             </select>
                         ) : (
                             <input
-                                className="p-2 border rounded"
+                                className="p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed placeholder:text-themed-muted"
                                 value={editingBook.genre}
                                 onChange={e => setEditingBook({...editingBook, genre: e.target.value})}
                                 placeholder="Género"
                             />
                         )}
                         <select
-                            className="p-2 border rounded bg-[var(--input-bg)] text-themed"
+                            className="p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed"
                             value={editingBook.recommendedAge || ''}
                             onChange={e => setEditingBook({...editingBook, recommendedAge: e.target.value})}
                         >
@@ -1968,9 +1968,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 <option key={age} value={age}>{age}</option>
                             ))}
                         </select>
-                        <input type="number" className="p-2 border rounded" value={editingBook.unitsTotal} onChange={e => setEditingBook({...editingBook, unitsTotal: parseInt(e.target.value)})} placeholder="Unidades" />
+                        <input type="number" className="p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed placeholder:text-themed-muted" value={editingBook.unitsTotal} onChange={e => setEditingBook({...editingBook, unitsTotal: parseInt(e.target.value)})} placeholder="Unidades" />
                         <select
-                            className="p-2 border rounded bg-[var(--input-bg)] text-themed"
+                            className="p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed"
                             value={editingBook.shelf || ''}
                             onChange={e => setEditingBook({...editingBook, shelf: e.target.value})}
                         >
@@ -1982,7 +1982,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </select>
                     </div>
 
-                    <textarea className="w-full p-2 border rounded h-24 text-sm" value={editingBook.description || ''} onChange={e => setEditingBook({...editingBook, description: e.target.value})} placeholder="Sinopsis" />
+                    <textarea className="w-full p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed placeholder:text-themed-muted h-24 text-sm" value={editingBook.description || ''} onChange={e => setEditingBook({...editingBook, description: e.target.value})} placeholder="Sinopsis" />
 
                     <div className="flex justify-end gap-2 pt-2">
                         <Button variant="outline" onClick={() => { setEditingBook(null); setShowCandidates(false); setIsCoverSelectionMode(false); }}>Cancelar</Button>
