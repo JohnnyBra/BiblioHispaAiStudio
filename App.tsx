@@ -65,14 +65,14 @@ const App: React.FC = () => {
       try {
         const data = await storageService.fetchAllData();
         if (data) {
-           setUsers(data.users || []);
-           setBooks(data.books || []);
-           setTransactions(data.transactions || []);
-           setReviews(data.reviews || []);
-           setPointHistory(data.pointHistory || []);
-           setSettings(data.settings || { schoolName: 'BiblioHispa', logoUrl: '' });
-           setIsLoaded(true);
-           setConnectionError(false);
+          setUsers(data.users || []);
+          setBooks(data.books || []);
+          setTransactions(data.transactions || []);
+          setReviews(data.reviews || []);
+          setPointHistory(data.pointHistory || []);
+          setSettings(data.settings || { schoolName: 'BiblioHispa', logoUrl: '' });
+          setIsLoaded(true);
+          setConnectionError(false);
         }
       } catch (err) {
         console.error("Error conectando con el servidor:", err);
@@ -87,20 +87,39 @@ const App: React.FC = () => {
   React.useEffect(() => {
     if (isLoaded && !currentUser) {
       const storedUserId = localStorage.getItem('biblio_session_user');
-      if (storedUserId) {
-        const foundUser = users.find(u => u.id === storedUserId);
-        if (foundUser) {
-          setCurrentUser(foundUser);
-        }
-      }
+
+      fetch('/api/auth/me')
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error('No SSO');
+        })
+        .then(data => {
+          if (data.success && data.user) {
+            setCurrentUser(data.user);
+            localStorage.setItem('biblio_session_user', data.user.id);
+            // Optimistic update of local user list if it's new
+            setUsers(prev => {
+              if (!prev.find(u => u.id === data.user.id)) return [...prev, data.user];
+              return prev;
+            });
+          }
+        })
+        .catch(() => {
+          if (storedUserId) {
+            const foundUser = users.find(u => u.id === storedUserId);
+            if (foundUser) {
+              setCurrentUser(foundUser);
+            }
+          }
+        });
     }
-  }, [isLoaded, users]);
+  }, [isLoaded, users, currentUser]);
 
   // --- Persistance Effects (Save to Server) ---
-  React.useEffect(() => { if(isLoaded) storageService.setTransactions(transactions).catch(() => setConnectionError(true)); }, [transactions, isLoaded]);
-  React.useEffect(() => { if(isLoaded) storageService.setReviews(reviews).catch(() => setConnectionError(true)); }, [reviews, isLoaded]);
-  React.useEffect(() => { if(isLoaded) storageService.setPointHistory(pointHistory).catch(() => setConnectionError(true)); }, [pointHistory, isLoaded]);
-  React.useEffect(() => { if(isLoaded) storageService.setSettings(settings).catch(() => setConnectionError(true)); }, [settings, isLoaded]);
+  React.useEffect(() => { if (isLoaded) storageService.setTransactions(transactions).catch(() => setConnectionError(true)); }, [transactions, isLoaded]);
+  React.useEffect(() => { if (isLoaded) storageService.setReviews(reviews).catch(() => setConnectionError(true)); }, [reviews, isLoaded]);
+  React.useEffect(() => { if (isLoaded) storageService.setPointHistory(pointHistory).catch(() => setConnectionError(true)); }, [pointHistory, isLoaded]);
+  React.useEffect(() => { if (isLoaded) storageService.setSettings(settings).catch(() => setConnectionError(true)); }, [settings, isLoaded]);
 
   // --- Toast Handler ---
   const addToast = (message: string, type: ToastType) => {
@@ -123,26 +142,26 @@ const App: React.FC = () => {
       try {
         const result = await userService.teacherLogin(loginInput, passwordInput);
         if (result.success && result.user) {
-           setCurrentUser(result.user);
-           // Update local user list with the new teacher if not present (or update details)
-           setUsers(prev => {
-              const idx = prev.findIndex(u => u.id === result.user!.id);
-              if (idx >= 0) {
-                  const copy = [...prev];
-                  copy[idx] = result.user!;
-                  return copy;
-              }
-              return [...prev, result.user!];
-           });
+          setCurrentUser(result.user);
+          // Update local user list with the new teacher if not present (or update details)
+          setUsers(prev => {
+            const idx = prev.findIndex(u => u.id === result.user!.id);
+            if (idx >= 0) {
+              const copy = [...prev];
+              copy[idx] = result.user!;
+              return copy;
+            }
+            return [...prev, result.user!];
+          });
 
-           localStorage.setItem('biblio_session_user', result.user.id);
-           addToast(`Bienvenido, ${result.user.firstName}`, 'info');
+          localStorage.setItem('biblio_session_user', result.user.id);
+          addToast(`Bienvenido, ${result.user.firstName}`, 'info');
 
-           // Trigger sync
-           syncPrismaData();
+          // Trigger sync
+          syncPrismaData();
 
         } else {
-           setAuthError(result.error || 'Credenciales incorrectas');
+          setAuthError(result.error || 'Credenciales incorrectas');
         }
       } catch (err) {
         setAuthError('Error de conexión con el sistema de autenticación');
@@ -161,54 +180,54 @@ const App: React.FC = () => {
   };
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-     try {
-         if (credentialResponse.credential) {
-             // Verify against Prisma
-             const result = await authService.verifyGoogleToken(credentialResponse.credential);
+    try {
+      if (credentialResponse.credential) {
+        // Verify against Prisma
+        const result = await authService.verifyGoogleToken(credentialResponse.credential);
 
-             if (result.success && result.user) {
-                setCurrentUser(result.user);
+        if (result.success && result.user) {
+          setCurrentUser(result.user);
 
-                // Update local list
-                setUsers(prev => {
-                    const idx = prev.findIndex(u => u.id === result.user!.id);
-                    if (idx >= 0) {
-                        const copy = [...prev];
-                        copy[idx] = result.user!;
-                        return copy;
-                    }
-                    return [...prev, result.user!];
-                });
+          // Update local list
+          setUsers(prev => {
+            const idx = prev.findIndex(u => u.id === result.user!.id);
+            if (idx >= 0) {
+              const copy = [...prev];
+              copy[idx] = result.user!;
+              return copy;
+            }
+            return [...prev, result.user!];
+          });
 
-                localStorage.setItem('biblio_session_user', result.user.id);
-                addToast(`Bienvenido, ${result.user.firstName}`, 'info');
+          localStorage.setItem('biblio_session_user', result.user.id);
+          addToast(`Bienvenido, ${result.user.firstName}`, 'info');
 
-                // Trigger sync
-                syncPrismaData();
-             } else {
-                 setAuthError(result.error || 'No tienes permisos para acceder.');
-             }
-         }
-     } catch (e) {
-         console.error(e);
-         setAuthError('Error validando el inicio de sesión con Google.');
-     }
+          // Trigger sync
+          syncPrismaData();
+        } else {
+          setAuthError(result.error || 'No tienes permisos para acceder.');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setAuthError('Error validando el inicio de sesión con Google.');
+    }
   };
 
   const syncPrismaData = async () => {
-      try {
-          addToast('Sincronizando con PrismaEdu...', 'info');
-          const result = await userService.syncStudents();
-          if (result.success) {
-              addToast(`Sincronización completada: ${result.updated} actualizados, ${result.created} nuevos.`, 'success');
-              // Reload local data?
-              const data = await storageService.fetchAllData();
-              if (data && data.users) setUsers(data.users);
-          }
-      } catch (e) {
-          console.error(e);
-          // Don't disturb user too much if sync fails in background
+    try {
+      addToast('Sincronizando con PrismaEdu...', 'info');
+      const result = await userService.syncStudents();
+      if (result.success) {
+        addToast(`Sincronización completada: ${result.updated} actualizados, ${result.created} nuevos.`, 'success');
+        // Reload local data?
+        const data = await storageService.fetchAllData();
+        if (data && data.users) setUsers(data.users);
       }
+    } catch (e) {
+      console.error(e);
+      // Don't disturb user too much if sync fails in background
+    }
   };
 
   const handleQRLogin = (scannedText: string) => {
@@ -236,71 +255,71 @@ const App: React.FC = () => {
 
   // Generic updaters
   const addUsers = async (newUsers: User[]) => {
-      try {
-          if (newUsers.length === 1) {
-              await userService.addUser(newUsers[0]);
-          } else if (newUsers.length > 1) {
-              await userService.importUsers(newUsers);
-          }
-          setUsers(prev => [...prev, ...newUsers]);
-      } catch (e) {
-          console.error(e);
-          addToast('Error guardando usuarios en servidor', 'error');
+    try {
+      if (newUsers.length === 1) {
+        await userService.addUser(newUsers[0]);
+      } else if (newUsers.length > 1) {
+        await userService.importUsers(newUsers);
       }
+      setUsers(prev => [...prev, ...newUsers]);
+    } catch (e) {
+      console.error(e);
+      addToast('Error guardando usuarios en servidor', 'error');
+    }
   };
 
   const updateUser = async (updatedUser: User) => {
     try {
-        await userService.updateUser(updatedUser);
-        setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-        addToast('Usuario actualizado correctamente', 'success');
+      await userService.updateUser(updatedUser);
+      setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+      addToast('Usuario actualizado correctamente', 'success');
     } catch (e) {
-        addToast('Error actualizando usuario', 'error');
+      addToast('Error actualizando usuario', 'error');
     }
   };
 
   const deleteUser = async (id: string) => {
     try {
-        await userService.deleteUser(id);
-        setUsers(prev => prev.filter(u => u.id !== id));
-        setPointHistory(prev => prev.filter(h => h.userId !== id));
-        addToast('Usuario eliminado', 'info');
+      await userService.deleteUser(id);
+      setUsers(prev => prev.filter(u => u.id !== id));
+      setPointHistory(prev => prev.filter(h => h.userId !== id));
+      addToast('Usuario eliminado', 'info');
     } catch (e) {
-        addToast('Error eliminando usuario', 'error');
+      addToast('Error eliminando usuario', 'error');
     }
   };
 
   const addBooks = async (newBooks: Book[]) => {
-      try {
-          if (newBooks.length === 1) {
-             await bookService.addBook(newBooks[0]);
-          } else {
-             await bookService.importBooks(newBooks);
-          }
-          setBooks(prev => [...prev, ...newBooks]);
-      } catch (e) {
-          console.error(e);
-          addToast('Error guardando libros', 'error');
+    try {
+      if (newBooks.length === 1) {
+        await bookService.addBook(newBooks[0]);
+      } else {
+        await bookService.importBooks(newBooks);
       }
+      setBooks(prev => [...prev, ...newBooks]);
+    } catch (e) {
+      console.error(e);
+      addToast('Error guardando libros', 'error');
+    }
   };
 
   const handleUpdateBook = async (updatedBook: Book) => {
     try {
-        await bookService.updateBook(updatedBook);
-        setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
-        addToast('Libro actualizado', 'success');
+      await bookService.updateBook(updatedBook);
+      setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
+      addToast('Libro actualizado', 'success');
     } catch (e) {
-        addToast('Error actualizando libro', 'error');
+      addToast('Error actualizando libro', 'error');
     }
   };
 
   const deleteBook = async (id: string) => {
     try {
-        await bookService.deleteBook(id);
-        setBooks(prev => prev.filter(b => b.id !== id));
-        addToast('Libro eliminado', 'info');
+      await bookService.deleteBook(id);
+      setBooks(prev => prev.filter(b => b.id !== id));
+      addToast('Libro eliminado', 'info');
     } catch (e) {
-        addToast('Error eliminando libro', 'error');
+      addToast('Error eliminando libro', 'error');
     }
   };
   const updateSettings = (newSettings: AppSettings) => {
@@ -328,7 +347,7 @@ const App: React.FC = () => {
     const entry = pointHistory.find(ph => ph.id === entryId);
     if (!entry) return;
     setUsers(prev => prev.map(u => {
-      if (u.id === entry.userId) return { ...u, points: Math.max(0, u.points - entry.amount) }; 
+      if (u.id === entry.userId) return { ...u, points: Math.max(0, u.points - entry.amount) };
       return u;
     }));
     setPointHistory(prev => prev.filter(ph => ph.id !== entryId));
@@ -347,53 +366,53 @@ const App: React.FC = () => {
     const className = (currentUser.className || '').toUpperCase();
     let maxBooks = 3;
     if (className.includes('AÑOS')) {
-        maxBooks = 1;
+      maxBooks = 1;
     } else if (className.includes('PRIMARIA')) {
-        maxBooks = 2;
+      maxBooks = 2;
     } else if (className.includes('SECUNDARIA')) {
-        maxBooks = 3;
+      maxBooks = 3;
     }
 
     if (activeLoans >= maxBooks) {
-         addToast(`Has alcanzado el límite de ${maxBooks} libros prestados. Devuelve uno para sacar otro.`, 'error');
-         return;
+      addToast(`Has alcanzado el límite de ${maxBooks} libros prestados. Devuelve uno para sacar otro.`, 'error');
+      return;
     }
 
     // Optimistic Update
     setBooks(prev => prev.map(b => b.id === book.id ? { ...b, unitsAvailable: b.unitsAvailable - 1 } : b));
 
     try {
-        const result = await checkoutBook(currentUser.id, book.id);
-        if (result.success) {
-            setTransactions(prev => [...prev, result.transaction]);
-            setUsers(prev => prev.map(u => {
-                if (u.id === currentUser.id) {
-                    const updated = { ...u, points: result.userPoints, badges: result.newBadges.length > 0 ? [...(u.badges||[]), ...result.newBadges] : u.badges };
-                    if (result.newBadges.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
-                    setCurrentUser(updated);
-                    return updated;
-                }
-                return u;
-            }));
-            addToast(`Has sacado "${book.title}". ¡Disfruta la lectura! 📖`, 'success');
-        }
+      const result = await checkoutBook(currentUser.id, book.id);
+      if (result.success) {
+        setTransactions(prev => [...prev, result.transaction]);
+        setUsers(prev => prev.map(u => {
+          if (u.id === currentUser.id) {
+            const updated = { ...u, points: result.userPoints, badges: result.newBadges.length > 0 ? [...(u.badges || []), ...result.newBadges] : u.badges };
+            if (result.newBadges.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
+            setCurrentUser(updated);
+            return updated;
+          }
+          return u;
+        }));
+        addToast(`Has sacado "${book.title}". ¡Disfruta la lectura! 📖`, 'success');
+      }
     } catch (e: any) {
-        console.error(e);
+      console.error(e);
 
-        // Revert Optimistic Update
-        setBooks(prev => prev.map(b => b.id === book.id ? { ...b, unitsAvailable: b.unitsAvailable + 1 } : b));
+      // Revert Optimistic Update
+      setBooks(prev => prev.map(b => b.id === book.id ? { ...b, unitsAvailable: b.unitsAvailable + 1 } : b));
 
-        // Parse Error Message
-        let errorMessage = 'Error al procesar el préstamo';
-        try {
-            if (e.message) {
-                 const parsed = JSON.parse(e.message);
-                 if (parsed.error) errorMessage = parsed.error;
-            }
-        } catch (parseError) {
-             // Fallback to generic or raw message if needed
+      // Parse Error Message
+      let errorMessage = 'Error al procesar el préstamo';
+      try {
+        if (e.message) {
+          const parsed = JSON.parse(e.message);
+          if (parsed.error) errorMessage = parsed.error;
         }
-        addToast(errorMessage, 'error');
+      } catch (parseError) {
+        // Fallback to generic or raw message if needed
+      }
+      addToast(errorMessage, 'error');
     }
   };
 
@@ -405,22 +424,22 @@ const App: React.FC = () => {
     setTransactions(prev => prev.map(t => (t.bookId === book.id && t.userId === currentUser.id && t.active) ? { ...t, active: false, dateReturned: new Date().toISOString() } : t));
 
     try {
-        const result = await returnBook(currentUser.id, book.id);
-        if (result.success) {
-            setUsers(prev => prev.map(u => {
-                if (u.id === currentUser.id) {
-                    const updated = { ...u, points: result.userPoints, badges: result.newBadges.length > 0 ? [...(u.badges||[]), ...result.newBadges] : u.badges };
-                     if (result.newBadges.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
-                    setCurrentUser(updated);
-                    return updated;
-                }
-                return u;
-            }));
-             addToast(`¡Libro devuelto! Puntos actualizados. 🌟`, 'success');
-        }
+      const result = await returnBook(currentUser.id, book.id);
+      if (result.success) {
+        setUsers(prev => prev.map(u => {
+          if (u.id === currentUser.id) {
+            const updated = { ...u, points: result.userPoints, badges: result.newBadges.length > 0 ? [...(u.badges || []), ...result.newBadges] : u.badges };
+            if (result.newBadges.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
+            setCurrentUser(updated);
+            return updated;
+          }
+          return u;
+        }));
+        addToast(`¡Libro devuelto! Puntos actualizados. 🌟`, 'success');
+      }
     } catch (e) {
-         console.error(e);
-         addToast('Error al procesar la devolución', 'error');
+      console.error(e);
+      addToast('Error al procesar la devolución', 'error');
     }
   };
 
@@ -428,22 +447,22 @@ const App: React.FC = () => {
     setReviews(prev => [review, ...prev]); // Optimistic
 
     try {
-        const result = await submitReview(review);
-         if (result.success && result.userPoints) {
-            setUsers(prev => prev.map(u => {
-                if (u.id === currentUser.id) {
-                     const updated = { ...u, points: result.userPoints, badges: result.newBadges?.length > 0 ? [...(u.badges||[]), ...result.newBadges] : u.badges };
-                     if (result.newBadges?.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
-                     setCurrentUser(updated);
-                     return updated;
-                }
-                return u;
-            }));
-        }
-        addToast('¡Gracias por tu opinión! ⭐', 'success');
+      const result = await submitReview(review);
+      if (result.success && result.userPoints) {
+        setUsers(prev => prev.map(u => {
+          if (u.id === currentUser.id) {
+            const updated = { ...u, points: result.userPoints, badges: result.newBadges?.length > 0 ? [...(u.badges || []), ...result.newBadges] : u.badges };
+            if (result.newBadges?.length > 0) addToast(`¡Nueva Insignia Conseguida! 🏆`, 'success');
+            setCurrentUser(updated);
+            return updated;
+          }
+          return u;
+        }));
+      }
+      addToast('¡Gracias por tu opinión! ⭐', 'success');
     } catch (e) {
-        console.error(e);
-        addToast('Error al guardar la opinión', 'error');
+      console.error(e);
+      addToast('Error al guardar la opinión', 'error');
     }
   };
 
@@ -465,157 +484,157 @@ const App: React.FC = () => {
 
   // --- Loading / Error States ---
   if (connectionError) {
-      return (
-          <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--mesh-auth)' }}>
-              <div className="glass-panel p-10 rounded-4xl text-center max-w-md shadow-glass-lg animate-modal-in">
-                  <div className="w-20 h-20 bg-red-500/15 rounded-3xl flex items-center justify-center mx-auto mb-5 text-accent-coral animate-float">
-                      <WifiOff size={36} />
-                  </div>
-                  <h1 className="text-2xl font-display font-bold text-themed mb-2">Error de Conexión</h1>
-                  <p className="text-themed-muted mb-8 text-sm leading-relaxed">No podemos conectar con el servidor de la biblioteca. Asegúrate de que el servidor está encendido.</p>
-                  <Button onClick={() => window.location.reload()} className="w-full" size="lg">Reintentar</Button>
-              </div>
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--mesh-auth)' }}>
+        <div className="glass-panel p-10 rounded-4xl text-center max-w-md shadow-glass-lg animate-modal-in">
+          <div className="w-20 h-20 bg-red-500/15 rounded-3xl flex items-center justify-center mx-auto mb-5 text-accent-coral animate-float">
+            <WifiOff size={36} />
           </div>
-      );
+          <h1 className="text-2xl font-display font-bold text-themed mb-2">Error de Conexión</h1>
+          <p className="text-themed-muted mb-8 text-sm leading-relaxed">No podemos conectar con el servidor de la biblioteca. Asegúrate de que el servidor está encendido.</p>
+          <Button onClick={() => window.location.reload()} className="w-full" size="lg">Reintentar</Button>
+        </div>
+      </div>
+    );
   }
 
   if (!isLoaded) {
-      return (
-          <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--mesh-auth)' }}>
-              <div className="text-center space-y-5 animate-fade-in">
-                  <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-brand animate-glow">
-                      <img src={settings.logoUrl || "/vite.svg"} className="w-10 h-10 brightness-0 invert" alt="logo"/>
-                  </div>
-                  <div className="space-y-2">
-                      <div className="skeleton h-3 w-48 mx-auto rounded-full"></div>
-                      <div className="skeleton h-2.5 w-32 mx-auto rounded-full"></div>
-                  </div>
-              </div>
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--mesh-auth)' }}>
+        <div className="text-center space-y-5 animate-fade-in">
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-brand animate-glow">
+            <img src={settings.logoUrl || "/vite.svg"} className="w-10 h-10 brightness-0 invert" alt="logo" />
           </div>
-      );
+          <div className="space-y-2">
+            <div className="skeleton h-3 w-48 mx-auto rounded-full"></div>
+            <div className="skeleton h-2.5 w-32 mx-auto rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // --- Views ---
 
   if (!currentUser) {
     return (
-     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
-      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'var(--mesh-auth)' }}>
-        <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 glass-panel hover:bg-[var(--surface-raised)] p-3 rounded-2xl shadow-glass-sm text-themed-muted hover:text-brand-400 transition-all duration-300 hover:shadow-glass hover:scale-105 press-effect" title="Volver a Prisma">
-          <ArrowLeft size={22} />
-        </a>
-        <button onClick={toggleTheme} className="theme-toggle absolute top-4 right-4 z-50" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'var(--mesh-auth)' }}>
+          <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 glass-panel hover:bg-[var(--surface-raised)] p-3 rounded-2xl shadow-glass-sm text-themed-muted hover:text-brand-400 transition-all duration-300 hover:shadow-glass hover:scale-105 press-effect" title="Volver a Prisma">
+            <ArrowLeft size={22} />
+          </a>
+          <button onClick={toggleTheme} className="theme-toggle absolute top-4 right-4 z-50" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-        <div className="glass-panel max-w-md w-full rounded-4xl p-8 md:p-10 relative z-10 animate-modal-in shadow-glass-lg">
-          <div className="text-center mb-8">
-            <div className="inline-block p-4 bg-[var(--surface-raised)] backdrop-blur-sm rounded-3xl mb-5 shadow-glass-sm ring-1 ring-[var(--glass-border)]">
-               <img src={settings.logoUrl || "https://cdn-icons-png.flaticon.com/512/3413/3413535.png"} alt="Logo" className="w-16 h-16 object-contain" />
+          <div className="glass-panel max-w-md w-full rounded-4xl p-8 md:p-10 relative z-10 animate-modal-in shadow-glass-lg">
+            <div className="text-center mb-8">
+              <div className="inline-block p-4 bg-[var(--surface-raised)] backdrop-blur-sm rounded-3xl mb-5 shadow-glass-sm ring-1 ring-[var(--glass-border)]">
+                <img src={settings.logoUrl || "https://cdn-icons-png.flaticon.com/512/3413/3413535.png"} alt="Logo" className="w-16 h-16 object-contain" />
+              </div>
+              <h1 className="text-4xl font-display font-bold text-themed mb-1">{settings.schoolName || 'Biblioteca'}</h1>
+              <p className="text-themed-muted font-medium text-sm">Tu puerta a mil aventuras</p>
             </div>
-            <h1 className="text-4xl font-display font-bold text-themed mb-1">{settings.schoolName || 'Biblioteca'}</h1>
-            <p className="text-themed-muted font-medium text-sm">Tu puerta a mil aventuras</p>
-          </div>
 
-          <div className="flex bg-[var(--surface-raised)] backdrop-blur-sm p-1 rounded-2xl mb-8 border border-[var(--glass-border)]">
-            <button
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${!isAdminMode ? 'bg-[var(--tab-active-bg)] shadow-glass-sm text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
-              onClick={() => { setIsAdminMode(false); setAuthError(''); }}
-            >
-              ACCESO ALUMNOS
-            </button>
-            <button
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${isAdminMode ? 'bg-[var(--tab-active-bg)] shadow-glass-sm text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
-              onClick={() => { setIsAdminMode(true); setAuthError(''); setIsManualLogin(false); }}
-            >
-              ACCESO PROFESORES
-            </button>
-          </div>
+            <div className="flex bg-[var(--surface-raised)] backdrop-blur-sm p-1 rounded-2xl mb-8 border border-[var(--glass-border)]">
+              <button
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${!isAdminMode ? 'bg-[var(--tab-active-bg)] shadow-glass-sm text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
+                onClick={() => { setIsAdminMode(false); setAuthError(''); }}
+              >
+                ACCESO ALUMNOS
+              </button>
+              <button
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${isAdminMode ? 'bg-[var(--tab-active-bg)] shadow-glass-sm text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
+                onClick={() => { setIsAdminMode(true); setAuthError(''); setIsManualLogin(false); }}
+              >
+                ACCESO PROFESORES
+              </button>
+            </div>
 
-          {!isAdminMode && (
-            <div className="mb-6">
-               <button onClick={() => setShowQRScanner(true)} className="w-full bg-gradient-to-b from-brand-500 to-brand-700 hover:from-brand-400 hover:to-brand-600 text-white flex items-center justify-center gap-3 py-3.5 rounded-2xl font-display font-semibold shadow-brand hover-glow transition-all duration-300 press-effect">
+            {!isAdminMode && (
+              <div className="mb-6">
+                <button onClick={() => setShowQRScanner(true)} className="w-full bg-gradient-to-b from-brand-500 to-brand-700 hover:from-brand-400 hover:to-brand-600 text-white flex items-center justify-center gap-3 py-3.5 rounded-2xl font-display font-semibold shadow-brand hover-glow transition-all duration-300 press-effect">
                   <QrCode size={20} /> Escanear Carnet
-               </button>
-               <div className="relative flex py-5 items-center">
+                </button>
+                <div className="relative flex py-5 items-center">
                   <div className="flex-grow border-t border-[var(--divider)]"></div>
                   <span className="flex-shrink-0 mx-4 text-themed-muted text-[11px] font-bold uppercase tracking-wider">O entra con tu nombre</span>
                   <div className="flex-grow border-t border-[var(--divider)]"></div>
-               </div>
-            </div>
-          )}
+                </div>
+              </div>
+            )}
 
-          {/* LOGIN FORMS */}
-          {isAdminMode ? (
-             <div className="space-y-4">
-                 {!isGoogleConfigured && (
-                    <div className="p-3 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-xl text-xs text-[var(--error-text)] font-bold mb-2">
-                        ⚠️ Error: Google Client ID no configurado o inválido. Revisa .env y ejecuta 'npm run build'.
+            {/* LOGIN FORMS */}
+            {isAdminMode ? (
+              <div className="space-y-4">
+                {!isGoogleConfigured && (
+                  <div className="p-3 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-xl text-xs text-[var(--error-text)] font-bold mb-2">
+                    ⚠️ Error: Google Client ID no configurado o inválido. Revisa .env y ejecuta 'npm run build'.
+                  </div>
+                )}
+                {!isManualLogin ? (
+                  <>
+                    <div className="flex flex-col gap-3">
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => setAuthError('Login Fallido')}
+                        useOneTap
+                        containerProps={{ className: 'w-full flex justify-center' }}
+                      />
+                      <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-[var(--divider)]"></div>
+                        <span className="flex-shrink-0 mx-4 text-themed-muted text-xs font-bold uppercase">O</span>
+                        <div className="flex-grow border-t border-[var(--divider)]"></div>
+                      </div>
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => setIsManualLogin(true)}
+                      >
+                        Usar Contraseña Manual
+                      </Button>
                     </div>
-                 )}
-                 {!isManualLogin ? (
-                     <>
-                        <div className="flex flex-col gap-3">
-                           <GoogleLogin
-                                onSuccess={handleGoogleSuccess}
-                                onError={() => setAuthError('Login Fallido')}
-                                useOneTap
-                                containerProps={{ className: 'w-full flex justify-center' }}
-                            />
-                            <div className="relative flex py-2 items-center">
-                                <div className="flex-grow border-t border-[var(--divider)]"></div>
-                                <span className="flex-shrink-0 mx-4 text-themed-muted text-xs font-bold uppercase">O</span>
-                                <div className="flex-grow border-t border-[var(--divider)]"></div>
-                            </div>
-                            <Button
-                                variant="secondary"
-                                className="w-full"
-                                onClick={() => setIsManualLogin(true)}
-                            >
-                                Usar Contraseña Manual
-                            </Button>
-                        </div>
-                     </>
-                 ) : (
-                    <form onSubmit={handleLogin} className="space-y-4 animate-fadeIn">
-                         <div>
-                            <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Usuario Prisma</label>
-                            <input
-                              type="text"
-                              className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
-                              value={loginInput}
-                              onChange={(e) => setLoginInput(e.target.value)}
-                              autoFocus
-                              placeholder="Usuario"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Contraseña / PIN</label>
-                            <input
-                              type="password"
-                              className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
-                              value={passwordInput}
-                              onChange={(e) => setPasswordInput(e.target.value)}
-                              placeholder="••••••••"
-                            />
-                          </div>
-                          <Button type="submit" className="w-full" size="lg">
-                            Entrar
-                          </Button>
-                          <button
-                             type="button"
-                             className="text-xs text-brand-400 font-bold hover:text-brand-300 w-full text-center transition-colors py-2"
-                             onClick={() => setIsManualLogin(false)}
-                          >
-                             Volver a Google Login
-                          </button>
-                    </form>
-                 )}
-             </div>
-          ) : (
-             /* STUDENT MANUAL LOGIN */
-             <form onSubmit={handleLogin} className="space-y-4">
+                  </>
+                ) : (
+                  <form onSubmit={handleLogin} className="space-y-4 animate-fadeIn">
+                    <div>
+                      <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Usuario Prisma</label>
+                      <input
+                        type="text"
+                        className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
+                        value={loginInput}
+                        onChange={(e) => setLoginInput(e.target.value)}
+                        autoFocus
+                        placeholder="Usuario"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Contraseña / PIN</label>
+                      <input
+                        type="password"
+                        className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" size="lg">
+                      Entrar
+                    </Button>
+                    <button
+                      type="button"
+                      className="text-xs text-brand-400 font-bold hover:text-brand-300 w-full text-center transition-colors py-2"
+                      onClick={() => setIsManualLogin(false)}
+                    >
+                      Volver a Google Login
+                    </button>
+                  </form>
+                )}
+              </div>
+            ) : (
+              /* STUDENT MANUAL LOGIN */
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Tu nombre (ej: juan.garcia)</label>
                   <input
@@ -629,20 +648,20 @@ const App: React.FC = () => {
                 <Button type="submit" className="w-full" size="lg">
                   Entrar
                 </Button>
-             </form>
-          )}
+              </form>
+            )}
 
-          {authError && <div className="mt-4 text-accent-coral text-sm font-medium text-center bg-[var(--error-bg)] p-3 rounded-2xl animate-fade-in">{authError}</div>}
+            {authError && <div className="mt-4 text-accent-coral text-sm font-medium text-center bg-[var(--error-bg)] p-3 rounded-2xl animate-fade-in">{authError}</div>}
 
-          <div className="mt-8 text-center border-t border-[var(--divider)] pt-5">
-             <p className="text-[11px] text-themed-muted">Creado por <span className="font-semibold text-themed-secondary">Javi Barrero</span></p>
+            <div className="mt-8 text-center border-t border-[var(--divider)] pt-5">
+              <p className="text-[11px] text-themed-muted">Creado por <span className="font-semibold text-themed-secondary">Javi Barrero</span></p>
+            </div>
           </div>
-        </div>
 
-        {showQRScanner && (
-           <QRScanner onScanSuccess={handleQRLogin} onClose={() => setShowQRScanner(false)} />
-        )}
-      </div>
+          {showQRScanner && (
+            <QRScanner onScanSuccess={handleQRLogin} onClose={() => setShowQRScanner(false)} />
+          )}
+        </div>
       </GoogleOAuthProvider>
     );
   }
@@ -650,38 +669,38 @@ const App: React.FC = () => {
   // --- Authenticated Views ---
 
   if (currentUser.role === UserRole.SUPERADMIN || currentUser.role === UserRole.ADMIN) {
-     return (
-        <div className="min-h-screen font-sans text-themed" style={{ background: 'var(--mesh-tutor)' }}>
-           <ToastContainer toasts={toasts} removeToast={removeToast} />
-           <AdminView
-             currentUser={currentUser}
-             users={users}
-             books={books}
-             reviews={reviews}
-             pointHistory={pointHistory}
-             settings={settings}
-             transactions={transactions}
-             onAddUsers={addUsers}
-             onAddBooks={addBooks}
-             onDeleteUser={deleteUser}
-             onUpdateUser={updateUser}
-             onDeleteBook={deleteBook}
-             onUpdateBook={handleUpdateBook}
-             onDeleteReview={handleDeleteReview}
-             onUpdateSettings={updateSettings}
-             onShowToast={addToast}
-             onAddPoints={handleManualPointAdjustment}
-             onDeletePointEntry={handleDeletePointEntry}
-             onRestoreBackup={handleRestoreBackup}
-             onLogout={handleLogout}
-             theme={theme}
-             toggleTheme={toggleTheme}
-           />
-           <div className="hidden md:block fixed bottom-6 right-6 z-50 no-print">
-              <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-glass-lg press-effect">Cerrar Sesión</Button>
-           </div>
+    return (
+      <div className="min-h-screen font-sans text-themed" style={{ background: 'var(--mesh-tutor)' }}>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        <AdminView
+          currentUser={currentUser}
+          users={users}
+          books={books}
+          reviews={reviews}
+          pointHistory={pointHistory}
+          settings={settings}
+          transactions={transactions}
+          onAddUsers={addUsers}
+          onAddBooks={addBooks}
+          onDeleteUser={deleteUser}
+          onUpdateUser={updateUser}
+          onDeleteBook={deleteBook}
+          onUpdateBook={handleUpdateBook}
+          onDeleteReview={handleDeleteReview}
+          onUpdateSettings={updateSettings}
+          onShowToast={addToast}
+          onAddPoints={handleManualPointAdjustment}
+          onDeletePointEntry={handleDeletePointEntry}
+          onRestoreBackup={handleRestoreBackup}
+          onLogout={handleLogout}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+        <div className="hidden md:block fixed bottom-6 right-6 z-50 no-print">
+          <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-glass-lg press-effect">Cerrar Sesión</Button>
         </div>
-     );
+      </div>
+    );
   }
 
   return (
