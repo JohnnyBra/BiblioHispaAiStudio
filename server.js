@@ -573,16 +573,31 @@ app.post('/api/auth/teacher-login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // Petición interna a PrismaEdu (External Service)
-    const data = await fetchFromPrisma('/api/auth/external-check', 'POST', { username, password });
+    const baseUrl = process.env.PRISMA_API_URL || 'https://prisma.bibliohispa.es';
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const url = `${cleanBaseUrl}/api/auth/external-check`;
+    const currentSecret = process.env.PRISMA_API_SECRET;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'BiblioHispa-Server/1.0',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache',
+        'api_secret': currentSecret,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
 
     if (data.success) {
-      // Map response to local user
-      // Assuming data from external-check looks like { success: true, user: { ... } } or similar based on prompt context
-      // Prompt says: Response: { success: true, role, ... }
-
-      // We might need to fetch the full user details if 'external-check' returns minimal info.
-      // But let's assume it returns enough or we match against the export list.
+      // Forward cookie si existe
+      const setCookieHeader = response.headers.get('set-cookie');
+      if (setCookieHeader) {
+        res.setHeader('set-cookie', setCookieHeader);
+      }
       // To be safe, let's fetch the user list and find the user by username/id if possible,
       // OR construct based on response.
       // Let's assume the response has { id, name, role, classId } etc.
@@ -612,6 +627,59 @@ app.post('/api/auth/teacher-login', async (req, res) => {
     const status = error.status || 500;
     const message = error.data?.message || error.message || 'Error de conexión con el sistema de autenticación.';
     res.status(status).json({ error: message });
+  }
+});
+
+// Endpoint invisible de SSO global para Biblio
+app.get('/api/auth/me', async (req, res) => {
+  const token = req.cookies.BIBLIO_SSO_TOKEN;
+  if (!token) return res.status(401).json({ success: false, message: 'No session' });
+  try {
+    const decoded = jwt.verify(token, JWT_SSO_SECRET);
+
+    // Permitir a Profesores o Admins
+    if (decoded.role === 'TEACHER' || decoded.role === 'ADMIN' || decoded.role === 'SUPERADMIN' || decoded.role === 'TUTOR') {
+      const currentData = await readDB();
+
+      // Clean email check for ID or email
+      const cleanEmail = (decoded.email || decoded.userId || '').toLowerCase();
+      const users = currentData.users || [];
+      let localUser = users.find(u =>
+        u.id === decoded.userId ||
+        (u.email && u.email.toLowerCase() === cleanEmail) ||
+        (u.username && u.username.toLowerCase() === cleanEmail)
+      );
+
+      if (localUser) {
+        return res.json({ success: true, user: localUser });
+      }
+
+      // Si el SSO autoriza pero no existe, lo creamos de emergencia
+      let mappedRole = 'ADMIN';
+      if (decoded.role === 'SUPERADMIN') mappedRole = 'SUPERADMIN';
+
+      const newUser = {
+        id: decoded.userId,
+        firstName: decoded.name || 'Docente',
+        lastName: '',
+        username: cleanEmail.split('@')[0],
+        role: mappedRole,
+        email: decoded.email,
+        className: 'PROFESORADO',
+        points: 0,
+        booksRead: 0,
+        currentStreak: 0,
+        badges: []
+      };
+
+      const saved = await upsertUserToDB(newUser);
+      return res.json({ success: true, user: saved });
+    }
+
+    // Estudiantes / Familias denegados (login por QR)
+    return res.status(401).json({ success: false, message: 'Role not compatible with UI' });
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
   }
 });
 
