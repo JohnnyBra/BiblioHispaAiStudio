@@ -10,6 +10,8 @@ import dotenv from 'dotenv'; // Load env vars
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { getAcademicData } from './prismaImportService.js';
+import cookieParser from 'cookie-parser';
+import jwt from 'jsonwebtoken';
 
 // Simular __dirname en módulos ES
 const __filename = fileURLToPath(import.meta.url);
@@ -18,15 +20,15 @@ const __dirname = path.dirname(__filename);
 const dotenvResult = dotenv.config(); // Load .env from cwd (Standard behavior)
 
 if (dotenvResult.error) {
-    console.warn("⚠️  No se pudo cargar el archivo .env (cwd):", dotenvResult.error.message);
+  console.warn("⚠️  No se pudo cargar el archivo .env (cwd):", dotenvResult.error.message);
 } else {
-    console.log("✅ Configuración cargada desde .env. Variables encontradas:", Object.keys(dotenvResult.parsed || {}));
+  console.log("✅ Configuración cargada desde .env. Variables encontradas:", Object.keys(dotenvResult.parsed || {}));
 }
 
 // Fallback para Google Client ID
 if (!process.env.GOOGLE_CLIENT_ID && process.env.VITE_GOOGLE_CLIENT_ID) {
-    console.log("ℹ️  GOOGLE_CLIENT_ID no definido, usando VITE_GOOGLE_CLIENT_ID.");
-    process.env.GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID;
+  console.log("ℹ️  GOOGLE_CLIENT_ID no definido, usando VITE_GOOGLE_CLIENT_ID.");
+  process.env.GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID;
 }
 
 if (!process.env.GOOGLE_CLIENT_ID) {
@@ -37,15 +39,15 @@ if (!process.env.GOOGLE_CLIENT_ID) {
 const apiSecret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
 
 if (!apiSecret) {
-    console.error("\n========================================================");
-    console.error("⚠️  ATENCIÓN: PRISMA_API_SECRET (o API_SECRET) no está configurado.");
-    console.error("   La sincronización fallará si el valor por defecto no es válido.");
-    console.error("   Por favor, añade PRISMA_API_SECRET=tu_secreto en .env");
-    console.error("========================================================\n");
+  console.error("\n========================================================");
+  console.error("⚠️  ATENCIÓN: PRISMA_API_SECRET (o API_SECRET) no está configurado.");
+  console.error("   La sincronización fallará si el valor por defecto no es válido.");
+  console.error("   Por favor, añade PRISMA_API_SECRET=tu_secreto en .env");
+  console.error("========================================================\n");
 } else {
-    console.log(`✅ API Secret configurado (comienza con ${apiSecret.substring(0,3)}...)`);
-    // Ensure both are set for consistency
-    if (!process.env.PRISMA_API_SECRET) process.env.PRISMA_API_SECRET = apiSecret;
+  console.log(`✅ API Secret configurado (comienza con ${apiSecret.substring(0, 3)}...)`);
+  // Ensure both are set for consistency
+  if (!process.env.PRISMA_API_SECRET) process.env.PRISMA_API_SECRET = apiSecret;
 }
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -59,6 +61,45 @@ const COVERS_DIR = path.join(process.cwd(), 'data', 'covers');
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Límite alto para backups grandes
+app.use(cookieParser());
+
+const JWT_SSO_SECRET = process.env.JWT_SSO_SECRET || 'fallback-secret';
+
+const globalAuthMiddleware = async (req, res, next) => {
+  if (process.env.ENABLE_GLOBAL_SSO !== 'true') return next();
+
+  const isManagementRoute =
+    (req.path.startsWith('/api/books') && req.method !== 'GET') ||
+    (req.path.startsWith('/api/users') && req.method !== 'GET') ||
+    req.path.startsWith('/api/sync') ||
+    req.path.startsWith('/api/restore') ||
+    req.path.startsWith('/api/transactions') ||
+    req.path === '/api/settings';
+
+  const token = req.cookies ? req.cookies.BIBLIO_SSO_TOKEN : null;
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, JWT_SSO_SECRET);
+    if (decoded.role === 'FAMILY' || decoded.role === 'STUDENT') {
+      if (isManagementRoute) {
+        return res.status(403).json({ success: false, message: 'Acceso denegado a gestión para este rol.' });
+      }
+      return next();
+    }
+
+    if (decoded.role === 'TEACHER' || decoded.role === 'ADMIN' || decoded.role === 'SUPERADMIN') {
+      req.ssoUser = decoded;
+      return next();
+    }
+    return next();
+  } catch (err) {
+    return next();
+  }
+};
+
+app.use(globalAuthMiddleware);
+
 app.use(express.static(path.join(__dirname, 'dist'))); // Servir el frontend compilado
 
 // --- GAMIFICATION CONFIG ---
@@ -141,7 +182,7 @@ let dbLock = Promise.resolve();
 
 function withDbLock(task) {
   const result = dbLock.then(() => task());
-  dbLock = result.catch(() => {}); // Prevent queue blockage on error
+  dbLock = result.catch(() => { }); // Prevent queue blockage on error
   return result;
 }
 
@@ -167,37 +208,37 @@ async function saveDB(data, key = null) {
 
 // Helper: Check and Award Badges
 async function checkAndAwardBadges(user, context, allData) {
-    let newBadges = [];
-    const currentBadges = user.badges || [];
+  let newBadges = [];
+  const currentBadges = user.badges || [];
 
-    // Check Streak Badges
-    if (context.streak) {
-        BADGES.filter(b => b.criteria.streak && b.criteria.streak <= user.currentStreak).forEach(b => {
-            if (!currentBadges.includes(b.id)) newBadges.push(b.id);
-        });
-    }
+  // Check Streak Badges
+  if (context.streak) {
+    BADGES.filter(b => b.criteria.streak && b.criteria.streak <= user.currentStreak).forEach(b => {
+      if (!currentBadges.includes(b.id)) newBadges.push(b.id);
+    });
+  }
 
-    // Check Reviews Badges
-    if (context.reviewCount) {
-         BADGES.filter(b => b.criteria.reviews && b.criteria.reviews <= context.reviewCount).forEach(b => {
-            if (!currentBadges.includes(b.id)) newBadges.push(b.id);
-        });
-    }
+  // Check Reviews Badges
+  if (context.reviewCount) {
+    BADGES.filter(b => b.criteria.reviews && b.criteria.reviews <= context.reviewCount).forEach(b => {
+      if (!currentBadges.includes(b.id)) newBadges.push(b.id);
+    });
+  }
 
-    // Check Books Read Badges
-    if (context.booksRead) {
-        BADGES.filter(b => b.criteria.books && b.criteria.books <= context.booksRead).forEach(b => {
-             if (!currentBadges.includes(b.id)) newBadges.push(b.id);
-        });
-    }
+  // Check Books Read Badges
+  if (context.booksRead) {
+    BADGES.filter(b => b.criteria.books && b.criteria.books <= context.booksRead).forEach(b => {
+      if (!currentBadges.includes(b.id)) newBadges.push(b.id);
+    });
+  }
 
-    // Manual Badges (Early Bird)
-    if (context.earlyReturn) {
-         const badgeId = 'early-bird';
-         if (!currentBadges.includes(badgeId)) newBadges.push(badgeId);
-    }
+  // Manual Badges (Early Bird)
+  if (context.earlyReturn) {
+    const badgeId = 'early-bird';
+    if (!currentBadges.includes(badgeId)) newBadges.push(badgeId);
+  }
 
-    return newBadges;
+  return newBadges;
 }
 
 // --- PRISMA EDU INTEGRATION HELPER (EN SERVER.JS) ---
@@ -207,16 +248,16 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
   const url = `${cleanBaseUrl}${endpoint}`;
 
   console.log(`Calling Prisma API: ${url}`);
-  
+
   // CORRECCIÓN CLAVE: Leer directamente del proceso, NO usar variable importada
   const currentSecret = process.env.PRISMA_API_SECRET;
 
   // Debug log para ver qué está pasando realmente
   if (!currentSecret) {
-      console.error("❌ ERROR CRÍTICO: PRISMA_API_SECRET es undefined en fetchFromPrisma");
+    console.error("❌ ERROR CRÍTICO: PRISMA_API_SECRET es undefined en fetchFromPrisma");
   } else {
-      // Mostrar solo los primeros 3 caracteres por seguridad
-      console.log(`ℹ️ Usando API Secret que empieza por: ${currentSecret.substring(0, 3)}...`);
+    // Mostrar solo los primeros 3 caracteres por seguridad
+    console.log(`ℹ️ Usando API Secret que empieza por: ${currentSecret.substring(0, 3)}...`);
   }
 
   const options = {
@@ -235,16 +276,16 @@ async function fetchFromPrisma(endpoint, method = 'GET', body = null) {
 
   const response = await fetch(url, options);
   if (!response.ok) {
-     const text = await response.text();
-     console.error(`Prisma API Error (${response.status}): ${text}`);
-     
-     let errorData = {};
-     try { errorData = JSON.parse(text); } catch (e) {}
+    const text = await response.text();
+    console.error(`Prisma API Error (${response.status}): ${text}`);
 
-     const error = new Error(errorData.message || `Prisma API responded with ${response.status}: ${text}`);
-     error.status = response.status;
-     error.data = errorData;
-     throw error;
+    let errorData = {};
+    try { errorData = JSON.parse(text); } catch (e) { }
+
+    const error = new Error(errorData.message || `Prisma API responded with ${response.status}: ${text}`);
+    error.status = response.status;
+    error.data = errorData;
+    throw error;
   }
   return response.json();
 }
@@ -294,7 +335,7 @@ function normalizeBook(book) {
 
 // GET BADGES METADATA
 app.get('/api/badges', (req, res) => {
-    res.json(BADGES);
+  res.json(BADGES);
 });
 
 // Obtener todos los datos al iniciar
@@ -313,7 +354,7 @@ app.post('/api/restore', async (req, res) => {
 app.post('/api/users', async (req, res) => {
   const user = req.body;
   if (Array.isArray(user)) {
-      return res.status(400).json({ error: "Para guardar masivamente usa /api/users/batch o restore. No envíes la lista entera." });
+    return res.status(400).json({ error: "Para guardar masivamente usa /api/users/batch o restore. No envíes la lista entera." });
   }
 
   const currentData = await readDB();
@@ -321,11 +362,11 @@ app.post('/api/users', async (req, res) => {
   const index = users.findIndex(u => u.id === user.id);
 
   if (index >= 0) {
-      users[index] = { ...users[index], ...user }; // Actualizar
+    users[index] = { ...users[index], ...user }; // Actualizar
   } else {
-      // Asegurar ID
-      if (!user.id) user.id = `user-${Date.now()}`;
-      users.push(user); // Crear nuevo
+    // Asegurar ID
+    if (!user.id) user.id = `user-${Date.now()}`;
+    users.push(user); // Crear nuevo
   }
 
   await saveDB(users, 'users');
@@ -339,11 +380,11 @@ app.put('/api/users/:id', async (req, res) => {
 
   const index = users.findIndex(u => u.id === req.params.id);
   if (index !== -1) {
-      users[index] = { ...users[index], ...req.body };
-      await saveDB(users, 'users');
-      res.json({ success: true, user: users[index] });
+    users[index] = { ...users[index], ...req.body };
+    await saveDB(users, 'users');
+    res.json({ success: true, user: users[index] });
   } else {
-      res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: 'User not found' });
   }
 });
 
@@ -367,7 +408,7 @@ app.post('/api/users/batch', async (req, res) => {
 
   // Assign IDs if missing
   usersToAdd.forEach(u => {
-      if (!u.id) u.id = `user-${Date.now()}-${Math.random().toString(36).substr(2,4)}`;
+    if (!u.id) u.id = `user-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
   });
 
   const newUsers = [...currentUsers, ...usersToAdd];
@@ -384,17 +425,17 @@ app.post('/api/books', async (req, res) => {
 
   // Protección: Asegurar que currentBooks sea un array
   if (!Array.isArray(currentBooks)) {
-      currentBooks = [];
+    currentBooks = [];
   }
 
   if (Array.isArray(payload)) {
-      // PREVENCIÓN DE SOBRESCRITURA ACCIDENTAL
-      return res.status(400).json({ error: 'Para guardar masivamente usa /api/books/batch o restore. No se permite sobrescribir toda la lista.' });
+    // PREVENCIÓN DE SOBRESCRITURA ACCIDENTAL
+    return res.status(400).json({ error: 'Para guardar masivamente usa /api/books/batch o restore. No se permite sobrescribir toda la lista.' });
   } else {
-      // Normalizar y añadir
-      const newBook = normalizeBook(payload);
-      currentBooks.push(newBook);
-      await saveDB(currentBooks, 'books');
+    // Normalizar y añadir
+    const newBook = normalizeBook(payload);
+    currentBooks.push(newBook);
+    await saveDB(currentBooks, 'books');
   }
 
   res.json({ success: true });
@@ -402,43 +443,43 @@ app.post('/api/books', async (req, res) => {
 
 // Update a book (Used for editing)
 app.put('/api/books/:id', async (req, res) => {
-    const currentData = await readDB();
-    let books = currentData.books;
+  const currentData = await readDB();
+  let books = currentData.books;
 
-    // Protección: Si la DB estaba corrupta y books no es array, lo reiniciamos
-    if (!Array.isArray(books)) {
-        books = [];
-    }
+  // Protección: Si la DB estaba corrupta y books no es array, lo reiniciamos
+  if (!Array.isArray(books)) {
+    books = [];
+  }
 
-    const index = books.findIndex(b => b.id === req.params.id);
+  const index = books.findIndex(b => b.id === req.params.id);
 
-    if (index !== -1) {
-        // We could/should strict normalize updates too, but that might overwrite intentional data?
-        // Let's at least keep the existing structure safe.
-        // Merging req.body into existing book.
-        books[index] = { ...books[index], ...req.body };
-        // Ensure critical fields aren't deleted by accident if missing in body (spread operator handles this mostly)
-        // But let's apply partial normalization just in case?
-        // books[index] = normalizeBook(books[index]); // This would reset 'addedDate' to now() if missing! Bad idea for updates.
+  if (index !== -1) {
+    // We could/should strict normalize updates too, but that might overwrite intentional data?
+    // Let's at least keep the existing structure safe.
+    // Merging req.body into existing book.
+    books[index] = { ...books[index], ...req.body };
+    // Ensure critical fields aren't deleted by accident if missing in body (spread operator handles this mostly)
+    // But let's apply partial normalization just in case?
+    // books[index] = normalizeBook(books[index]); // This would reset 'addedDate' to now() if missing! Bad idea for updates.
 
-        await saveDB(books, 'books');
-        res.json({ success: true, book: books[index] });
-    } else {
-        res.status(404).json({ error: 'Book not found' });
-    }
+    await saveDB(books, 'books');
+    res.json({ success: true, book: books[index] });
+  } else {
+    res.status(404).json({ error: 'Book not found' });
+  }
 });
 
 // Delete a book
 app.delete('/api/books/:id', async (req, res) => {
-    const currentData = await readDB();
-    let books = currentData.books;
+  const currentData = await readDB();
+  let books = currentData.books;
 
-    // Protección
-    if (!Array.isArray(books)) books = [];
+  // Protección
+  if (!Array.isArray(books)) books = [];
 
-    const newBooks = books.filter(b => b.id !== req.params.id);
-    await saveDB(newBooks, 'books');
-    res.json({ success: true });
+  const newBooks = books.filter(b => b.id !== req.params.id);
+  await saveDB(newBooks, 'books');
+  res.json({ success: true });
 });
 
 // Batch import books (enhanced)
@@ -451,23 +492,23 @@ app.post('/api/books/batch', async (req, res) => {
 
   // Metadata fetching logic for batch items
   for (let book of booksToAdd) {
-      if (book.title && (!book.coverUrl || !book.description || !book.genre)) {
-          try {
-             // Simple search to fill gaps
-             const query = `${book.title} ${book.author || ''}`;
-             const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&key=${process.env.VITE_API_KEY}`);
-             const data = await response.json();
-             if (data.items && data.items.length > 0) {
-                 const info = data.items[0].volumeInfo;
-                 if (!book.coverUrl && info.imageLinks?.thumbnail) book.coverUrl = info.imageLinks.thumbnail.replace('http:', 'https:');
-                 if (!book.description && info.description) book.description = info.description;
-                 if (!book.genre && info.categories) book.genre = info.categories[0];
-                 if (!book.recommendedAge) book.recommendedAge = '6-8';
-             }
-          } catch (e) { console.error(e); }
-      }
-      // Apply normalization
-      normalizedBooks.push(normalizeBook(book));
+    if (book.title && (!book.coverUrl || !book.description || !book.genre)) {
+      try {
+        // Simple search to fill gaps
+        const query = `${book.title} ${book.author || ''}`;
+        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&key=${process.env.VITE_API_KEY}`);
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          const info = data.items[0].volumeInfo;
+          if (!book.coverUrl && info.imageLinks?.thumbnail) book.coverUrl = info.imageLinks.thumbnail.replace('http:', 'https:');
+          if (!book.description && info.description) book.description = info.description;
+          if (!book.genre && info.categories) book.genre = info.categories[0];
+          if (!book.recommendedAge) book.recommendedAge = '6-8';
+        }
+      } catch (e) { console.error(e); }
+    }
+    // Apply normalization
+    normalizedBooks.push(normalizeBook(book));
   }
 
   const newBooks = [...currentBooks, ...normalizedBooks];
@@ -483,46 +524,46 @@ app.post('/api/auth/google-verify', async (req, res) => {
   if (!token) return res.status(400).json({ error: 'Token is required' });
 
   try {
-     // Verify Google Token
-     const ticket = await client.verifyIdToken({
-         idToken: token,
-         audience: process.env.GOOGLE_CLIENT_ID,
-     });
-     const payload = ticket.getPayload();
-     const email = payload.email;
+    // Verify Google Token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const email = payload.email;
 
-     if (!email) return res.status(400).json({ error: 'Invalid token payload' });
+    if (!email) return res.status(400).json({ error: 'Invalid token payload' });
 
-     // Fetch users from Prisma
-     const usersList = await fetchFromPrisma('/api/export/users'); // [{id, name, role, email, classId}, ...]
+    // Fetch users from Prisma
+    const usersList = await fetchFromPrisma('/api/export/users'); // [{id, name, role, email, classId}, ...]
 
-     const prismaUser = usersList.find(u => u.email === email);
+    const prismaUser = usersList.find(u => u.email === email);
 
-     if (!prismaUser) {
-         return res.status(401).json({ error: 'Email no encontrado en el sistema escolar.' });
-     }
+    if (!prismaUser) {
+      return res.status(401).json({ error: 'Email no encontrado en el sistema escolar.' });
+    }
 
-     const allowedRoles = ['TUTOR', 'ADMIN', 'DIRECCION', 'TESORERIA'];
-     if (!allowedRoles.includes(prismaUser.role)) {
-         return res.status(403).json({ error: 'Tu rol no tiene acceso a esta aplicación.' });
-     }
+    const allowedRoles = ['TUTOR', 'ADMIN', 'DIRECCION', 'TESORERIA'];
+    if (!allowedRoles.includes(prismaUser.role)) {
+      return res.status(403).json({ error: 'Tu rol no tiene acceso a esta aplicación.' });
+    }
 
-     // Map to Local User format
-     const localUser = mapPrismaUserToLocal(prismaUser);
+    // Map to Local User format
+    const localUser = mapPrismaUserToLocal(prismaUser);
 
-     // Resolve Class Name if possible
-     await resolveClassName(localUser);
+    // Resolve Class Name if possible
+    await resolveClassName(localUser);
 
-     // Upsert into local DB
-     const savedUser = await upsertUserToDB(localUser);
+    // Upsert into local DB
+    const savedUser = await upsertUserToDB(localUser);
 
-     res.json({ success: true, user: savedUser });
+    res.json({ success: true, user: savedUser });
 
   } catch (error) {
-     console.error('Google Auth Error:', error);
-     const status = error.status || 500;
-     const message = error.data?.message || error.message || 'Error validando con PrismaEdu.';
-     res.status(status).json({ error: message });
+    console.error('Google Auth Error:', error);
+    const status = error.status || 500;
+    const message = error.data?.message || error.message || 'Error validando con PrismaEdu.';
+    res.status(status).json({ error: message });
   }
 });
 
@@ -550,10 +591,10 @@ app.post('/api/auth/teacher-login', async (req, res) => {
       // "Devuelve: { success: true, role, ... }" - it implies it returns user info.
 
       const teacherUser = mapPrismaUserToLocal(data.user || {
-          id: `manual-${username}`,
-          name: username,
-          role: data.role || 'ADMIN',
-          classId: data.classId
+        id: `manual-${username}`,
+        name: username,
+        role: data.role || 'ADMIN',
+        classId: data.classId
       });
 
       // Resolve Class Name if possible
@@ -576,75 +617,75 @@ app.post('/api/auth/teacher-login', async (req, res) => {
 
 // Helper to resolve className from classId using existing DB data
 async function resolveClassName(user) {
-    if (!user.classId) return user;
+  if (!user.classId) return user;
 
-    try {
-        const dbData = await readDB();
-        // 1. Check if any other user has the same classId and a valid name
-        // We look for a student (or anyone) who has this classId but NOT this same ID as name
-        const reference = dbData.users.find(u => u.classId == user.classId && u.className && u.className !== String(user.classId) && u.className !== 'PROFESORADO');
+  try {
+    const dbData = await readDB();
+    // 1. Check if any other user has the same classId and a valid name
+    // We look for a student (or anyone) who has this classId but NOT this same ID as name
+    const reference = dbData.users.find(u => u.classId == user.classId && u.className && u.className !== String(user.classId) && u.className !== 'PROFESORADO');
 
-        if (reference) {
-            user.className = reference.className;
-        } else {
-             // 2. Check if we ourselves have a valid name in DB (to avoid overwriting with ID on re-login if sync gave us a name)
-             const existingSelf = dbData.users.find(u => u.id === user.id);
-             if (existingSelf && existingSelf.className && existingSelf.className !== String(user.classId) && existingSelf.className !== 'PROFESORADO') {
-                 user.className = existingSelf.className;
-             }
-        }
-    } catch (e) {
-        console.error("Error resolving class name:", e);
+    if (reference) {
+      user.className = reference.className;
+    } else {
+      // 2. Check if we ourselves have a valid name in DB (to avoid overwriting with ID on re-login if sync gave us a name)
+      const existingSelf = dbData.users.find(u => u.id === user.id);
+      if (existingSelf && existingSelf.className && existingSelf.className !== String(user.classId) && existingSelf.className !== 'PROFESORADO') {
+        user.className = existingSelf.className;
+      }
     }
-    return user;
+  } catch (e) {
+    console.error("Error resolving class name:", e);
+  }
+  return user;
 }
 
 // Helper to Upsert
 async function upsertUserToDB(user) {
-    const currentData = await readDB();
-    const users = currentData.users || [];
-    const index = users.findIndex(u => u.id === user.id);
-    let savedUser;
+  const currentData = await readDB();
+  const users = currentData.users || [];
+  const index = users.findIndex(u => u.id === user.id);
+  let savedUser;
 
-    if (index !== -1) {
-        // Update existing (preserve points/badges)
-        users[index] = { ...users[index], ...user, points: users[index].points, badges: users[index].badges };
-        savedUser = users[index];
-    } else {
-        // Add new
-        users.push(user);
-        savedUser = user;
-    }
-    await saveDB(users, 'users');
-    return savedUser;
+  if (index !== -1) {
+    // Update existing (preserve points/badges)
+    users[index] = { ...users[index], ...user, points: users[index].points, badges: users[index].badges };
+    savedUser = users[index];
+  } else {
+    // Add new
+    users.push(user);
+    savedUser = user;
+  }
+  await saveDB(users, 'users');
+  return savedUser;
 }
 
 // Helper to Map Prisma User to Local User
 function mapPrismaUserToLocal(prismaUser) {
-    // Determine Role Mapping
-    let role = 'ADMIN'; // Default for teachers
-    if (prismaUser.role === 'DIRECCION' || prismaUser.role === 'TESORERIA') role = 'SUPERADMIN';
-    if (prismaUser.role === 'TUTOR') role = 'ADMIN';
+  // Determine Role Mapping
+  let role = 'ADMIN'; // Default for teachers
+  if (prismaUser.role === 'DIRECCION' || prismaUser.role === 'TESORERIA') role = 'SUPERADMIN';
+  if (prismaUser.role === 'TUTOR') role = 'ADMIN';
 
-    return {
-         id: prismaUser.id.toString(), // Ensure string
-         firstName: prismaUser.name || 'Profesor',
-         lastName: prismaUser.surname || '',
-         username: prismaUser.email ? prismaUser.email.split('@')[0] : `user${prismaUser.id}`,
-         role: role,
-         className: prismaUser.classId || 'STAFF', // Store classId in className for mapping? Or add new field?
-         // We'll overload className or add a new property if TS allows.
-         // TS Definition has className. We can put classId there or look it up.
-         // Better: Keep className as the "Display Name" of the class, but we only have ID.
-         // We will need to fetch classes to map ID -> Name later.
-         // For now, store ID in className or a generic 'PROFESORADO'.
-         // Let's store 'classId: X' in className if it's a tutor, so frontend can parse it?
-         // Or better, just fetch classes and resolve it.
-         classId: prismaUser.classId, // Add this property (ignored by TS if not in interface but stored in JSON)
-         points: 0,
-         booksRead: 0,
-         isExternal: true
-    };
+  return {
+    id: prismaUser.id.toString(), // Ensure string
+    firstName: prismaUser.name || 'Profesor',
+    lastName: prismaUser.surname || '',
+    username: prismaUser.email ? prismaUser.email.split('@')[0] : `user${prismaUser.id}`,
+    role: role,
+    className: prismaUser.classId || 'STAFF', // Store classId in className for mapping? Or add new field?
+    // We'll overload className or add a new property if TS allows.
+    // TS Definition has className. We can put classId there or look it up.
+    // Better: Keep className as the "Display Name" of the class, but we only have ID.
+    // We will need to fetch classes to map ID -> Name later.
+    // For now, store ID in className or a generic 'PROFESORADO'.
+    // Let's store 'classId: X' in className if it's a tutor, so frontend can parse it?
+    // Or better, just fetch classes and resolve it.
+    classId: prismaUser.classId, // Add this property (ignored by TS if not in interface but stored in JSON)
+    points: 0,
+    booksRead: 0,
+    isExternal: true
+  };
 }
 
 
@@ -663,61 +704,61 @@ app.post('/api/sync/students', async (req, res) => {
     // 3. Crear mapa de Clases (ID -> Name) para llenar "className" legible
     const classMap = {};
     if (Array.isArray(classes)) {
-        classes.forEach(c => {
-            classMap[c.id] = c.name; // e.g. "1A", "2B"
-        });
+      classes.forEach(c => {
+        classMap[c.id] = c.name; // e.g. "1A", "2B"
+      });
     }
 
     // Helper para procesar usuarios (Simplificado ya que el servicio formatea los datos)
     const processUser = (preMappedUser) => {
-        if (preMappedUser.role === 'TUTOR') {
-             console.log(`[SYNC] Procesando Tutor: ${preMappedUser.firstName}, ClassID: ${preMappedUser.classId}`);
-        }
-        let localUserIndex = currentUsers.findIndex(u => u.id === String(preMappedUser.id));
-        const className = classMap[preMappedUser.classId] || (preMappedUser.role === 'TUTOR' ? 'PROFESORADO' : 'Sin Asignar');
+      if (preMappedUser.role === 'TUTOR') {
+        console.log(`[SYNC] Procesando Tutor: ${preMappedUser.firstName}, ClassID: ${preMappedUser.classId}`);
+      }
+      let localUserIndex = currentUsers.findIndex(u => u.id === String(preMappedUser.id));
+      const className = classMap[preMappedUser.classId] || (preMappedUser.role === 'TUTOR' ? 'PROFESORADO' : 'Sin Asignar');
 
-        // Mapeo de roles para BiblioHispa
-        let localRole = preMappedUser.role;
-        if (preMappedUser.role === 'TUTOR') localRole = 'ADMIN';
+      // Mapeo de roles para BiblioHispa
+      let localRole = preMappedUser.role;
+      if (preMappedUser.role === 'TUTOR') localRole = 'ADMIN';
 
-        if (localUserIndex !== -1) {
-            // UPDATE (Merge)
-            const localUser = currentUsers[localUserIndex];
-            currentUsers[localUserIndex] = {
-                ...localUser,
-                firstName: preMappedUser.firstName || localUser.firstName,
-                lastName: preMappedUser.lastName || localUser.lastName,
-                className: className,
-                classId: preMappedUser.classId,
-                role: localRole,
-                email: preMappedUser.email || localUser.email,
-                isExternal: true
-            };
-            updatedCount++;
-        } else {
-            // CREATE
-            const newUser = {
-                id: String(preMappedUser.id),
-                firstName: preMappedUser.firstName,
-                lastName: preMappedUser.lastName,
-                className: className,
-                classId: preMappedUser.classId,
-                username: preMappedUser.username,
-                role: localRole,
-                email: preMappedUser.email,
-                points: 0,
-                booksRead: 0,
-                badges: [],
-                currentStreak: 0,
-                isExternal: true
-            };
-            // Default password for new teachers
-            if (localRole === 'ADMIN') {
-                 newUser.password = '1234';
-            }
-            currentUsers.push(newUser);
-            createdCount++;
+      if (localUserIndex !== -1) {
+        // UPDATE (Merge)
+        const localUser = currentUsers[localUserIndex];
+        currentUsers[localUserIndex] = {
+          ...localUser,
+          firstName: preMappedUser.firstName || localUser.firstName,
+          lastName: preMappedUser.lastName || localUser.lastName,
+          className: className,
+          classId: preMappedUser.classId,
+          role: localRole,
+          email: preMappedUser.email || localUser.email,
+          isExternal: true
+        };
+        updatedCount++;
+      } else {
+        // CREATE
+        const newUser = {
+          id: String(preMappedUser.id),
+          firstName: preMappedUser.firstName,
+          lastName: preMappedUser.lastName,
+          className: className,
+          classId: preMappedUser.classId,
+          username: preMappedUser.username,
+          role: localRole,
+          email: preMappedUser.email,
+          points: 0,
+          booksRead: 0,
+          badges: [],
+          currentStreak: 0,
+          isExternal: true
+        };
+        // Default password for new teachers
+        if (localRole === 'ADMIN') {
+          newUser.password = '1234';
         }
+        currentUsers.push(newUser);
+        createdCount++;
+      }
     };
 
     // 4. Procesar Tutores
@@ -748,228 +789,228 @@ function normalizeString(str) {
 
 // Checkout Action
 app.post('/api/actions/checkout', async (req, res) => {
-    return withDbLock(async () => {
-        const { userId, bookId } = req.body;
-        const currentData = await readDB();
+  return withDbLock(async () => {
+    const { userId, bookId } = req.body;
+    const currentData = await readDB();
 
-        // 1. Validate
-        const bookIndex = currentData.books.findIndex(b => b.id === bookId);
-        const userIndex = currentData.users.findIndex(u => u.id === userId);
+    // 1. Validate
+    const bookIndex = currentData.books.findIndex(b => b.id === bookId);
+    const userIndex = currentData.users.findIndex(u => u.id === userId);
 
-        if (bookIndex === -1 || userIndex === -1) return res.status(404).json({error: 'Not found'});
-        if (currentData.books[bookIndex].unitsAvailable <= 0) return res.status(400).json({error: 'No stock'});
+    if (bookIndex === -1 || userIndex === -1) return res.status(404).json({ error: 'Not found' });
+    if (currentData.books[bookIndex].unitsAvailable <= 0) return res.status(400).json({ error: 'No stock' });
 
-        const user = currentData.users[userIndex];
+    const user = currentData.users[userIndex];
 
-        // --- REGLAS DE PRÉSTAMO ---
-        const className = (user.className || '').toUpperCase();
-        let maxBooks = 3; // Default (e.g. Teachers or others)
-        let daysToReturn = 15; // Default
+    // --- REGLAS DE PRÉSTAMO ---
+    const className = (user.className || '').toUpperCase();
+    let maxBooks = 3; // Default (e.g. Teachers or others)
+    let daysToReturn = 15; // Default
 
-        if (className.includes('AÑOS')) {
-            maxBooks = 1;
-            daysToReturn = 7;
-        } else if (className.includes('PRIMARIA')) {
-            maxBooks = 2;
-            daysToReturn = 15;
-        } else if (className.includes('SECUNDARIA')) {
-            maxBooks = 3;
-            daysToReturn = 20;
-        }
+    if (className.includes('AÑOS')) {
+      maxBooks = 1;
+      daysToReturn = 7;
+    } else if (className.includes('PRIMARIA')) {
+      maxBooks = 2;
+      daysToReturn = 15;
+    } else if (className.includes('SECUNDARIA')) {
+      maxBooks = 3;
+      daysToReturn = 20;
+    }
 
-        // Verificar límite de préstamos activos
-        const activeLoans = currentData.transactions.filter(t => t.userId === userId && t.active).length;
+    // Verificar límite de préstamos activos
+    const activeLoans = currentData.transactions.filter(t => t.userId === userId && t.active).length;
 
-        if (activeLoans >= maxBooks) {
-             return res.status(400).json({ error: `Has alcanzado el límite de ${maxBooks} libros prestados. Devuelve uno para sacar otro.` });
-        }
+    if (activeLoans >= maxBooks) {
+      return res.status(400).json({ error: `Has alcanzado el límite de ${maxBooks} libros prestados. Devuelve uno para sacar otro.` });
+    }
 
-        // Calcular fecha de devolución
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + daysToReturn);
+    // Calcular fecha de devolución
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + daysToReturn);
 
-        // 2. Logic: Decrease stock
-        currentData.books[bookIndex].unitsAvailable -= 1;
+    // 2. Logic: Decrease stock
+    currentData.books[bookIndex].unitsAvailable -= 1;
 
-        // 3. Logic: Create Transaction
-        const transaction = {
-            id: `tx-${Date.now()}-${Math.random().toString(36).substr(2,4)}`,
-            userId,
-            bookId,
-            dateBorrowed: new Date().toISOString(),
-            dueDate: dueDate.toISOString(),
-            active: true
-        };
-        currentData.transactions.push(transaction);
+    // 3. Logic: Create Transaction
+    const transaction = {
+      id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      userId,
+      bookId,
+      dateBorrowed: new Date().toISOString(),
+      dueDate: dueDate.toISOString(),
+      active: true
+    };
+    currentData.transactions.push(transaction);
 
-        // 4. Logic: User Points & Streak
-        user.points = (user.points || 0) + POINTS.CHECKOUT;
+    // 4. Logic: User Points & Streak
+    user.points = (user.points || 0) + POINTS.CHECKOUT;
 
-        // Streak Logic
-        const today = new Date().toISOString().split('T')[0];
-        const lastActivity = user.lastActivityDate ? user.lastActivityDate.split('T')[0] : null;
+    // Streak Logic
+    const today = new Date().toISOString().split('T')[0];
+    const lastActivity = user.lastActivityDate ? user.lastActivityDate.split('T')[0] : null;
 
-        if (lastActivity === today) {
-            // Already active today, no streak increment but points ok
-        } else {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
+    if (lastActivity === today) {
+      // Already active today, no streak increment but points ok
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-            if (lastActivity === yesterdayStr) {
-                user.currentStreak = (user.currentStreak || 0) + 1;
-            } else {
-                user.currentStreak = 1; // Reset or Start
-            }
-        }
-        user.lastActivityDate = new Date().toISOString();
+      if (lastActivity === yesterdayStr) {
+        user.currentStreak = (user.currentStreak || 0) + 1;
+      } else {
+        user.currentStreak = 1; // Reset or Start
+      }
+    }
+    user.lastActivityDate = new Date().toISOString();
 
-        // Check Badges
-        const newBadges = await checkAndAwardBadges(user, { streak: true }, currentData);
-        if (newBadges.length > 0) {
-            user.badges = [...(user.badges || []), ...newBadges];
-        }
+    // Check Badges
+    const newBadges = await checkAndAwardBadges(user, { streak: true }, currentData);
+    if (newBadges.length > 0) {
+      user.badges = [...(user.badges || []), ...newBadges];
+    }
 
-        // Add history log
-        currentData.pointHistory.push({
-            id: `ph-${Date.now()}`,
-            userId,
-            amount: POINTS.CHECKOUT,
-            reason: 'Préstamo de libro',
-            date: new Date().toISOString()
-        });
-
-        // Save
-        await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
-        res.json({ success: true, transaction, userPoints: user.points, newBadges });
+    // Add history log
+    currentData.pointHistory.push({
+      id: `ph-${Date.now()}`,
+      userId,
+      amount: POINTS.CHECKOUT,
+      reason: 'Préstamo de libro',
+      date: new Date().toISOString()
     });
+
+    // Save
+    await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
+    res.json({ success: true, transaction, userPoints: user.points, newBadges });
+  });
 });
 
 // Return Action
 app.post('/api/actions/return', async (req, res) => {
-    return withDbLock(async () => {
-        const { bookId, userId } = req.body; // Can be triggered by bookId (scanner) or user context
-        const currentData = await readDB();
+  return withDbLock(async () => {
+    const { bookId, userId } = req.body; // Can be triggered by bookId (scanner) or user context
+    const currentData = await readDB();
 
-        // Find active transaction
-        // If we only have bookId (from scanner), finding the correct transaction might be ambiguous if multiple copies are out?
-        // But usually we scan the book QR. The system assumes unique IDs for each book copy?
-        // The current system seems to assume one 'book' entry has multiple 'units'.
-        // So we need to find ANY active transaction for this bookId.
-        // Ideally, we should know the USER who is returning it.
-        // If we don't send userId, we pick the oldest active transaction for this book?
-        // Let's assume the frontend sends both if possible, or we search.
+    // Find active transaction
+    // If we only have bookId (from scanner), finding the correct transaction might be ambiguous if multiple copies are out?
+    // But usually we scan the book QR. The system assumes unique IDs for each book copy?
+    // The current system seems to assume one 'book' entry has multiple 'units'.
+    // So we need to find ANY active transaction for this bookId.
+    // Ideally, we should know the USER who is returning it.
+    // If we don't send userId, we pick the oldest active transaction for this book?
+    // Let's assume the frontend sends both if possible, or we search.
 
-        // Strategy: Look for transaction matching bookId AND userId (if provided).
-        // If only bookId provided (Admin scanner mode might not know user?), we might need to ask "Who is returning?".
-        // For now, assume userId is passed or we find the first one.
+    // Strategy: Look for transaction matching bookId AND userId (if provided).
+    // If only bookId provided (Admin scanner mode might not know user?), we might need to ask "Who is returning?".
+    // For now, assume userId is passed or we find the first one.
 
-        let txIndex = -1;
-        if (userId) {
-            txIndex = currentData.transactions.findIndex(t => t.bookId === bookId && t.userId === userId && t.active);
-        } else {
-             // Fallback: Find any active transaction for this book (risky if multiple copies out)
-             txIndex = currentData.transactions.findIndex(t => t.bookId === bookId && t.active);
-        }
+    let txIndex = -1;
+    if (userId) {
+      txIndex = currentData.transactions.findIndex(t => t.bookId === bookId && t.userId === userId && t.active);
+    } else {
+      // Fallback: Find any active transaction for this book (risky if multiple copies out)
+      txIndex = currentData.transactions.findIndex(t => t.bookId === bookId && t.active);
+    }
 
-        if (txIndex === -1) return res.status(404).json({error: 'Active transaction not found'});
+    if (txIndex === -1) return res.status(404).json({ error: 'Active transaction not found' });
 
-        const tx = currentData.transactions[txIndex];
-        const userIndex = currentData.users.findIndex(u => u.id === tx.userId);
-        const bookIndex = currentData.books.findIndex(b => b.id === tx.bookId);
+    const tx = currentData.transactions[txIndex];
+    const userIndex = currentData.users.findIndex(u => u.id === tx.userId);
+    const bookIndex = currentData.books.findIndex(b => b.id === tx.bookId);
 
-        if (userIndex === -1 || bookIndex === -1) return res.status(500).json({error: 'Data integrity error'});
+    if (userIndex === -1 || bookIndex === -1) return res.status(500).json({ error: 'Data integrity error' });
 
-        const user = currentData.users[userIndex];
-        const book = currentData.books[bookIndex];
+    const user = currentData.users[userIndex];
+    const book = currentData.books[bookIndex];
 
-        // 1. Update Transaction
-        tx.active = false;
-        tx.dateReturned = new Date().toISOString();
+    // 1. Update Transaction
+    tx.active = false;
+    tx.dateReturned = new Date().toISOString();
 
-        // 2. Update Book
-        book.unitsAvailable = Math.min(book.unitsAvailable + 1, book.unitsTotal);
-        book.readCount = (book.readCount || 0) + 1;
+    // 2. Update Book
+    book.unitsAvailable = Math.min(book.unitsAvailable + 1, book.unitsTotal);
+    book.readCount = (book.readCount || 0) + 1;
 
-        // 3. User Points
-        let pointsEarned = POINTS.RETURN;
-        let earlyReturn = false;
+    // 3. User Points
+    let pointsEarned = POINTS.RETURN;
+    let earlyReturn = false;
 
-        // Check early return (within 7 days?)
-        const borrowedDate = new Date(tx.dateBorrowed);
-        const returnedDate = new Date();
-        const diffDays = (returnedDate - borrowedDate) / (1000 * 60 * 60 * 24);
-        if (diffDays < 7) {
-            pointsEarned += POINTS.RETURN_EARLY;
-            earlyReturn = true;
-        }
+    // Check early return (within 7 days?)
+    const borrowedDate = new Date(tx.dateBorrowed);
+    const returnedDate = new Date();
+    const diffDays = (returnedDate - borrowedDate) / (1000 * 60 * 60 * 24);
+    if (diffDays < 7) {
+      pointsEarned += POINTS.RETURN_EARLY;
+      earlyReturn = true;
+    }
 
-        user.points = (user.points || 0) + pointsEarned;
-        user.booksRead = (user.booksRead || 0) + 1;
+    user.points = (user.points || 0) + pointsEarned;
+    user.booksRead = (user.booksRead || 0) + 1;
 
-        // Maintain/Update Streak (Returning also counts as activity)
-        user.lastActivityDate = new Date().toISOString();
+    // Maintain/Update Streak (Returning also counts as activity)
+    user.lastActivityDate = new Date().toISOString();
 
-        // Check Badges
-        const newBadges = await checkAndAwardBadges(user, { booksRead: user.booksRead, earlyReturn }, currentData);
-        if (newBadges.length > 0) {
-            user.badges = [...(user.badges || []), ...newBadges];
-        }
+    // Check Badges
+    const newBadges = await checkAndAwardBadges(user, { booksRead: user.booksRead, earlyReturn }, currentData);
+    if (newBadges.length > 0) {
+      user.badges = [...(user.badges || []), ...newBadges];
+    }
 
-        // Add history log
-        currentData.pointHistory.push({
-             id: `ph-${Date.now()}`,
-             userId: user.id,
-             amount: pointsEarned,
-             reason: earlyReturn ? 'Devolución rápida (+Bonus)' : 'Devolución de libro',
-             date: new Date().toISOString()
-        });
-
-        await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
-        res.json({ success: true, userPoints: user.points, newBadges });
+    // Add history log
+    currentData.pointHistory.push({
+      id: `ph-${Date.now()}`,
+      userId: user.id,
+      amount: pointsEarned,
+      reason: earlyReturn ? 'Devolución rápida (+Bonus)' : 'Devolución de libro',
+      date: new Date().toISOString()
     });
+
+    await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
+    res.json({ success: true, userPoints: user.points, newBadges });
+  });
 });
 
 // Review Action
 app.post('/api/actions/review', async (req, res) => {
-    return withDbLock(async () => {
-        const review = req.body; // { bookId, userId, rating, comment, ... }
-        const currentData = await readDB();
+  return withDbLock(async () => {
+    const review = req.body; // { bookId, userId, rating, comment, ... }
+    const currentData = await readDB();
 
-        // Save Review
-        if (!review.id) review.id = `rev-${Date.now()}`;
-        currentData.reviews.push(review);
+    // Save Review
+    if (!review.id) review.id = `rev-${Date.now()}`;
+    currentData.reviews.push(review);
 
-        // Update User Points
-        const userIndex = currentData.users.findIndex(u => u.id === review.userId);
-        if (userIndex !== -1) {
-            const user = currentData.users[userIndex];
-            user.points = (user.points || 0) + POINTS.REVIEW;
+    // Update User Points
+    const userIndex = currentData.users.findIndex(u => u.id === review.userId);
+    if (userIndex !== -1) {
+      const user = currentData.users[userIndex];
+      user.points = (user.points || 0) + POINTS.REVIEW;
 
-            // Check Badges
-            const userReviews = currentData.reviews.filter(r => r.userId === user.id).length;
-            const newBadges = await checkAndAwardBadges(user, { reviewCount: userReviews }, currentData);
-             if (newBadges.length > 0) {
-                user.badges = [...(user.badges || []), ...newBadges];
-            }
+      // Check Badges
+      const userReviews = currentData.reviews.filter(r => r.userId === user.id).length;
+      const newBadges = await checkAndAwardBadges(user, { reviewCount: userReviews }, currentData);
+      if (newBadges.length > 0) {
+        user.badges = [...(user.badges || []), ...newBadges];
+      }
 
-            // Add history log
-            currentData.pointHistory.push({
-                id: `ph-${Date.now()}`,
-                userId: user.id,
-                amount: POINTS.REVIEW,
-                reason: 'Opinión escrita',
-                date: new Date().toISOString()
-            });
+      // Add history log
+      currentData.pointHistory.push({
+        id: `ph-${Date.now()}`,
+        userId: user.id,
+        amount: POINTS.REVIEW,
+        reason: 'Opinión escrita',
+        date: new Date().toISOString()
+      });
 
-            await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
-            res.json({ success: true, userPoints: user.points, newBadges });
-        } else {
-            // Just save review if user not found (weird)
-            await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
-            res.json({ success: true });
-        }
-    });
+      await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
+      res.json({ success: true, userPoints: user.points, newBadges });
+    } else {
+      // Just save review if user not found (weird)
+      await fs.writeFile(DB_FILE, JSON.stringify(currentData, null, 2));
+      res.json({ success: true });
+    }
+  });
 });
 
 app.post('/api/transactions', async (req, res) => {
