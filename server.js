@@ -708,6 +708,15 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
+// SSO Logout — clears the shared SSO cookie
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('BIBLIO_SSO_TOKEN', {
+    domain: process.env.COOKIE_DOMAIN || '.bibliohispa.es',
+    path: '/'
+  });
+  res.json({ success: true });
+});
+
 // Helper to resolve className from classId using existing DB data
 async function resolveClassName(user) {
   if (!user.classId) return user;
