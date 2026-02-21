@@ -215,10 +215,13 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="glass-header">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-             <a href="https://prisma.bibliohispa.es/" className="mr-2 text-themed-muted hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
-                <ArrowLeft size={20} />
+             <a href="https://prisma.bibliohispa.es"
+                className="flex items-center gap-2 p-2 md:px-4 md:py-2 glass-panel rounded-lg md:rounded-xl transition-all duration-200 font-semibold text-xs md:text-sm text-themed-secondary hover:bg-[var(--surface-raised)] hover:scale-[1.02] press-effect"
+                title="Ir al Portal Prisma">
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden lg:inline">Prisma</span>
              </a>
-             <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
+             <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
              <div className="hidden sm:block">
                  <h1 className="font-display font-bold text-themed text-lg leading-none">{settings.schoolName}</h1>
                  <p className="text-[11px] text-themed-muted font-medium">Biblioteca</p>
