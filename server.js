@@ -557,6 +557,21 @@ app.post('/api/auth/google-verify', async (req, res) => {
     // Upsert into local DB
     const savedUser = await upsertUserToDB(localUser);
 
+    // Crear cookie SSO tras login Google exitoso
+    if (process.env.ENABLE_GLOBAL_SSO === 'true') {
+      const rawRole = (prismaUser.role || 'TUTOR').toUpperCase();
+      const ssoRole = rawRole === 'TUTOR' ? 'TEACHER' : rawRole;
+      const ssoPayload = { userId: prismaUser.id, email: email.toLowerCase(), role: ssoRole, profileId: prismaUser.id };
+      const ssoToken = jwt.sign(ssoPayload, JWT_SSO_SECRET, { expiresIn: '8h' });
+      res.cookie('BIBLIO_SSO_TOKEN', ssoToken, {
+        domain: process.env.COOKIE_DOMAIN || '.bibliohispa.es',
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Lax'
+      });
+    }
+
     res.json({ success: true, user: savedUser });
 
   } catch (error) {
@@ -593,10 +608,20 @@ app.post('/api/auth/teacher-login', async (req, res) => {
     const data = await response.json();
 
     if (data.success) {
-      // Forward cookie si existe
-      const setCookieHeader = response.headers.get('set-cookie');
-      if (setCookieHeader) {
-        res.setHeader('set-cookie', setCookieHeader);
+      // Crear cookie SSO directamente (en vez de retransmitir de PrismaEdu)
+      const loginUser = data.user || { id: `manual-${username}`, role: data.role || 'ADMIN' };
+      if (process.env.ENABLE_GLOBAL_SSO === 'true') {
+        const rawRole = (loginUser.role || data.role || 'ADMIN').toUpperCase();
+        const ssoRole = rawRole === 'TUTOR' ? 'TEACHER' : rawRole;
+        const ssoPayload = { userId: loginUser.id, email: (loginUser.email || username || '').toLowerCase(), role: ssoRole, profileId: loginUser.id };
+        const ssoToken = jwt.sign(ssoPayload, JWT_SSO_SECRET, { expiresIn: '8h' });
+        res.cookie('BIBLIO_SSO_TOKEN', ssoToken, {
+          domain: process.env.COOKIE_DOMAIN || '.bibliohispa.es',
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'Lax'
+        });
       }
       // To be safe, let's fetch the user list and find the user by username/id if possible,
       // OR construct based on response.

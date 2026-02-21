@@ -92,6 +92,18 @@ Copy `.env.example` to `.env`. Required variables:
 - `ADMIN` — Teachers/library staff
 - `STUDENT` — Student catalog and borrowing
 
+### Authentication & SSO
+
+Three login methods:
+
+1. **Google OAuth** (`POST /api/auth/google-verify`) - Verifies Google ID token via `google-auth-library`, checks email against PrismaEdu user list. Creates SSO cookie.
+2. **Teacher PIN login** (`POST /api/auth/teacher-login`) - Proxies credentials to PrismaEdu `/api/auth/external-check`. Creates SSO cookie.
+3. **SSO silent login** (`GET /api/auth/me`) - Reads `BIBLIO_SSO_TOKEN` cookie, verifies JWT, auto-logs in.
+
+Both login endpoints create the `BIBLIO_SSO_TOKEN` cookie directly (when `ENABLE_GLOBAL_SSO=true`) using `jwt.sign()` with `JWT_SSO_SECRET`. The cookie enables cross-app SSO across all `*.bibliohispa.es` subdomains. Role normalization: `TUTOR` → `TEACHER`.
+
+Session stored in localStorage as `biblio_session_user`. On page load, `App.tsx` calls `/api/auth/me` for SSO auto-login.
+
 ### API Routes Pattern
 
 All backend routes are in `server.js`. Pattern: `/api/{resource}` for collections, `/api/{resource}/:id` for individual items, `/api/actions/{action}` for operations (checkout, return, review).
