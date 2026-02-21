@@ -11,7 +11,7 @@ import { StudentView } from './components/StudentView';
 import { Button } from './components/Button';
 import { QRScanner } from './components/QRScanner';
 import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
-import { QrCode, WifiOff, Loader2, ArrowLeft, Sun, Moon } from 'lucide-react';
+import { QrCode, WifiOff, Loader2, LayoutGrid, Sun, Moon } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 const App: React.FC = () => {
@@ -504,7 +504,7 @@ const App: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--mesh-auth)' }}>
         <div className="text-center space-y-5 animate-fade-in">
           <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-brand animate-glow">
-            <img src={settings.logoUrl || "/vite.svg"} className="w-10 h-10 brightness-0 invert" alt="logo" />
+            <img src="/logo.png" className="w-10 h-10 brightness-0 invert" alt="logo" />
           </div>
           <div className="space-y-2">
             <div className="skeleton h-3 w-48 mx-auto rounded-full"></div>
@@ -521,8 +521,11 @@ const App: React.FC = () => {
     return (
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'var(--mesh-auth)' }}>
-          <a href="https://prisma.bibliohispa.es/" className="absolute top-4 left-4 z-50 glass-panel hover:bg-[var(--surface-raised)] p-3 rounded-2xl shadow-glass-sm text-themed-muted hover:text-brand-400 transition-all duration-300 hover:shadow-glass hover:scale-105 press-effect" title="Volver a Prisma">
-            <ArrowLeft size={22} />
+          <a href="https://prisma.bibliohispa.es"
+             className="absolute top-4 left-4 z-50 flex items-center gap-2 p-2 md:px-4 md:py-2 glass-panel rounded-lg md:rounded-xl transition-all duration-200 font-semibold text-xs md:text-sm text-themed-secondary hover:bg-[var(--surface-raised)] hover:scale-[1.02] press-effect"
+             title="Ir al Portal Prisma">
+            <LayoutGrid className="h-4 w-4" />
+            <span className="hidden lg:inline">Prisma</span>
           </a>
           <button onClick={toggleTheme} className="theme-toggle absolute top-4 right-4 z-50" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -532,7 +535,7 @@ const App: React.FC = () => {
           <div className="glass-panel max-w-md w-full rounded-4xl p-8 md:p-10 relative z-10 animate-modal-in shadow-glass-lg">
             <div className="text-center mb-8">
               <div className="inline-block p-4 bg-[var(--surface-raised)] backdrop-blur-sm rounded-3xl mb-5 shadow-glass-sm ring-1 ring-[var(--glass-border)]">
-                <img src={settings.logoUrl || "https://cdn-icons-png.flaticon.com/512/3413/3413535.png"} alt="Logo" className="w-16 h-16 object-contain" />
+                <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain" />
               </div>
               <h1 className="text-4xl font-display font-bold text-themed mb-1">{settings.schoolName || 'Biblioteca'}</h1>
               <p className="text-themed-muted font-medium text-sm">Tu puerta a mil aventuras</p>
