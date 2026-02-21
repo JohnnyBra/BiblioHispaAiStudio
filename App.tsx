@@ -245,6 +245,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('biblio_session_user');
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     setLoginInput('');
     setPasswordInput('');
     setAuthError('');
