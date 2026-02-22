@@ -22,8 +22,8 @@ async function fetchFromPrisma(endpoint) {
     // Buscamos ambas variables para máxima compatibilidad
     const secret = process.env.PRISMA_API_SECRET || process.env.API_SECRET;
 
-    if (!secret || secret === 'YOUR_API_SECRET') {
-        console.warn(`[ImportService] ALERTA: PRISMA_API_SECRET (o API_SECRET) parece incorrecto o por defecto: ${secret}`);
+    if (!secret) {
+        console.warn(`[ImportService] ALERTA: PRISMA_API_SECRET (o API_SECRET) no configurado.`);
     }
 
     try {
