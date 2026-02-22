@@ -11,7 +11,7 @@ import { StudentView } from './components/StudentView';
 import { Button } from './components/Button';
 import { QRScanner } from './components/QRScanner';
 import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
-import { QrCode, WifiOff, Loader2, LayoutGrid, Sun, Moon } from 'lucide-react';
+import { QrCode, WifiOff, Loader2, LayoutGrid, Sun, Moon, Monitor } from 'lucide-react';
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 const App: React.FC = () => {
@@ -41,20 +41,33 @@ const App: React.FC = () => {
   const isGoogleConfigured = import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID";
 
   // --- Theme State ---
-  const [theme, setTheme] = React.useState<'dark' | 'light'>(() => {
+  const [theme, setTheme] = React.useState<'dark' | 'light' | 'system'>(() => {
     const saved = localStorage.getItem('biblio_theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    // Auto-detect from device preference
-    if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light';
-    return 'dark';
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved as 'dark' | 'light' | 'system';
+    return 'system';
   });
 
   React.useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const applyTheme = (currentTheme: 'dark' | 'light' | 'system') => {
+      let isDark = currentTheme === 'dark';
+      if (currentTheme === 'system') {
+        isDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+      }
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    };
+
+    applyTheme(theme);
     localStorage.setItem('biblio_theme', theme);
+
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => applyTheme('system');
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
   }, [theme]);
 
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : prev === 'dark' ? 'system' : 'light');
 
   // --- Initialization (Load from Server) ---
   React.useEffect(() => {
@@ -245,7 +258,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('biblio_session_user');
-    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
     setLoginInput('');
     setPasswordInput('');
     setAuthError('');
@@ -522,13 +535,13 @@ const App: React.FC = () => {
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"}>
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'var(--mesh-auth)' }}>
           <a href="https://prisma.bibliohispa.es"
-             className="absolute top-4 left-4 z-50 flex items-center gap-2 p-2 md:px-4 md:py-2 glass-panel rounded-lg md:rounded-xl transition-all duration-200 font-semibold text-xs md:text-sm text-themed-secondary hover:bg-[var(--surface-raised)] hover:scale-[1.02] press-effect"
-             title="Ir al Portal Prisma">
+            className="absolute top-4 left-4 z-50 flex items-center gap-2 p-2 md:px-4 md:py-2 glass-panel rounded-lg md:rounded-xl transition-all duration-200 font-semibold text-xs md:text-sm text-themed-secondary hover:bg-[var(--surface-raised)] hover:scale-[1.02] press-effect"
+            title="Ir al Portal Prisma">
             <LayoutGrid className="h-4 w-4" />
             <span className="hidden lg:inline">Prisma</span>
           </a>
-          <button onClick={toggleTheme} className="theme-toggle absolute top-4 right-4 z-50" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          <button onClick={toggleTheme} className="theme-toggle absolute top-4 right-4 z-50" title={theme === 'dark' ? 'Modo oscuro' : theme === 'light' ? 'Modo claro' : 'Modo sistema'}>
+            {theme === 'dark' ? <Moon size={18} /> : theme === 'light' ? <Sun size={18} /> : <Monitor size={18} />}
           </button>
           <ToastContainer toasts={toasts} removeToast={removeToast} />
 
