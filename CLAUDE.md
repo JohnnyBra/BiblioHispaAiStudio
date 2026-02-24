@@ -53,9 +53,22 @@ Copy `.env.example` to `.env`. Required variables:
 - **Gradient mesh backgrounds** per role: `--mesh-auth` (login), `--mesh-tutor` (ADMIN/SUPERADMIN), `--mesh-student` (STUDENT)
 - **Bridge classes:** `text-themed`, `text-themed-secondary`, `text-themed-muted`, `modal-glass`, `bg-themed-raised`, `input-themed` — respond to theme automatically
 - **Glass classes redefined:** `.glass-panel`, `.glass-card`, `.glass-input`, `.glass-header`, `.glass-bottom-nav`, `.modal-backdrop` all use CSS variables
-- **Toggle location:** Desktop header tabs (AdminView + StudentView), mobile "Más Opciones" menu (AdminView), login screen top-right corner
+- **Toggle location:** 3-button group (Sun / Monitor / Moon) in desktop header (AdminView + StudentView), mobile "Más Opciones" menu (AdminView), login screen top-right corner
+- **Toggle implementation:** `App.tsx` exposes `handleSetTheme(t)` (accepts `'light' | 'dark' | 'system'`) passed as `setTheme` prop to views. CSS classes `.theme-toggle-group` and `.theme-toggle-active` (defined in `index.html`) style the toggle group, with active state using `color: #234B6E`
 - **Dark-safe colors:** Use `bg-*-500/15` instead of `bg-*-100`, `text-*-300/400` instead of `text-*-700/800`
 - **IDCard.tsx is excluded** from theming (print artifact, uses hardcoded colors)
+- **Logo dark adaptation:** Uses CSS variable `--header-logo-filter` (dark: `brightness(0) invert(1) brightness(1.8)`; light: `drop-shadow`). Applied via inline `style={{ filter: 'var(--header-logo-filter, none)' }}` on `<img>` tags. Note: Biblio uses `data-theme` attribute, NOT Tailwind's `.dark` class — so `dark:brightness-0 dark:invert` does NOT work here.
+
+### Unified Header
+
+Both `AdminView.tsx` and `StudentView.tsx` implement the unified header design shared across apps:
+- **Logo**: `w-10 h-10` with `var(--header-logo-filter)` CSS filter for theme adaptation
+- **3-button theme toggle**: Sun / Monitor / Moon via `.theme-toggle-group` CSS class, `setTheme` prop from `App.tsx`
+- **Prisma link**: SVG icon (4 squares, top-right filled `#3b82f6`), links to `https://prisma.bibliohispa.es`
+- **AdminView-specific**: scope toggle (Global/Mi Clase), navigation tabs, mobile "Más Opciones" menu with theme toggle
+- **StudentView-specific**: user badge with XP/streak, badges tooltip on hover, logout button
+
+The `.glass-header` class (defined in `index.html`) provides glassmorphism using CSS variables (`--glass-bg-heavy`, `--glass-border`).
 
 ### Backend (Express 5 + Node.js)
 
