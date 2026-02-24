@@ -9,7 +9,7 @@ import { generateStudentLoanReport } from '../services/reportService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, ArrowLeft, FileText, ChevronDown, ChevronUp, Menu, LogOut, Sun, Moon } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, FileText, ChevronDown, ChevronUp, Menu, LogOut, Sun, Moon } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User;
@@ -661,77 +661,91 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* HEADER - Fixed */}
       <div className="flex-none p-4 md:p-6 pb-0 z-30">
-          <header className="glass-header flex flex-col md:flex-row justify-between items-start md:items-center gap-3 p-4 md:p-5 rounded-3xl shadow-glass-sm no-print mb-3">
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <a href="https://prisma.bibliohispa.es/" className="text-themed-muted hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
-                <ArrowLeft size={22} />
+          <header className="glass-header flex flex-col gap-3 p-4 md:px-5 md:py-4 rounded-3xl shadow-glass-sm no-print mb-3">
+            {/* Top row: Brand + Info + Theme */}
+            <div className="flex items-center gap-4 w-full">
+              {/* Prisma link (four-squares icon) */}
+              <a href="https://prisma.bibliohispa.es/" className="flex-none text-themed-muted hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <rect width="7" height="7" x="3" y="3" rx="1" />
+                  <rect width="7" height="7" x="14" y="3" rx="1" fill="currentColor" stroke="currentColor" opacity="0.5" />
+                  <rect width="7" height="7" x="14" y="14" rx="1" />
+                  <rect width="7" height="7" x="3" y="14" rx="1" />
+                </svg>
               </a>
-              <div className="w-12 h-12 md:w-14 md:h-14 p-1.5 rounded-2xl flex items-center justify-center bg-[var(--surface-raised)] shadow-glass-sm ring-1 ring-[var(--glass-border)]">
-                <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-              </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-display font-bold text-themed">Panel de Administración</h1>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <p className="text-themed-muted text-xs md:text-sm">
-                    {settings.schoolName} • <span className="text-brand-500 font-bold">
-                        {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
-                        {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
-                    </span>
-                  </p>
 
-                  {isTechnical && (
-                      <div className="flex bg-[var(--surface-raised)] backdrop-blur-sm p-0.5 rounded-xl self-start sm:self-auto border border-[var(--glass-border)]">
-                          <button
-                              onClick={() => setViewScope('global')}
-                              className={`px-2.5 py-1 rounded-lg text-xs transition-all duration-200 ${viewScope === 'global' ? 'bg-[var(--tab-active-bg)] shadow-glass-sm font-bold text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
-                          >
-                              Global
-                          </button>
-                          <button
-                              onClick={() => setViewScope('class')}
-                              className={`px-2.5 py-1 rounded-lg text-xs transition-all duration-200 ${viewScope === 'class' ? 'bg-[var(--tab-active-bg)] shadow-glass-sm font-bold text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
-                          >
-                              Mi Clase
-                          </button>
-                      </div>
-                  )}
-                </div>
+              {/* Logo - larger and integrated */}
+              <div className="flex-none w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center">
+                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain drop-shadow-sm" style={{ filter: 'var(--header-logo-filter, none)' }} />
+              </div>
+
+              {/* Title + Role */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg md:text-xl font-display font-bold text-themed leading-tight truncate">Panel de Administración</h1>
+                <p className="text-themed-muted text-xs truncate">
+                  {settings.schoolName} • <span className="text-brand-500 font-bold">
+                      {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
+                      {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
+                  </span>
+                </p>
+              </div>
+
+              {/* Right side: scope toggle + theme */}
+              <div className="flex-none flex items-center gap-2">
+                {isTechnical && (
+                    <div className="hidden md:flex bg-[var(--surface-raised)] backdrop-blur-sm p-0.5 rounded-xl border border-[var(--glass-border)]">
+                        <button
+                            onClick={() => setViewScope('global')}
+                            className={`px-2.5 py-1 rounded-lg text-xs transition-all duration-200 ${viewScope === 'global' ? 'bg-[var(--tab-active-bg)] shadow-glass-sm font-bold text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
+                        >
+                            Global
+                        </button>
+                        <button
+                            onClick={() => setViewScope('class')}
+                            className={`px-2.5 py-1 rounded-lg text-xs transition-all duration-200 ${viewScope === 'class' ? 'bg-[var(--tab-active-bg)] shadow-glass-sm font-bold text-brand-400' : 'text-themed-muted hover:text-themed-secondary'}`}
+                        >
+                            Mi Clase
+                        </button>
+                    </div>
+                )}
+                {toggleTheme && (
+                  <button onClick={toggleTheme} className="theme-toggle" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                  </button>
+                )}
               </div>
             </div>
-            <div className="hidden md:flex gap-1.5 overflow-x-auto pb-1 w-full md:w-auto no-scrollbar mask-gradient-right flex-wrap">
+
+            {/* Bottom row: Navigation tabs (desktop only) */}
+            <div className="hidden md:flex gap-1.5 overflow-x-auto no-scrollbar mask-gradient-right flex-wrap -mb-1">
               {isSuperAdmin && (
-                <button onClick={() => setActiveTab('teachers')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'teachers' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                  <Shield size={16} /> Profesores
+                <button onClick={() => setActiveTab('teachers')} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'teachers' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                  <Shield size={15} /> Profesores
                 </button>
               )}
-              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'users' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                <Users size={16} /> Alumnos
+              <button onClick={() => setActiveTab('users')} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'users' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                <Users size={15} /> Alumnos
               </button>
-              <button onClick={() => setActiveTab('books')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'books' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                <BookOpen size={16} /> Libros
+              <button onClick={() => setActiveTab('books')} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'books' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                <BookOpen size={15} /> Libros
               </button>
-              <button onClick={() => setActiveTab('reviews')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'reviews' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                <MessageSquare size={16} /> Opiniones
+              <button onClick={() => setActiveTab('reviews')} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'reviews' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                <MessageSquare size={15} /> Opiniones
               </button>
-              <button onClick={() => setActiveTab('history')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                <Clock size={16} /> Historial
+              <button onClick={() => setActiveTab('history')} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'history' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                <Clock size={15} /> Historial
               </button>
-              <button onClick={() => setActiveTab('stats')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'stats' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                <BarChart3 size={16} /> Estadísticas
+              <button onClick={() => setActiveTab('stats')} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'stats' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                <BarChart3 size={15} /> Estadísticas
               </button>
-              <button onClick={() => setActiveTab('cards')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'cards' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                <CreditCard size={16} /> Carnets
+              <button onClick={() => setActiveTab('cards')} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'cards' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                <CreditCard size={15} /> Carnets
               </button>
 
               {isTechnical && viewScope === 'global' && (
-              <button onClick={() => { setActiveTab('settings'); setTempSettings(settings); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'settings' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
-                <Settings size={16} />
+              <button onClick={() => { setActiveTab('settings'); setTempSettings(settings); }} className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 press-effect ${activeTab === 'settings' ? 'bg-brand-500 text-white shadow-brand' : 'text-themed-muted hover:text-themed-secondary hover:bg-[var(--tab-inactive-hover)]'}`}>
+                <Settings size={15} />
               </button>
-              )}
-              {toggleTheme && (
-                <button onClick={toggleTheme} className="theme-toggle ml-1" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                </button>
               )}
             </div>
           </header>
