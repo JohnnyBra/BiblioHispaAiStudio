@@ -667,6 +667,24 @@
       border-color: var(--glass-border-heavy);
     }
 
+    /* === THEME TOGGLE GROUP (3-button: Light / System / Dark) === */
+    .theme-toggle-group {
+      background: var(--surface-raised);
+      border: 1px solid var(--glass-border);
+    }
+
+    .theme-toggle-active {
+      background: var(--glass-bg-heavy);
+      color: #234B6E;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    html[data-theme="light"] .theme-toggle-active {
+      background: #ffffff;
+      color: #234B6E;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
     /* PRINT STYLES - ID CARDS A4 OPTIMIZATION */
     @media print {
       @page {
