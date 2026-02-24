@@ -3,7 +3,7 @@ import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft, Sun, Moon } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft, Sun, Moon, Monitor } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 import { proxyCoverUrl } from '../services/utils';
 import { getBookDetails, BookDetails } from '../services/bookService';
@@ -20,8 +20,8 @@ interface StudentViewProps {
    onReturn: (book: Book) => void;
    onLogout: () => void;
    onAddReview?: (review: Review) => void;
-   theme?: 'dark' | 'light';
-   toggleTheme?: () => void;
+   theme?: 'dark' | 'light' | 'system';
+   setTheme?: (t: 'dark' | 'light' | 'system') => void;
 }
 
 interface ChatMessage {
@@ -42,7 +42,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
    onLogout,
    onAddReview,
    theme,
-   toggleTheme
+   setTheme
 }) => {
    const [activeTab, setActiveTab] = React.useState<'catalog' | 'mybooks' | 'ranking' | 'history'>('catalog');
    const [searchTerm, setSearchTerm] = React.useState('');
@@ -226,7 +226,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                      </svg>
                      <span className="hidden lg:inline">Prisma</span>
                   </a>
-                  <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+                  <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" style={{ filter: 'var(--header-logo-filter, none)' }} />
                   <div className="hidden sm:block">
                      <h1 className="font-display font-bold text-themed text-lg leading-none">{settings.schoolName}</h1>
                      <p className="text-[11px] text-themed-muted font-medium">Biblioteca</p>
@@ -272,10 +272,18 @@ export const StudentView: React.FC<StudentViewProps> = ({
                         </div>
                      </div>
                   </div>
-                  {toggleTheme && (
-                     <button onClick={toggleTheme} className="theme-toggle" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-                        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                     </button>
+                  {setTheme && (
+                     <div className="flex theme-toggle-group rounded-lg p-0.5">
+                       <button onClick={() => setTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro">
+                         <Sun size={14} />
+                       </button>
+                       <button onClick={() => setTheme('system')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático">
+                         <Monitor size={14} />
+                       </button>
+                       <button onClick={() => setTheme('dark')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro">
+                         <Moon size={14} />
+                       </button>
+                     </div>
                   )}
                   <Button variant="outline" size="sm" onClick={onLogout} className="border-[var(--glass-border)] hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 press-effect">
                      <span className="text-xs">Salir</span>
