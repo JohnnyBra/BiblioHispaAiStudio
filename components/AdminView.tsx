@@ -9,7 +9,7 @@ import { generateStudentLoanReport } from '../services/reportService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, FileText, ChevronDown, ChevronUp, Menu, LogOut, Sun, Moon } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, FileText, ChevronDown, ChevronUp, Menu, LogOut, Sun, Moon, Monitor } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User;
@@ -32,8 +32,8 @@ interface AdminViewProps {
   onDeletePointEntry: (entryId: string) => void;
   onRestoreBackup: (data: BackupData) => void;
   onLogout: () => void;
-  theme?: 'dark' | 'light';
-  toggleTheme?: () => void;
+  theme?: 'dark' | 'light' | 'system';
+  setTheme?: (t: 'dark' | 'light' | 'system') => void;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -58,7 +58,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onRestoreBackup,
   onLogout,
   theme,
-  toggleTheme
+  setTheme
 }) => {
   const [activeTab, setActiveTab] = React.useState<'users' | 'books' | 'reviews' | 'stats' | 'settings' | 'cards' | 'teachers' | 'history' | 'menu'>('users');
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -668,7 +668,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <a href="https://prisma.bibliohispa.es/" className="flex-none text-themed-muted hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                   <rect width="7" height="7" x="3" y="3" rx="1" />
-                  <rect width="7" height="7" x="14" y="3" rx="1" fill="currentColor" stroke="currentColor" opacity="0.5" />
+                  <rect width="7" height="7" x="14" y="3" rx="1" fill="#3b82f6" stroke="#3b82f6" />
                   <rect width="7" height="7" x="14" y="14" rx="1" />
                   <rect width="7" height="7" x="3" y="14" rx="1" />
                 </svg>
@@ -708,10 +708,18 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </button>
                     </div>
                 )}
-                {toggleTheme && (
-                  <button onClick={toggleTheme} className="theme-toggle" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                  </button>
+                {setTheme && (
+                  <div className="flex theme-toggle-group rounded-lg p-0.5">
+                    <button onClick={() => setTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro">
+                      <Sun size={14} />
+                    </button>
+                    <button onClick={() => setTheme('system')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático">
+                      <Monitor size={14} />
+                    </button>
+                    <button onClick={() => setTheme('dark')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro">
+                      <Moon size={14} />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -2067,13 +2075,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <span className="font-bold text-themed text-sm">Ajustes</span>
                     </button>
                 )}
-                {toggleTheme && (
-                    <button onClick={toggleTheme} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
-                        <div className="w-12 h-12 bg-gradient-to-br from-brand-500/10 to-brand-500/15 rounded-2xl flex items-center justify-center text-themed-secondary">
-                            {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
+                {setTheme && (
+                    <div className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 col-span-2">
+                        <span className="font-bold text-themed text-sm mb-1">Tema</span>
+                        <div className="flex theme-toggle-group rounded-lg p-0.5">
+                          <button onClick={() => setTheme('light')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro">
+                            <Sun size={18} />
+                          </button>
+                          <button onClick={() => setTheme('system')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático">
+                            <Monitor size={18} />
+                          </button>
+                          <button onClick={() => setTheme('dark')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro">
+                            <Moon size={18} />
+                          </button>
                         </div>
-                        <span className="font-bold text-themed text-sm">{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
-                    </button>
+                    </div>
                 )}
                 <button onClick={onLogout} className="bg-red-500/15 backdrop-blur-sm p-5 rounded-3xl border border-red-500/20 flex flex-col items-center gap-3 press-effect col-span-2 mt-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center text-red-600">

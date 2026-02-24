@@ -67,7 +67,7 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : prev === 'dark' ? 'system' : 'light');
+  const handleSetTheme = (t: 'dark' | 'light' | 'system') => setTheme(t);
 
   // --- Initialization (Load from Server) ---
   React.useEffect(() => {
@@ -545,9 +545,17 @@ const App: React.FC = () => {
             </svg>
             <span className="hidden lg:inline">Prisma</span>
           </a>
-          <button onClick={toggleTheme} className="theme-toggle absolute top-4 right-4 z-50" title={theme === 'dark' ? 'Modo oscuro' : theme === 'light' ? 'Modo claro' : 'Modo sistema'}>
-            {theme === 'dark' ? <Moon size={18} /> : theme === 'light' ? <Sun size={18} /> : <Monitor size={18} />}
-          </button>
+          <div className="absolute top-4 right-4 z-50 flex theme-toggle-group rounded-lg p-0.5">
+            <button onClick={() => handleSetTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro">
+              <Sun size={14} />
+            </button>
+            <button onClick={() => handleSetTheme('system')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático">
+              <Monitor size={14} />
+            </button>
+            <button onClick={() => handleSetTheme('dark')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro">
+              <Moon size={14} />
+            </button>
+          </div>
           <ToastContainer toasts={toasts} removeToast={removeToast} />
 
           <div className="glass-panel max-w-md w-full rounded-4xl p-8 md:p-10 relative z-10 animate-modal-in shadow-glass-lg">
@@ -716,7 +724,7 @@ const App: React.FC = () => {
           onRestoreBackup={handleRestoreBackup}
           onLogout={handleLogout}
           theme={theme}
-          toggleTheme={toggleTheme}
+          setTheme={handleSetTheme}
         />
         <div className="hidden md:block fixed bottom-6 right-6 z-50 no-print">
           <Button onClick={handleLogout} variant="danger" size="sm" className="shadow-glass-lg press-effect">Cerrar Sesión</Button>
@@ -740,7 +748,7 @@ const App: React.FC = () => {
         onAddReview={handleAddReview}
         onLogout={handleLogout}
         theme={theme}
-        toggleTheme={toggleTheme}
+        setTheme={handleSetTheme}
       />
     </div>
   );
