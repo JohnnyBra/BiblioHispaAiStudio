@@ -6,6 +6,22 @@ Sistema de gestión de la biblioteca del Colegio La Hispanidad. Combina préstam
 
 ---
 
+## 📸 Capturas de Pantalla
+
+| Login | Alumno — Catálogo de Libros |
+|:---:|:---:|
+| ![Login](docs/screenshots/01-login.png) | ![Catálogo](docs/screenshots/02-alumno-catalogo.png) |
+
+| Alumno — Ranking y Gamificación | Admin — Gestión del Catálogo |
+|:---:|:---:|
+| ![Ranking](docs/screenshots/03-alumno-ranking.png) | ![Admin catálogo](docs/screenshots/04-admin-catalogo-libros.png) |
+
+| Admin — Estadísticas y Clasificación | |
+|:---:|:---:|
+| ![Estadísticas](docs/screenshots/05-admin-estadisticas-ranking.png) | |
+
+---
+
 ## 🚀 Funcionalidades por Público
 
 ### 🎓 Alumnado
