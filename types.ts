@@ -9,7 +9,7 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
-  username: string; // generated: firstname.lastname
+  username: string; // generated: nombre.apellido1.apellido2 (spaces within each part become dots)
   password?: string; // Only for ADMIN/SUPERADMIN
   className: string; // e.g., "1A", "2B", "STAFF"
   classId?: string; // ID from external system

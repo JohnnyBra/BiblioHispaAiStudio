@@ -187,7 +187,7 @@ const App: React.FC = () => {
         localStorage.setItem('biblio_session_user', student.id);
         addToast(`¡Hola de nuevo, ${student.firstName}! 👋`, 'success');
       } else {
-        setAuthError('Usuario no encontrado. Usa nombre.apellido');
+        setAuthError('Usuario no encontrado. Usa nombre.apellido1.apellido2');
       }
     }
   };
