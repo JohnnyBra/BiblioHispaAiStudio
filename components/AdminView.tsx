@@ -893,41 +893,45 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </form>
                     </div>
 
-                    {/* SYNC PANEL */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
-                      <h3 className="font-bold text-lg mb-2 text-indigo-300 flex items-center gap-2">
-                        <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
-                        Sincronización Central
-                      </h3>
-                      <p className="text-sm text-indigo-300 mb-4">
-                          Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
-                      </p>
-                      <Button
-                        onClick={handleSyncStudents}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
-                        disabled={isSyncing}
-                      >
-                        {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
-                      </Button>
-                    </div>
+                    {/* SYNC PANEL — solo Dirección (SUPERADMIN) */}
+                    {isSuperAdmin && (
+                      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
+                        <h3 className="font-bold text-lg mb-2 text-indigo-300 flex items-center gap-2">
+                          <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
+                          Sincronización Central
+                        </h3>
+                        <p className="text-sm text-indigo-300 mb-4">
+                            Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
+                        </p>
+                        <Button
+                          onClick={handleSyncStudents}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                          disabled={isSyncing}
+                        >
+                          {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
+                        </Button>
+                      </div>
+                    )}
 
-                    {/* Fix Usernames */}
-                    <div className="bg-amber-500/10 p-6 rounded-3xl border border-amber-500/20">
-                      <h3 className="font-bold text-lg mb-2 text-amber-300 flex items-center gap-2">
-                        <UserCog size={20} />
-                        Regenerar Usuarios
-                      </h3>
-                      <p className="text-sm text-amber-300/80 mb-4">
-                        Actualiza todos los nombres de usuario de alumnos al formato <span className="font-mono">nombre.apellido1.apellido2</span>. Necesario tras importar desde PrismaEdu.
-                      </p>
-                      <Button
-                        onClick={handleFixUsernames}
-                        className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                        disabled={isFixingUsernames}
-                      >
-                        {isFixingUsernames ? 'Actualizando...' : '🔧 Regenerar nombres de usuario'}
-                      </Button>
-                    </div>
+                    {/* Fix Usernames — solo Dirección (SUPERADMIN) */}
+                    {isSuperAdmin && (
+                      <div className="bg-amber-500/10 p-6 rounded-3xl border border-amber-500/20">
+                        <h3 className="font-bold text-lg mb-2 text-amber-300 flex items-center gap-2">
+                          <UserCog size={20} />
+                          Regenerar Usuarios
+                        </h3>
+                        <p className="text-sm text-amber-300/80 mb-4">
+                          Actualiza todos los nombres de usuario de alumnos al formato <span className="font-mono">nombre.apellido1.apellido2</span>. Necesario tras importar desde PrismaEdu.
+                        </p>
+                        <Button
+                          onClick={handleFixUsernames}
+                          className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                          disabled={isFixingUsernames}
+                        >
+                          {isFixingUsernames ? 'Actualizando...' : '🔧 Regenerar nombres de usuario'}
+                        </Button>
+                      </div>
+                    )}
 
                     {/* CSV Import */}
                     <div className="bg-brand-500/15 p-6 rounded-3xl border border-brand-500/20">
