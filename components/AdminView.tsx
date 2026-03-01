@@ -4,12 +4,12 @@ import { User, Book, RawUserImport, RawBookImport, UserRole, Review, AppSettings
 import { normalizeString } from '../services/storageService';
 import { compareClassNames, compareStudents, proxyCoverUrl } from '../services/utils';
 import { searchBookCover, determineBookAge, searchBookMetadata, searchBookMetadataBatch, searchBookCandidates, updateBook, deleteBook, addBook } from '../services/bookService';
-import { syncStudents } from '../services/userService';
+import { syncStudents, fixUsernames } from '../services/userService';
 import { generateStudentLoanReport } from '../services/reportService';
 import { Button } from './Button';
 import { IDCard } from './IDCard';
 import { ToastType } from './Toast';
-import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, FileText, ChevronDown, ChevronUp, Menu, LogOut, Sun, Moon, Monitor } from 'lucide-react';
+import { Upload, Plus, Trash2, Users, BookOpen, BarChart3, Search, Loader2, Edit2, X, Save, MessageSquare, Settings, Check, Image as ImageIcon, Lock, Key, CreditCard, Printer, Trophy, History, RefreshCcw, UserPlus, UserCog, Shield, Clock, Download, AlertTriangle, ArrowRight, Wand2, FileText, ChevronDown, ChevronUp, Menu, LogOut, Sun, Moon, Monitor } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User;
@@ -118,6 +118,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [loadingProgress, setLoadingProgress] = React.useState(0);
   const [loadingMessage, setLoadingMessage] = React.useState('');
   const [isSyncing, setIsSyncing] = React.useState(false);
+  const [isFixingUsernames, setIsFixingUsernames] = React.useState(false);
   const [isMobileActionsOpen, setIsMobileActionsOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -194,6 +195,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
         onShowToast("❌ Fallo de conexión con el sistema central.", "error");
     } finally {
         setIsSyncing(false);
+    }
+  };
+
+  const handleFixUsernames = async () => {
+    const students = users.filter(u => u.role === UserRole.STUDENT);
+    if (!window.confirm(`Se van a regenerar los nombres de usuario de ${students.length} alumnos con el formato nombre.apellido1.apellido2.\n\nLos alumnos deberán usar el nuevo usuario para iniciar sesión.\n\n¿Continuar?`)) return;
+    setIsFixingUsernames(true);
+    try {
+      const result = await fixUsernames();
+      onShowToast(`✅ ${result.updated} de ${result.total} usuarios actualizados.`, 'success');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch {
+      onShowToast('❌ Error al regenerar los nombres de usuario.', 'error');
+    } finally {
+      setIsFixingUsernames(false);
     }
   };
 
@@ -892,6 +908,24 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         disabled={isSyncing}
                       >
                         {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
+                      </Button>
+                    </div>
+
+                    {/* Fix Usernames */}
+                    <div className="bg-amber-500/10 p-6 rounded-3xl border border-amber-500/20">
+                      <h3 className="font-bold text-lg mb-2 text-amber-300 flex items-center gap-2">
+                        <UserCog size={20} />
+                        Regenerar Usuarios
+                      </h3>
+                      <p className="text-sm text-amber-300/80 mb-4">
+                        Actualiza todos los nombres de usuario de alumnos al formato <span className="font-mono">nombre.apellido1.apellido2</span>. Necesario tras importar desde PrismaEdu.
+                      </p>
+                      <Button
+                        onClick={handleFixUsernames}
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                        disabled={isFixingUsernames}
+                      >
+                        {isFixingUsernames ? 'Actualizando...' : '🔧 Regenerar nombres de usuario'}
                       </Button>
                     </div>
 

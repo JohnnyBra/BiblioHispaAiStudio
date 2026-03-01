@@ -50,6 +50,15 @@ export const teacherLogin = async (username: string, password: string): Promise<
     return { success: true, user: data.user };
 };
 
+export const fixUsernames = async (): Promise<{ success: boolean; updated?: number; total?: number; error?: string }> => {
+    const res = await fetch('/api/admin/fix-usernames', {
+        method: 'POST'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al regenerar usernames');
+    return data;
+};
+
 export const syncStudents = async (): Promise<{ success: boolean; updated?: number; created?: number; error?: string }> => {
     const res = await fetch('/api/sync/students', {
         method: 'POST'
