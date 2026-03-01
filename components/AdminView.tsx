@@ -66,7 +66,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [historySearchTerm, setHistorySearchTerm] = React.useState('');
   
   // Single Entry States
-  const [newUser, setNewUser] = React.useState({ name: '', lastname: '', className: '' });
+  const [newUser, setNewUser] = React.useState({ name: '', lastname: '', lastname2: '', className: '' });
 
   // Add Book State
   const [newBook, setNewBook] = React.useState<Partial<Book>>({ unitsTotal: 1, unitsAvailable: 1, shelf: 'Recepción' });
@@ -228,14 +228,18 @@ export const AdminView: React.FC<AdminViewProps> = ({
         let lastName = '';
 
         if (looksLikeSurnameCommaName) {
-           const parts = line.split(',');
+           const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
            if (parts.length >= 2) {
-             lastName = parts[0].trim();
-             firstName = parts[1].trim();
+             lastName = parts[0];
+             firstName = parts[1];
            }
         } else {
            const parts = line.split(/[,;]/).map(p => p.trim().replace(/^"|"$/g, ''));
-           if (parts.length >= 2) {
+           if (parts.length >= 3) {
+             // Formato 3 columnas: Apellido1;Apellido2;Nombre
+             lastName = parts[0] + ' ' + parts[1];
+             firstName = parts[2];
+           } else if (parts.length >= 2) {
              lastName = parts[0];
              firstName = parts[1];
            }
@@ -346,19 +350,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handleAddSingleUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.name || !newUser.lastname || !newUser.className) return;
-    
+
+    const fullLastName = [newUser.lastname, newUser.lastname2].filter(p => p.trim()).join(' ');
     const user: User = {
       id: `user-${Date.now()}`,
       firstName: newUser.name,
-      lastName: newUser.lastname,
-      username: `${normalizeString(newUser.name)}.${normalizeString(newUser.lastname)}`,
+      lastName: fullLastName,
+      username: `${normalizeString(newUser.name)}.${normalizeString(fullLastName)}`,
       className: newUser.className,
       role: UserRole.STUDENT,
       points: 0,
       booksRead: 0
     };
     onAddUsers([user]);
-    setNewUser({ name: '', lastname: '', className: '' });
+    setNewUser({ name: '', lastname: '', lastname2: '', className: '' });
     onShowToast(`Usuario ${user.firstName} creado`, "success");
   };
 
@@ -862,8 +867,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <div className="glass-panel p-6 rounded-3xl shadow-glass-sm">
                         <h3 className="font-bold text-lg mb-4 text-themed">Añadir Alumno</h3>
                         <form onSubmit={handleAddSingleUser} className="space-y-3">
-                          <input className="w-full p-2 border border-[var(--glass-border)] rounded-xl bg-[var(--input-bg)] text-themed" placeholder="Nombre" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
-                          <input className="w-full p-2 border border-[var(--glass-border)] rounded-xl bg-[var(--input-bg)] text-themed" placeholder="Apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
+                          <input className="w-full p-2 border border-[var(--glass-border)] rounded-xl bg-[var(--input-bg)] text-themed" placeholder="Nombre (ej: María José)" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                          <input className="w-full p-2 border border-[var(--glass-border)] rounded-xl bg-[var(--input-bg)] text-themed" placeholder="Primer apellido" value={newUser.lastname} onChange={e => setNewUser({...newUser, lastname: e.target.value})} />
+                          <input className="w-full p-2 border border-[var(--glass-border)] rounded-xl bg-[var(--input-bg)] text-themed" placeholder="Segundo apellido" value={newUser.lastname2} onChange={e => setNewUser({...newUser, lastname2: e.target.value})} />
                           <input className="w-full p-2 border border-[var(--glass-border)] rounded-xl bg-[var(--input-bg)] text-themed" placeholder="Clase (ej. 3A)" value={newUser.className} onChange={e => setNewUser({...newUser, className: e.target.value})} />
                           <Button type="submit" className="w-full">
                             <Plus size={18}/> Crear Usuario
@@ -1853,8 +1859,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <input className="w-full p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed" value={editingUser.firstName} onChange={e => setEditingUser({...editingUser, firstName: e.target.value})} />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Apellido</label>
-                        <input className="w-full p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed" value={editingUser.lastName} onChange={e => setEditingUser({...editingUser, lastName: e.target.value})} />
+                        <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Apellidos</label>
+                        <input className="w-full p-2 border border-[var(--glass-border)] rounded-lg bg-[var(--input-bg)] text-themed" placeholder="Apellido1 Apellido2" value={editingUser.lastName} onChange={e => setEditingUser({...editingUser, lastName: e.target.value})} />
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Clase</label>
