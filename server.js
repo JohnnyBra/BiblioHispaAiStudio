@@ -72,6 +72,7 @@ const globalAuthMiddleware = async (req, res, next) => {
     (req.path.startsWith('/api/books') && req.method !== 'GET') ||
     (req.path.startsWith('/api/users') && req.method !== 'GET') ||
     req.path.startsWith('/api/sync') ||
+    req.path.startsWith('/api/admin') ||
     req.path.startsWith('/api/restore') ||
     req.path.startsWith('/api/transactions') ||
     req.path === '/api/settings';
@@ -414,6 +415,43 @@ app.post('/api/users/batch', async (req, res) => {
   const newUsers = [...currentUsers, ...usersToAdd];
   await saveDB(newUsers, 'users');
   res.json({ success: true, count: usersToAdd.length });
+});
+
+// Migración: regenerar usernames de alumnos con formato nombre.apellido1.apellido2
+app.post('/api/admin/fix-usernames', async (req, res) => {
+  const data = await readDB();
+  const users = data.users || [];
+
+  // Usernames ya ocupados por no-alumnos (no se pueden pisar)
+  const usedUsernames = new Set(
+    users.filter(u => u.role !== 'STUDENT').map(u => u.username).filter(Boolean)
+  );
+
+  let updatedCount = 0;
+
+  const updatedUsers = users.map(u => {
+    if (u.role !== 'STUDENT') return u;
+
+    let base = normalizeString(u.firstName || '') + '.' + normalizeString(u.lastName || '');
+    base = base.replace(/\.$/, '') || normalizeString(u.firstName || 'alumno');
+
+    let newUsername = base;
+    let suffix = 2;
+    while (usedUsernames.has(newUsername) && newUsername !== u.username) {
+      newUsername = `${base}${suffix}`;
+      suffix++;
+    }
+    usedUsernames.add(newUsername);
+
+    if (u.username !== newUsername) {
+      updatedCount++;
+      return { ...u, username: newUsername };
+    }
+    return u;
+  });
+
+  await saveDB(updatedUsers, 'users');
+  res.json({ success: true, updated: updatedCount, total: users.filter(u => u.role === 'STUDENT').length });
 });
 
 app.post('/api/books', async (req, res) => {
