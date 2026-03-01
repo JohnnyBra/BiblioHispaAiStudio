@@ -933,6 +933,30 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       </div>
                     )}
 
+                    {/* Login por nombre — solo Dirección (SUPERADMIN) */}
+                    {isSuperAdmin && (() => {
+                      const enabled = settings.studentUsernameLoginEnabled !== false;
+                      return (
+                        <div className={`p-6 rounded-3xl border ${enabled ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+                          <h3 className={`font-bold text-lg mb-2 flex items-center gap-2 ${enabled ? 'text-emerald-300' : 'text-red-300'}`}>
+                            <Lock size={20} />
+                            Acceso por nombre de usuario
+                          </h3>
+                          <p className={`text-sm mb-4 ${enabled ? 'text-emerald-300/80' : 'text-red-300/80'}`}>
+                            {enabled
+                              ? 'Los alumnos pueden acceder escribiendo su nombre de usuario además del QR.'
+                              : 'Los alumnos solo pueden acceder con el carnet QR. El acceso por nombre está desactivado.'}
+                          </p>
+                          <Button
+                            onClick={() => onUpdateSettings({ ...settings, studentUsernameLoginEnabled: !enabled })}
+                            className={`w-full text-white ${enabled ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                          >
+                            {enabled ? '🔒 Desactivar acceso por nombre' : '🔓 Activar acceso por nombre'}
+                          </Button>
+                        </div>
+                      );
+                    })()}
+
                     {/* CSV Import */}
                     <div className="bg-brand-500/15 p-6 rounded-3xl border border-brand-500/20">
                       <h3 className="font-bold text-lg mb-2 text-brand-300">Importar Alumnos CSV (Manual)</h3>
