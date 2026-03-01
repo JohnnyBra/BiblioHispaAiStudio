@@ -181,6 +181,10 @@ const App: React.FC = () => {
       }
     } else {
       // ACCESO ALUMNOS (Local)
+      if (settings.studentUsernameLoginEnabled === false) {
+        setAuthError('El acceso por nombre de usuario está desactivado. Usa tu carnet QR.');
+        return;
+      }
       const student = users.find(u => u.username === loginInput.toLowerCase() && u.role === UserRole.STUDENT);
       if (student) {
         setCurrentUser(student);
@@ -587,11 +591,13 @@ const App: React.FC = () => {
                 <button onClick={() => setShowQRScanner(true)} className="w-full bg-gradient-to-b from-brand-500 to-brand-700 hover:from-brand-400 hover:to-brand-600 text-white flex items-center justify-center gap-3 py-3.5 rounded-2xl font-display font-semibold shadow-brand hover-glow transition-all duration-300 press-effect">
                   <QrCode size={20} /> Escanear Carnet
                 </button>
-                <div className="relative flex py-5 items-center">
-                  <div className="flex-grow border-t border-[var(--divider)]"></div>
-                  <span className="flex-shrink-0 mx-4 text-themed-muted text-[11px] font-bold uppercase tracking-wider">O entra con tu nombre</span>
-                  <div className="flex-grow border-t border-[var(--divider)]"></div>
-                </div>
+                {settings.studentUsernameLoginEnabled !== false && (
+                  <div className="relative flex py-5 items-center">
+                    <div className="flex-grow border-t border-[var(--divider)]"></div>
+                    <span className="flex-shrink-0 mx-4 text-themed-muted text-[11px] font-bold uppercase tracking-wider">O entra con tu nombre</span>
+                    <div className="flex-grow border-t border-[var(--divider)]"></div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -664,21 +670,23 @@ const App: React.FC = () => {
               </div>
             ) : (
               /* STUDENT MANUAL LOGIN */
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Tu nombre (ej: juan.garcia)</label>
-                  <input
-                    type="text"
-                    className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
-                    value={loginInput}
-                    onChange={(e) => setLoginInput(e.target.value)}
-                    placeholder="juan.garcia"
-                  />
-                </div>
-                <Button type="submit" className="w-full" size="lg">
-                  Entrar
-                </Button>
-              </form>
+              settings.studentUsernameLoginEnabled !== false ? (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-themed-muted uppercase mb-1">Tu nombre (ej: juan.garcia)</label>
+                    <input
+                      type="text"
+                      className="w-full p-3 rounded-xl glass-input outline-none transition-all font-medium"
+                      value={loginInput}
+                      onChange={(e) => setLoginInput(e.target.value)}
+                      placeholder="juan.garcia"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" size="lg">
+                    Entrar
+                  </Button>
+                </form>
+              ) : null
             )}
 
             {authError && <div className="mt-4 text-accent-coral text-sm font-medium text-center bg-[var(--error-bg)] p-3 rounded-2xl animate-fade-in">{authError}</div>}

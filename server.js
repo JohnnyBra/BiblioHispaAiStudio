@@ -145,7 +145,8 @@ const INITIAL_DATA = {
   pointHistory: [],
   settings: {
     schoolName: 'BiblioHispa',
-    logoUrl: 'https://cdn-icons-png.flaticon.com/512/3413/3413535.png'
+    logoUrl: 'https://cdn-icons-png.flaticon.com/512/3413/3413535.png',
+    studentUsernameLoginEnabled: true
   }
 };
 

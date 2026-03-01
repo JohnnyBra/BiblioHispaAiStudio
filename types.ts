@@ -78,6 +78,7 @@ export interface PointHistory {
 export interface AppSettings {
   schoolName: string;
   logoUrl: string;
+  studentUsernameLoginEnabled?: boolean; // default true; false = solo QR para alumnos
 }
 
 export interface LeaderboardEntry {
