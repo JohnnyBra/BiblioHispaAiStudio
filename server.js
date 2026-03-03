@@ -659,7 +659,8 @@ app.post('/api/auth/teacher-login', async (req, res) => {
           path: '/',
           httpOnly: true,
           secure: true,
-          sameSite: 'Lax'
+          sameSite: 'Lax',
+          maxAge: 8 * 60 * 60 * 1000
         });
       }
       // To be safe, let's fetch the user list and find the user by username/id if possible,
