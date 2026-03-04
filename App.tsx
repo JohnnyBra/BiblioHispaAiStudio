@@ -41,7 +41,17 @@ const App: React.FC = () => {
   const isGoogleConfigured = import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID";
 
   // --- Theme State ---
+  const getSharedTheme = (): 'dark' | 'light' | 'system' | null => {
+    const m = document.cookie.match(/(?:^|;\s*)HISPA_THEME=([^;]+)/);
+    const v = m?.[1];
+    return (v === 'light' || v === 'dark' || v === 'system') ? v as 'dark' | 'light' | 'system' : null;
+  };
+
   const [theme, setTheme] = React.useState<'dark' | 'light' | 'system'>(() => {
+    if (!localStorage.getItem('biblio_theme_manual')) {
+      const cookieTheme = getSharedTheme();
+      if (cookieTheme) return cookieTheme;
+    }
     const saved = localStorage.getItem('biblio_theme');
     if (saved === 'light' || saved === 'dark' || saved === 'system') return saved as 'dark' | 'light' | 'system';
     return 'system';
@@ -67,7 +77,26 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const handleSetTheme = (t: 'dark' | 'light' | 'system') => setTheme(t);
+  // Re-sync from PrismaEdu cookie when tab regains focus (if no manual override)
+  React.useEffect(() => {
+    const syncFromCookie = () => {
+      if (localStorage.getItem('biblio_theme_manual')) return;
+      const cookieTheme = getSharedTheme();
+      if (cookieTheme) setTheme(cookieTheme);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') syncFromCookie(); };
+    window.addEventListener('focus', syncFromCookie);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', syncFromCookie);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  const handleSetTheme = (t: 'dark' | 'light' | 'system') => {
+    localStorage.setItem('biblio_theme_manual', '1');
+    setTheme(t);
+  };
 
   // --- Initialization (Load from Server) ---
   React.useEffect(() => {
@@ -108,6 +137,9 @@ const App: React.FC = () => {
         })
         .then(data => {
           if (data.success && data.user) {
+            localStorage.removeItem('biblio_theme_manual');
+            const cookieTheme = getSharedTheme();
+            if (cookieTheme) setTheme(cookieTheme);
             setCurrentUser(data.user);
             localStorage.setItem('biblio_session_user', data.user.id);
             setUsers(prev => {
@@ -153,6 +185,9 @@ const App: React.FC = () => {
       try {
         const result = await userService.teacherLogin(loginInput, passwordInput);
         if (result.success && result.user) {
+          localStorage.removeItem('biblio_theme_manual');
+          const cookieTheme = getSharedTheme();
+          if (cookieTheme) setTheme(cookieTheme);
           setCurrentUser(result.user);
           // Update local user list with the new teacher if not present (or update details)
           setUsers(prev => {
@@ -201,6 +236,9 @@ const App: React.FC = () => {
         const result = await authService.verifyGoogleToken(credentialResponse.credential);
 
         if (result.success && result.user) {
+          localStorage.removeItem('biblio_theme_manual');
+          const cookieTheme = getSharedTheme();
+          if (cookieTheme) setTheme(cookieTheme);
           setCurrentUser(result.user);
 
           // Update local list
