@@ -104,15 +104,9 @@ const App: React.FC = () => {
       fetch('/api/auth/me')
         .then(res => {
           if (res.ok) return res.json();
-          if (res.status === 401) {
-            // Sesión inválida o expirada → limpiar y forzar login
-            localStorage.removeItem('biblio_session_user');
-            return null;
-          }
-          throw new Error('Server error'); // error temporal → caerá al catch
+          throw new Error('No SSO'); // 401 u otro error → caerá al catch con fallback localStorage
         })
         .then(data => {
-          if (!data) return; // caso 401 ya gestionado
           if (data.success && data.user) {
             setCurrentUser(data.user);
             localStorage.setItem('biblio_session_user', data.user.id);
@@ -123,7 +117,7 @@ const App: React.FC = () => {
           }
         })
         .catch(() => {
-          // Solo errores de red llegan aquí → fallback temporal
+          // SSO no disponible (401, error de red, etc.) → fallback a localStorage
           if (storedUserId) {
             const foundUser = users.find(u => u.id === storedUserId);
             if (foundUser) setCurrentUser(foundUser);
