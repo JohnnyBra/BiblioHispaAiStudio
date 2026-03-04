@@ -702,8 +702,9 @@ app.get('/api/auth/me', async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SSO_SECRET);
 
-    // Permitir a Profesores o Admins
-    if (decoded.role === 'TEACHER' || decoded.role === 'ADMIN' || decoded.role === 'SUPERADMIN' || decoded.role === 'TUTOR') {
+    // Permitir a Profesores o Admins (incluye roles de dirección de PrismaEdu)
+    const allowedRoles = ['TEACHER', 'ADMIN', 'SUPERADMIN', 'TUTOR', 'DIRECCION', 'TESORERIA', 'COORDINACION'];
+    if (allowedRoles.includes(decoded.role)) {
       const currentData = await readDB();
 
       // Clean email check for ID or email
@@ -721,7 +722,7 @@ app.get('/api/auth/me', async (req, res) => {
 
       // Si el SSO autoriza pero no existe, lo creamos de emergencia
       let mappedRole = 'ADMIN';
-      if (decoded.role === 'SUPERADMIN') mappedRole = 'SUPERADMIN';
+      if (decoded.role === 'SUPERADMIN' || decoded.role === 'DIRECCION' || decoded.role === 'TESORERIA') mappedRole = 'SUPERADMIN';
 
       const newUser = {
         id: decoded.userId,
