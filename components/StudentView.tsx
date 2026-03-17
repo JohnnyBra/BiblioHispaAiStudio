@@ -30,6 +30,27 @@ interface ChatMessage {
    text: string;
 }
 
+// Parses AI text and replaces [LIBRO:id:title] with clickable chips
+const renderChatText = (text: string, onBookClick: (id: string, title: string) => void) => {
+   const parts = text.split(/(\[LIBRO:[^\]]+\])/g);
+   return parts.map((part, i) => {
+      const match = part.match(/^\[LIBRO:([^:]+):(.+)\]$/);
+      if (match) {
+         const [, id, title] = match;
+         return (
+            <button
+               key={i}
+               onClick={() => onBookClick(id, title)}
+               className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-lg bg-brand-500/20 text-brand-400 hover:bg-brand-500/40 transition-colors text-xs font-semibold border border-brand-500/30 cursor-pointer"
+            >
+               📖 {title}
+            </button>
+         );
+      }
+      return <span key={i}>{part}</span>;
+   });
+};
+
 export const StudentView: React.FC<StudentViewProps> = ({
    currentUser,
    books,
@@ -189,6 +210,12 @@ export const StudentView: React.FC<StudentViewProps> = ({
       const details = await getBookDetails(book.title, book.author);
       setBookDetails(details);
       setIsLoadingDetails(false);
+   };
+
+   // Navigate to catalog and search for a book from chat
+   const handleBookLink = (bookId: string, title: string) => {
+      setActiveTab('catalog');
+      setSearchTerm(title);
    };
 
    // Handle AI Chat
@@ -802,7 +829,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                                  ? 'bg-gradient-to-br from-brand-500 to-brand-600 text-white rounded-tr-sm shadow-brand'
                                  : 'glass-card text-themed shadow-glass-sm rounded-tl-sm border border-[var(--glass-border)]'
                               }`}>
-                              {msg.text}
+                              {msg.sender === 'ai' ? renderChatText(msg.text, handleBookLink) : msg.text}
                            </div>
                         </div>
                      ))}
