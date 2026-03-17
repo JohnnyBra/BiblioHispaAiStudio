@@ -28,7 +28,7 @@ export const chatWithLibrarian = async (
     const ai = getAIClient();
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
       contents: `
         Actúa como "BiblioBot", un bibliotecario escolar súper divertido, amable y experto en literatura infantil y juvenil.
         
@@ -60,7 +60,7 @@ export const getAIRecommendedAge = async (title: string, author: string): Promis
     const ai = getAIClient();
     
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
       contents: `
         Clasifica el libro "${title}" de "${author}" en UNO de los siguientes rangos de edad recomendada.
         
@@ -124,7 +124,7 @@ export const identifyBooksBatch = async (
     try {
       const ai = getAIClient();
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite-preview',
         contents: `
           Para cada libro de la siguiente lista, proporciona:
           - El título exacto (original o el más conocido en español)
@@ -178,7 +178,7 @@ export const identifyBook = async (query: string): Promise<{title: string, autho
     const ai = getAIClient();
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
       contents: `
         Identifica el libro exacto a partir de esta búsqueda: "${query}"
 
