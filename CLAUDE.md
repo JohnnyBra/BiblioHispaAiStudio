@@ -184,6 +184,16 @@ Title text sits behind the image. If image fails to load, `onError` hides it and
 - Date formatting uses `es-ES` locale
 - String comparison uses `normalizeString()` from `services/utils.ts` (strips accents)
 - Book covers: multi-source (Librario → Open Library → Google Books), URLs stored in db.json, images cached locally via `/api/cover-proxy` in `data/covers/`
-- Gemini model used: `gemini-2.5-flash`. Free tier: 20 RPD / 5 RPM — batch functions mitigate this
+- Gemini model used: `gemini-3.1-flash-lite-preview` (updated 2026-03-18, previously `gemini-2.5-flash`). Free tier: 20 RPD / 5 RPM — batch functions mitigate this
 - Gemini API key (`VITE_API_KEY`) must have billing enabled for production use; free tier is too restrictive for batch imports
+- `VITE_API_KEY` is embedded in the frontend bundle (visible in browser source) — restrict it by HTTP referrer in Google Cloud Console to `https://biblio.bibliohispa.es/*`
 - Production deployment uses PM2 + Nginx on Ubuntu (see `install.sh`)
+
+## BiblioBot Chat (geminiService.ts + StudentView.tsx)
+
+- The chat **only answers book/library questions**. Off-topic questions get a fixed rejection message — this is intentional, do not remove the restriction from the prompt.
+- Books recommended by the AI are returned in the format `[LIBRO:id:título]` inside the response text.
+- `renderChatText()` in `StudentView.tsx` parses these markers and renders them as clickable chip buttons.
+- Clicking a chip → switches to the `catalog` tab and sets `searchTerm` to the book title.
+- The book list passed to Gemini includes the book `id` in the format `[id] "Title" de Author (Genre, Estante: shelf)` so Gemini can reference books by ID accurately.
+- If the AI model is changed, verify it still respects the `[LIBRO:id:título]` format instruction — newer models may need prompt tuning.
