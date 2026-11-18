@@ -682,33 +682,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* HEADER - Fixed */}
       <div className="flex-none p-4 md:p-6 pb-0 z-30">
-          <header className="glass-header flex flex-col gap-3 p-4 md:px-5 md:py-4 rounded-3xl shadow-glass-sm no-print mb-3">
+          <header className="glass-header hs-luz relative overflow-hidden flex flex-col gap-3 p-4 md:px-5 md:py-4 rounded-3xl shadow-glass-sm no-print mb-3">
             {/* Top row: Brand + Info + Theme */}
             <div className="flex items-center gap-4 w-full">
-              {/* Prisma link (four-squares icon) */}
-              <a href="https://prisma.bibliohispa.es/" className="flex-none text-themed-muted hover:text-brand-500 transition-colors duration-200 press-effect" title="Volver a Prisma">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                  <rect width="7" height="7" x="3" y="3" rx="1" />
-                  <rect width="7" height="7" x="14" y="3" rx="1" fill="#3b82f6" stroke="#3b82f6" />
-                  <rect width="7" height="7" x="14" y="14" rx="1" />
-                  <rect width="7" height="7" x="3" y="14" rx="1" />
-                </svg>
-              </a>
-
-              {/* Logo - larger and integrated */}
-              <div className="flex-none w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center">
-                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain drop-shadow-sm" style={{ filter: 'var(--header-logo-filter, none)' }} />
-              </div>
-
-              {/* Title + Role */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-lg md:text-xl font-display font-bold text-themed leading-tight truncate">Panel de Administración</h1>
-                <p className="text-themed-muted text-xs truncate">
-                  {settings.schoolName} • <span className="text-brand-500 font-bold">
+              {/* Marca común de la Suite La Hispanidad */}
+              <div className="hs-marca flex-1 min-w-0">
+                <img className="hs-escudo" src="https://prisma.bibliohispa.es/suite/escudo.png" alt="Colegio La Hispanidad" />
+                <span className="min-w-0">
+                  <span className="hs-marca-nombre">Biblioteca</span>
+                  <span className="text-themed-muted text-xs truncate">
+                    Panel de Administración • <span className="text-brand-500 font-bold">
                       {isSuperAdmin ? 'SuperAdmin' : 'Profesor'}
                       {!isSuperAdmin && currentUser.className && currentUser.className !== 'PROFESORADO' && ` - ${currentUser.className}`}
+                    </span>
                   </span>
-                </p>
+                  <span className="hs-firma">Creado por Javi Barrero</span>
+                </span>
               </div>
 
               {/* Right side: scope toggle + theme */}
@@ -731,17 +720,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 )}
                 {setTheme && (
                   <div className="flex theme-toggle-group rounded-lg p-0.5">
-                    <button onClick={() => setTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro">
+                    <button onClick={() => setTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro" aria-label="Modo claro">
                       <Sun size={14} />
                     </button>
-                    <button onClick={() => setTheme('system')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático">
+                    <button onClick={() => setTheme('system')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático" aria-label="Automático">
                       <Monitor size={14} />
                     </button>
-                    <button onClick={() => setTheme('dark')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro">
+                    <button onClick={() => setTheme('dark')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro" aria-label="Modo oscuro">
                       <Moon size={14} />
                     </button>
                   </div>
                 )}
+                <a href="https://prisma.bibliohispa.es/" className="hs-boton hs-boton--suave" title="Ir al Portal Prisma">
+                  <span className="hs-prisma" style={{ '--t': '18px' } as React.CSSProperties} aria-hidden="true" />
+                  <span className="hidden sm:inline">Prisma</span>
+                  <span className="sr-only sm:hidden">Ir a Prisma</span>
+                </a>
               </div>
             </div>
 
@@ -2147,13 +2141,13 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <div className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 col-span-2">
                         <span className="font-bold text-themed text-sm mb-1">Tema</span>
                         <div className="flex theme-toggle-group rounded-lg p-0.5">
-                          <button onClick={() => setTheme('light')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro">
+                          <button onClick={() => setTheme('light')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro" aria-label="Modo claro">
                             <Sun size={18} />
                           </button>
-                          <button onClick={() => setTheme('system')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático">
+                          <button onClick={() => setTheme('system')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático" aria-label="Automático">
                             <Monitor size={18} />
                           </button>
-                          <button onClick={() => setTheme('dark')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro">
+                          <button onClick={() => setTheme('dark')} className={`flex justify-center p-2.5 rounded-md transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro" aria-label="Modo oscuro">
                             <Moon size={18} />
                           </button>
                         </div>

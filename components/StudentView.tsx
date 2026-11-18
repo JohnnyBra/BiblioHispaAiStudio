@@ -239,28 +239,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
    return (
       <div className="min-h-screen pb-24 relative">
          {/* Top Bar */}
-         <div className="glass-header">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-               <div className="flex items-center gap-3">
-                  <a href="https://prisma.bibliohispa.es"
-                     className="flex items-center gap-2 p-2 md:px-4 md:py-2 glass-panel rounded-lg md:rounded-xl transition-all duration-200 font-semibold text-xs md:text-sm text-themed-secondary hover:bg-[var(--surface-raised)] hover:scale-[1.02] press-effect"
-                     title="Ir al Portal Prisma">
-                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                        <rect width="7" height="7" x="3" y="3" rx="1" />
-                        <rect width="7" height="7" x="14" y="3" rx="1" fill="#3b82f6" stroke="#3b82f6" />
-                        <rect width="7" height="7" x="14" y="14" rx="1" />
-                        <rect width="7" height="7" x="3" y="14" rx="1" />
-                     </svg>
-                     <span className="hidden lg:inline">Prisma</span>
-                  </a>
-                  <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" style={{ filter: 'var(--header-logo-filter, none)' }} />
-                  <div className="hidden sm:block">
-                     <h1 className="font-display font-bold text-themed text-lg leading-none">{settings.schoolName}</h1>
-                     <p className="text-[11px] text-themed-muted font-medium">Biblioteca</p>
-                  </div>
+         {/* Cabecera común de la Suite La Hispanidad (kit servido desde Prisma) */}
+         <header className="hs-header flex-wrap gap-y-2">
+               <div className="hs-marca">
+                  <img className="hs-escudo" src="https://prisma.bibliohispa.es/suite/escudo.png" alt="Colegio La Hispanidad" />
+                  <span>
+                     <span className="hs-marca-nombre">Biblioteca</span>
+                     <span className="hs-firma">Creado por Javi Barrero</span>
+                  </span>
                </div>
 
-               <div className="flex items-center gap-3">
+               <div className="flex items-center gap-2 sm:gap-3 ml-auto">
                   <div className="flex items-center gap-3 glass-panel px-4 py-2 rounded-2xl cursor-default group relative hover-glow">
                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-[var(--surface-base)] shadow-sm">
                         {currentUser.firstName[0]}
@@ -301,23 +290,27 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   </div>
                   {setTheme && (
                      <div className="flex theme-toggle-group rounded-lg p-0.5">
-                       <button onClick={() => setTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro">
+                       <button onClick={() => setTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro" aria-label="Modo claro">
                          <Sun size={14} />
                        </button>
-                       <button onClick={() => setTheme('system')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático">
+                       <button onClick={() => setTheme('system')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'system' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Automático" aria-label="Automático">
                          <Monitor size={14} />
                        </button>
-                       <button onClick={() => setTheme('dark')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro">
+                       <button onClick={() => setTheme('dark')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'dark' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo oscuro" aria-label="Modo oscuro">
                          <Moon size={14} />
                        </button>
                      </div>
                   )}
+                  <a href="https://prisma.bibliohispa.es/" className="hs-boton hs-boton--suave !px-3 sm:!px-5" title="Ir al Portal Prisma">
+                    <span className="hs-prisma" style={{ '--t': '18px' } as React.CSSProperties} aria-hidden="true" />
+                    <span className="hidden sm:inline">Prisma</span>
+                    <span className="sr-only sm:hidden">Ir a Prisma</span>
+                  </a>
                   <Button variant="outline" size="sm" onClick={onLogout} className="border-[var(--glass-border)] hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 press-effect">
                      <span className="text-xs">Salir</span>
                   </Button>
                </div>
-            </div>
-         </div>
+         </header>
 
          <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
 
