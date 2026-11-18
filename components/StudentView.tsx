@@ -688,7 +688,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                <div className="space-y-8 animate-fade-in-up">
                   <div className="text-center space-y-2 mb-8">
                      <h2 className="text-3xl font-display font-bold text-themed flex items-center justify-center gap-3">
-                        <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-14 h-14 object-contain drop-shadow-lg" />
+                        <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-14 h-14 object-contain" />
                         Salón de la Fama
                      </h2>
                      <p className="text-themed-muted text-sm">¡Descubre quién lee más y cuáles son los mejores libros!</p>
@@ -699,7 +699,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                      {/* COL 1: TOP STUDENTS */}
                      <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
                         <div className="bg-brand-500/10 backdrop-blur-sm p-4 border-b border-brand-500/20 flex items-center gap-2">
-                           <Trophy size={20} className="text-brand-400" />
+                           <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-7 h-7 object-contain" />
                            <h3 className="font-bold text-brand-300">Superlectores</h3>
                         </div>
                         {users
@@ -714,13 +714,13 @@ export const StudentView: React.FC<StudentViewProps> = ({
                               if (index === 0) {
                                  rankStyle = "text-yellow-500 text-xl";
                                  bgStyle = "bg-yellow-500/10 hover:bg-yellow-500/15";
-                                 icon = <Trophy size={16} fill="currentColor" className="text-yellow-400" />;
+                                 icon = <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-5 h-5 object-contain" />;
                               } else if (index === 1) {
                                  rankStyle = "text-themed-muted text-lg";
-                                 icon = <Trophy size={14} fill="currentColor" className="text-themed-muted" />;
+                                 icon = <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-4 h-4 object-contain grayscale brightness-125" />;
                               } else if (index === 2) {
                                  rankStyle = "text-orange-400 text-lg";
-                                 icon = <Trophy size={14} fill="currentColor" className="text-orange-300" />;
+                                 icon = <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-4 h-4 object-contain sepia saturate-150 hue-rotate-[-15deg] brightness-90" />;
                               }
 
                               return (
@@ -754,7 +754,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                      {/* COL 2: TOP BORROWED BOOKS */}
                      <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
                         <div className="bg-fun-green/10 p-4 border-b border-fun-green/20 flex items-center gap-2">
-                           <TrendingUp size={20} className="text-fun-green" />
+                           <img src="https://prisma.bibliohispa.es/suite/iconos/balance.webp" alt="" className="w-7 h-7 object-contain" />
                            <h3 className="font-bold text-green-300">Más Leídos</h3>
                         </div>
                         {[...books]
@@ -776,7 +776,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                      {/* COL 3: TOP RATED BOOKS */}
                      <div className="glass-panel rounded-3xl overflow-hidden flex flex-col">
                         <div className="bg-fun-purple/10 p-4 border-b border-fun-purple/20 flex items-center gap-2">
-                           <Heart size={20} className="text-fun-purple" />
+                           <img src="https://prisma.bibliohispa.es/suite/iconos/corazon.webp" alt="" className="w-7 h-7 object-contain" />
                            <h3 className="font-bold text-purple-300">Mejores Valorados</h3>
                         </div>
                         {[...books]
@@ -874,7 +874,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                onClick={() => setIsChatOpen(!isChatOpen)}
                className={`${isChatOpen ? 'bg-brand-600' : 'bg-gradient-to-b from-brand-500 to-brand-600 animate-bounce-slow shadow-brand-lg'} text-white p-4 rounded-2xl shadow-glass-lg hover:shadow-glass-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 press-effect`}
             >
-               {isChatOpen ? <X size={24} /> : <img src="https://prisma.bibliohispa.es/suite/iconos/bibliobot.webp" alt="" className="w-8 h-8 object-contain drop-shadow" />}
+               {isChatOpen ? <X size={24} /> : <img src="https://prisma.bibliohispa.es/suite/iconos/bibliobot.webp" alt="" className="w-8 h-8 object-contain" />}
                {!isChatOpen && <span className="font-display font-bold pr-1 text-sm">¡Pregúntame!</span>}
             </button>
          </div>
