@@ -15,41 +15,45 @@
   <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
   <link rel="preconnect" href="https://books.google.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
     rel="stylesheet">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Plus Jakarta Sans', 'sans-serif'],
-            display: ['Outfit', 'sans-serif'],
+            sans: ['Figtree', 'sans-serif'],
+            display: ['Bricolage Grotesque', 'Figtree', 'sans-serif'],
           },
           colors: {
+            // Suite La Hispanidad: marino del escudo para lo que se pulsa (antes índigo)
             brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              200: '#c7d2fe',
-              300: '#a5b4fc',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-              800: '#3730a3',
-              900: '#312e81',
-              950: '#1e1b4b',
+              50: '#eef5fb',
+              100: '#d5e7f6',
+              200: '#abcfed',
+              300: '#78b1e0',
+              400: '#4a9ad8',
+              500: '#2373bd',
+              600: '#145ea6',
+              700: '#0a4a8c',
+              800: '#0b3d72',
+              900: '#0c325c',
+              950: '#081f3a',
             },
+            indigo: { 50: '#eef5fb', 100: '#d5e7f6', 200: '#abcfed', 300: '#78b1e0', 400: '#4a9ad8', 500: '#2373bd', 600: '#145ea6', 700: '#0a4a8c', 800: '#0b3d72', 900: '#0c325c', 950: '#081f3a' },
+            violet: { 50: '#ecf9fe', 100: '#d2f0fc', 200: '#a6e1f8', 300: '#6ccdf2', 400: '#30b5e8', 500: '#0aa0dc', 600: '#0882b6', 700: '#0b6893', 800: '#0f5678', 900: '#124864', 950: '#0b2f42' },
+            purple: { 50: '#ecf9fe', 100: '#d2f0fc', 200: '#a6e1f8', 300: '#6ccdf2', 400: '#30b5e8', 500: '#0aa0dc', 600: '#0882b6', 700: '#0b6893', 800: '#0f5678', 900: '#124864', 950: '#0b2f42' },
             fun: {
               yellow: '#facc15',
               orange: '#fb923c',
-              purple: '#a855f7',
+              purple: '#0aa0dc',
               green: '#4ade80',
               red: '#f87171'
             },
             accent: {
               amber: '#f59e0b',
               coral: '#f97066',
-              violet: '#8b5cf6',
+              violet: '#0aa0dc',
               emerald: '#10b981',
               rose: '#fb7185',
               sky: '#38bdf8',
@@ -57,11 +61,11 @@
           },
           boxShadow: {
             'glass-sm': '0 2px 8px 0 rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
-            'glass': '0 8px 32px 0 rgba(31,38,135,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-            'glass-lg': '0 16px 48px 0 rgba(31,38,135,0.12), 0 4px 16px rgba(0,0,0,0.06)',
-            'glass-xl': '0 24px 64px 0 rgba(31,38,135,0.16), 0 8px 24px rgba(0,0,0,0.08)',
-            'brand': '0 4px 14px 0 rgba(99,102,241,0.35)',
-            'brand-lg': '0 8px 24px 0 rgba(99,102,241,0.40)',
+            'glass': '0 8px 32px 0 rgba(10,40,80,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+            'glass-lg': '0 16px 48px 0 rgba(10,40,80,0.12), 0 4px 16px rgba(0,0,0,0.06)',
+            'glass-xl': '0 24px 64px 0 rgba(10,40,80,0.16), 0 8px 24px rgba(0,0,0,0.08)',
+            'brand': '0 4px 14px 0 rgba(20,94,166,0.35)',
+            'brand-lg': '0 8px 24px 0 rgba(20,94,166,0.40)',
             'success': '0 4px 14px 0 rgba(16,185,129,0.35)',
             'danger': '0 4px 14px 0 rgba(249,112,102,0.35)',
             'float': '0 -4px 24px 0 rgba(0,0,0,0.06), 0 -1px 4px rgba(0,0,0,0.03)',
@@ -156,8 +160,8 @@
               '50%': { transform: 'translateY(-10px)' },
             },
             glow: {
-              '0%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.15)' },
-              '100%': { boxShadow: '0 0 30px rgba(99, 102, 241, 0.30)' },
+              '0%': { boxShadow: '0 0 20px rgba(20, 94, 166, 0.15)' },
+              '100%': { boxShadow: '0 0 30px rgba(20, 94, 166, 0.30)' },
             },
             wiggle: {
               '0%, 100%': { transform: 'rotate(0deg)' },
@@ -170,10 +174,10 @@
               '100%': { transform: 'scale(1)', opacity: '1' },
             },
             rainbowGlow: {
-              '0%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)' },
-              '33%': { boxShadow: '0 0 20px rgba(168, 85, 247, 0.4)' },
-              '66%': { boxShadow: '0 0 20px rgba(236, 72, 153, 0.4)' },
-              '100%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)' },
+              '0%': { boxShadow: '0 0 20px rgba(20, 94, 166, 0.4)' },
+              '33%': { boxShadow: '0 0 20px rgba(10, 160, 220, 0.4)' },
+              '66%': { boxShadow: '0 0 20px rgba(47, 180, 124, 0.4)' },
+              '100%': { boxShadow: '0 0 20px rgba(20, 94, 166, 0.4)' },
             },
           },
           transitionTimingFunction: {
@@ -202,29 +206,29 @@
       --text-secondary: #cbd5e1;
       --text-muted: #94a3b8;
       --text-inverse: #0f172a;
-      --mesh-auth: radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.35) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 80%, rgba(236, 72, 153, 0.25) 0%, transparent 50%),
-        linear-gradient(135deg, #0f0a2a 0%, #1a1145 50%, #0f172a 100%);
-      --mesh-tutor: radial-gradient(ellipse at 15% 50%, rgba(99, 102, 241, 0.35) 0%, transparent 50%),
+      --mesh-auth: radial-gradient(ellipse at 20% 50%, rgba(20, 94, 166, 0.35) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(10, 160, 220, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(47, 180, 124, 0.25) 0%, transparent 50%),
+        linear-gradient(135deg, #06121f 0%, #0a1c33 50%, #0f172a 100%);
+      --mesh-tutor: radial-gradient(ellipse at 15% 50%, rgba(20, 94, 166, 0.35) 0%, transparent 50%),
         radial-gradient(ellipse at 85% 30%, rgba(79, 70, 229, 0.3) 0%, transparent 50%),
         radial-gradient(ellipse at 50% 90%, rgba(67, 56, 202, 0.2) 0%, transparent 50%),
-        linear-gradient(135deg, #0f0a2a 0%, #1e1b4b 50%, #0f172a 100%);
+        linear-gradient(135deg, #06121f 0%, #0b223d 50%, #0f172a 100%);
       --mesh-student: radial-gradient(ellipse at 25% 30%, rgba(34, 211, 238, 0.35) 0%, transparent 50%),
-        radial-gradient(ellipse at 75% 60%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 60%, rgba(20, 94, 166, 0.3) 0%, transparent 50%),
         radial-gradient(ellipse at 40% 90%, rgba(59, 130, 246, 0.25) 0%, transparent 50%),
         linear-gradient(135deg, #0a1628 0%, #0f1d3a 50%, #0f172a 100%);
       --input-bg: rgba(255, 255, 255, 0.06);
       --input-border: rgba(255, 255, 255, 0.12);
-      --input-focus-border: #818cf8;
-      --input-focus-ring: rgba(99, 102, 241, 0.20);
+      --input-focus-border: #4a9ad8;
+      --input-focus-ring: rgba(20, 94, 166, 0.20);
       --skeleton-from: rgba(255, 255, 255, 0.04);
       --skeleton-via: rgba(255, 255, 255, 0.08);
       --modal-backdrop-bg: rgba(0, 0, 0, 0.60);
       --scrollbar-thumb: rgba(148, 163, 184, 0.2);
       --scrollbar-thumb-hover: rgba(148, 163, 184, 0.35);
       --divider: rgba(255, 255, 255, 0.08);
-      --tab-active-bg: rgba(99, 102, 241, 0.15);
+      --tab-active-bg: rgba(20, 94, 166, 0.15);
       --tab-inactive-hover: rgba(255, 255, 255, 0.06);
       --error-bg: rgba(239, 68, 68, 0.15);
       --error-border: rgba(239, 68, 68, 0.30);
@@ -234,7 +238,7 @@
 
     /* === LIGHT THEME OVERRIDES === */
     html[data-theme="light"] {
-      --surface-base: #f0f0ff;
+      --surface-base: #f5f3ee;
       --surface-raised: rgba(255, 255, 255, 0.80);
       --surface-overlay: rgba(255, 255, 255, 0.90);
       --glass-bg: rgba(255, 255, 255, 0.75);
@@ -249,29 +253,29 @@
       --text-secondary: #475569;
       --text-muted: #94a3b8;
       --text-inverse: #f1f5f9;
-      --mesh-auth: radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+      --mesh-auth: radial-gradient(ellipse at 20% 50%, rgba(20, 94, 166, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(10, 160, 220, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(47, 180, 124, 0.15) 0%, transparent 50%),
         linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      --mesh-tutor: radial-gradient(ellipse at 15% 50%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+      --mesh-tutor: radial-gradient(ellipse at 15% 50%, rgba(20, 94, 166, 0.12) 0%, transparent 50%),
         radial-gradient(ellipse at 85% 30%, rgba(79, 70, 229, 0.1) 0%, transparent 50%),
         radial-gradient(ellipse at 50% 90%, rgba(67, 56, 202, 0.08) 0%, transparent 50%),
-        linear-gradient(135deg, #f0f0ff 0%, #e8e5f5 50%, #f8fafc 100%);
+        linear-gradient(135deg, #f5f3ee 0%, #eef1f5 50%, #f8fafc 100%);
       --mesh-student: radial-gradient(ellipse at 25% 30%, rgba(34, 211, 238, 0.12) 0%, transparent 50%),
-        radial-gradient(ellipse at 75% 60%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 60%, rgba(20, 94, 166, 0.1) 0%, transparent 50%),
         radial-gradient(ellipse at 40% 90%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
         linear-gradient(135deg, #f0f8ff 0%, #e6f0fa 50%, #f8fafc 100%);
       --input-bg: rgba(255, 255, 255, 0.60);
       --input-border: rgba(203, 213, 225, 0.50);
-      --input-focus-border: #6366f1;
-      --input-focus-ring: rgba(99, 102, 241, 0.12);
+      --input-focus-border: #2373bd;
+      --input-focus-ring: rgba(20, 94, 166, 0.12);
       --skeleton-from: #f1f5f9;
       --skeleton-via: #e2e8f0;
       --modal-backdrop-bg: rgba(15, 23, 42, 0.40);
       --scrollbar-thumb: rgba(148, 163, 184, 0.3);
       --scrollbar-thumb-hover: rgba(148, 163, 184, 0.5);
       --divider: rgba(148, 163, 184, 0.20);
-      --tab-active-bg: rgba(99, 102, 241, 0.10);
+      --tab-active-bg: rgba(20, 94, 166, 0.10);
       --tab-inactive-hover: rgba(255, 255, 255, 0.60);
       --error-bg: rgba(239, 68, 68, 0.08);
       --error-border: rgba(239, 68, 68, 0.20);
@@ -374,7 +378,7 @@
 
     /* Premium gradient text — indigo/purple/pink animated */
     .gradient-text {
-      background: linear-gradient(135deg, #818cf8, #a855f7, #ec4899, #818cf8);
+      background: linear-gradient(135deg, #4a9ad8, #0aa0dc, #2fb47c, #4a9ad8);
       background-size: 200% 200%;
       animation: gradientX 8s ease infinite;
       -webkit-background-clip: text;
@@ -384,7 +388,7 @@
 
     /* Warm gradient text */
     .gradient-text-warm {
-      background: linear-gradient(135deg, #f59e0b, #f97066, #ec4899);
+      background: linear-gradient(135deg, #f59e0b, #f97066, #2fb47c);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -401,7 +405,7 @@
       inset: 0;
       border-radius: inherit;
       padding: 1.5px;
-      background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+      background: linear-gradient(135deg, #2373bd, #0aa0dc, #2fb47c);
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
@@ -411,18 +415,18 @@
 
     /* === GLOW BORDERS === */
     .glow-border-blue {
-      box-shadow: 0 0 15px rgba(99, 102, 241, 0.25), inset 0 0 15px rgba(99, 102, 241, 0.06);
-      border: 1px solid rgba(99, 102, 241, 0.30);
+      box-shadow: 0 0 15px rgba(20, 94, 166, 0.25), inset 0 0 15px rgba(20, 94, 166, 0.06);
+      border: 1px solid rgba(20, 94, 166, 0.30);
     }
 
     .glow-border-purple {
-      box-shadow: 0 0 15px rgba(168, 85, 247, 0.25), inset 0 0 15px rgba(168, 85, 247, 0.06);
-      border: 1px solid rgba(168, 85, 247, 0.30);
+      box-shadow: 0 0 15px rgba(10, 160, 220, 0.25), inset 0 0 15px rgba(10, 160, 220, 0.06);
+      border: 1px solid rgba(10, 160, 220, 0.30);
     }
 
     .glow-border-candy {
-      box-shadow: 0 0 15px rgba(236, 72, 153, 0.25), inset 0 0 15px rgba(236, 72, 153, 0.06);
-      border: 1px solid rgba(236, 72, 153, 0.30);
+      box-shadow: 0 0 15px rgba(47, 180, 124, 0.25), inset 0 0 15px rgba(47, 180, 124, 0.06);
+      border: 1px solid rgba(47, 180, 124, 0.30);
     }
 
     /* === BRIDGE CLASSES (themed text/bg) === */
@@ -505,8 +509,8 @@
     }
 
     .student-points-pill {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.20), rgba(168, 85, 247, 0.20));
-      border: 1px solid rgba(99, 102, 241, 0.30);
+      background: linear-gradient(135deg, rgba(20, 94, 166, 0.20), rgba(10, 160, 220, 0.20));
+      border: 1px solid rgba(20, 94, 166, 0.30);
       border-radius: 9999px;
       padding: 0.25rem 0.75rem;
       font-weight: 700;
@@ -587,7 +591,7 @@
     }
 
     .hover-glow:hover {
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+      box-shadow: 0 0 20px rgba(20, 94, 166, 0.15);
     }
 
     /* Safe area padding for iOS */
