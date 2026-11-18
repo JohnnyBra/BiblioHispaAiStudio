@@ -688,7 +688,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                <div className="space-y-8 animate-fade-in-up">
                   <div className="text-center space-y-2 mb-8">
                      <h2 className="text-3xl font-display font-bold text-themed flex items-center justify-center gap-3">
-                        <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-14 h-14 object-contain drop-shadow-lg" />
+                        <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-14 h-14 object-contain" />
                         Salón de la Fama
                      </h2>
                      <p className="text-themed-muted text-sm">¡Descubre quién lee más y cuáles son los mejores libros!</p>
@@ -874,7 +874,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                onClick={() => setIsChatOpen(!isChatOpen)}
                className={`${isChatOpen ? 'bg-brand-600' : 'bg-gradient-to-b from-brand-500 to-brand-600 animate-bounce-slow shadow-brand-lg'} text-white p-4 rounded-2xl shadow-glass-lg hover:shadow-glass-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 press-effect`}
             >
-               {isChatOpen ? <X size={24} /> : <img src="https://prisma.bibliohispa.es/suite/iconos/bibliobot.webp" alt="" className="w-8 h-8 object-contain drop-shadow" />}
+               {isChatOpen ? <X size={24} /> : <img src="https://prisma.bibliohispa.es/suite/iconos/bibliobot.webp" alt="" className="w-8 h-8 object-contain" />}
                {!isChatOpen && <span className="font-display font-bold pr-1 text-sm">¡Pregúntame!</span>}
             </button>
          </div>
