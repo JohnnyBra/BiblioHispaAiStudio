@@ -3,7 +3,7 @@ import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft, Sun, Moon, Monitor, LogOut } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, Award, ArrowLeft, Sun, Moon, Monitor, LogOut } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 import { proxyCoverUrl } from '../services/utils';
 import { getBookDetails, BookDetails } from '../services/bookService';
@@ -551,7 +551,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   {filteredBooks.length === 0 && (
                      <div className="col-span-full flex flex-col items-center justify-center py-20 animate-fade-in">
                         <div className="w-24 h-24 bg-[var(--surface-raised)]/80 rounded-3xl flex items-center justify-center mb-6">
-                           <BookOpen size={40} className="text-themed-muted" />
+                           <img src="https://prisma.bibliohispa.es/suite/iconos/biblioteca.webp" alt="" className="w-20 h-20 object-contain opacity-80" />
                         </div>
                         <h3 className="font-display font-bold text-xl text-themed mb-2">Sin resultados</h3>
                         <p className="text-themed-muted text-sm max-w-xs text-center">No encontramos libros con esos filtros. Prueba a cambiar la búsqueda.</p>
@@ -614,7 +614,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   ) : (
                      <div className="glass-panel rounded-3xl p-12 text-center animate-fade-in">
                         <div className="w-24 h-24 bg-[var(--surface-raised)]/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                           <BookOpen size={40} className="text-themed-muted" />
+                           <img src="https://prisma.bibliohispa.es/suite/iconos/biblioteca.webp" alt="" className="w-20 h-20 object-contain opacity-80" />
                         </div>
                         <h3 className="text-xl font-display font-bold text-themed mb-2">No tienes libros prestados</h3>
                         <p className="text-themed-muted text-sm mb-8">¡Ve al catálogo y elige tu próxima aventura!</p>
@@ -628,7 +628,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
             {activeTab === 'history' && (
                <div className="space-y-6 animate-fade-in-up">
                   <h2 className="text-2xl font-display font-bold text-themed flex items-center gap-2">
-                     <History size={24} className="text-themed-muted" />
+                     <img src="https://prisma.bibliohispa.es/suite/iconos/historial.webp" alt="" className="w-9 h-9 object-contain" />
                      Historial de Lecturas
                   </h2>
                   {myHistoryTransactions.length > 0 ? (
@@ -674,7 +674,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                   ) : (
                      <div className="glass-panel rounded-3xl p-12 text-center animate-fade-in">
                         <div className="w-24 h-24 bg-[var(--surface-raised)]/80 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                           <History size={40} className="text-themed-muted" />
+                           <img src="https://prisma.bibliohispa.es/suite/iconos/historial.webp" alt="" className="w-20 h-20 object-contain opacity-80" />
                         </div>
                         <h3 className="font-display font-bold text-xl text-themed mb-2">Sin historial</h3>
                         <p className="text-themed-muted text-sm">Aún no has sacado ningún libro. ¡Tu historia empieza hoy!</p>
@@ -688,7 +688,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                <div className="space-y-8 animate-fade-in-up">
                   <div className="text-center space-y-2 mb-8">
                      <h2 className="text-3xl font-display font-bold text-themed flex items-center justify-center gap-3">
-                        <Trophy className="text-accent-amber w-10 h-10 drop-shadow-sm" fill="currentColor" />
+                        <img src="https://prisma.bibliohispa.es/suite/iconos/trofeo.webp" alt="" className="w-14 h-14 object-contain drop-shadow-lg" />
                         Salón de la Fama
                      </h2>
                      <p className="text-themed-muted text-sm">¡Descubre quién lee más y cuáles son los mejores libros!</p>
@@ -874,7 +874,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
                onClick={() => setIsChatOpen(!isChatOpen)}
                className={`${isChatOpen ? 'bg-brand-600' : 'bg-gradient-to-b from-brand-500 to-brand-600 animate-bounce-slow shadow-brand-lg'} text-white p-4 rounded-2xl shadow-glass-lg hover:shadow-glass-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 press-effect`}
             >
-               {isChatOpen ? <X size={24} /> : <MessageCircle size={26} />}
+               {isChatOpen ? <X size={24} /> : <img src="https://prisma.bibliohispa.es/suite/iconos/bibliobot.webp" alt="" className="w-8 h-8 object-contain drop-shadow" />}
                {!isChatOpen && <span className="font-display font-bold pr-1 text-sm">¡Pregúntame!</span>}
             </button>
          </div>
