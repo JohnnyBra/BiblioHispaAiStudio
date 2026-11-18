@@ -3,7 +3,7 @@ import * as React from 'react';
 import { User, Book, Transaction, Review, AppSettings } from '../types';
 import { BookCard } from './BookCard';
 import { Button } from './Button';
-import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft, Sun, Moon, Monitor } from 'lucide-react';
+import { Trophy, Star, BookOpen, Search, Sparkles, User as UserIcon, MessageCircle, Send, X, TrendingUp, Heart, Calendar, FileText, Bookmark, Archive, LayoutGrid, List, ArrowUpDown, SlidersHorizontal, Clock, Sparkle, History, Award, ArrowLeft, Sun, Moon, Monitor, LogOut } from 'lucide-react';
 import { chatWithLibrarian } from '../services/geminiService';
 import { proxyCoverUrl } from '../services/utils';
 import { getBookDetails, BookDetails } from '../services/bookService';
@@ -240,25 +240,25 @@ export const StudentView: React.FC<StudentViewProps> = ({
       <div className="min-h-screen pb-24 relative">
          {/* Top Bar */}
          {/* Cabecera común de la Suite La Hispanidad (kit servido desde Prisma) */}
-         <header className="hs-header flex-wrap gap-y-2">
-               <div className="hs-marca">
+         <header className="hs-header gap-1.5 sm:gap-3 !px-2.5 sm:!px-4">
+               <div className="hs-marca min-w-0 !gap-2 sm:!gap-2.5">
                   <img className="hs-escudo" src="https://prisma.bibliohispa.es/suite/escudo.png" alt="Colegio La Hispanidad" />
-                  <span>
+                  <span className="min-w-0 overflow-hidden">
                      <span className="hs-marca-nombre">Biblioteca</span>
-                     <span className="hs-firma">Creado por Javi Barrero</span>
+                     <span className="hs-firma truncate">Creado por Javi Barrero</span>
                   </span>
                </div>
 
-               <div className="flex items-center gap-2 sm:gap-3 ml-auto">
-                  <div className="flex items-center gap-3 glass-panel px-4 py-2 rounded-2xl cursor-default group relative hover-glow">
-                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-[var(--surface-base)] shadow-sm">
+               <div className="flex items-center gap-1 sm:gap-3 ml-auto shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-3 glass-panel px-1 py-1 sm:px-4 sm:py-2 rounded-2xl cursor-default group relative hover-glow">
+                     <div className="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 items-center justify-center text-white font-bold text-sm ring-2 ring-[var(--surface-base)] shadow-sm">
                         {currentUser.firstName[0]}
                      </div>
                      <div className="flex flex-col">
-                        <span className="font-bold text-xs text-themed leading-none">{currentUser.firstName}</span>
+                        <span className="hidden sm:block font-bold text-xs text-themed leading-none">{currentUser.firstName}</span>
                         <div className="flex items-center gap-2">
-                           <span className="student-points-pill flex items-center gap-0.5 text-[10px] font-bold gradient-text">
-                              <Star size={10} className="text-accent-amber" fill="currentColor" /> {currentUser.points} XP
+                           <span className="student-points-pill flex items-center gap-0.5 text-[10px] font-bold text-themed !px-2 sm:!px-3">
+                              <Star size={10} className="text-accent-amber" fill="currentColor" /> {currentUser.points}<span className="hidden sm:inline">&nbsp;XP</span><span className="sr-only sm:hidden"> puntos</span>
                            </span>
                            {currentUser.currentStreak && currentUser.currentStreak > 0 && (
                               <span className="flex items-center gap-0.5 text-[10px] font-bold text-accent-coral" title="Racha actual">
@@ -289,7 +289,17 @@ export const StudentView: React.FC<StudentViewProps> = ({
                      </div>
                   </div>
                   {setTheme && (
-                     <div className="flex theme-toggle-group rounded-lg p-0.5">
+                     <button
+                       onClick={() => setTheme(theme === 'light' ? 'system' : theme === 'system' ? 'dark' : 'light')}
+                       className="sm:hidden flex justify-center p-2 rounded-lg theme-toggle-group text-themed-secondary"
+                       aria-label={`Tema: ${theme === 'light' ? 'claro' : theme === 'system' ? 'automático' : 'oscuro'}. Cambiar`}
+                       title="Cambiar tema"
+                     >
+                       {theme === 'light' ? <Sun size={16} /> : theme === 'system' ? <Monitor size={16} /> : <Moon size={16} />}
+                     </button>
+                  )}
+                  {setTheme && (
+                     <div className="hidden sm:flex theme-toggle-group rounded-lg p-0.5">
                        <button onClick={() => setTheme('light')} className={`flex justify-center p-1.5 rounded-md text-sm transition-colors ${theme === 'light' ? 'theme-toggle-active' : 'text-themed-muted hover:text-themed-secondary'}`} title="Modo claro" aria-label="Modo claro">
                          <Sun size={14} />
                        </button>
@@ -301,13 +311,14 @@ export const StudentView: React.FC<StudentViewProps> = ({
                        </button>
                      </div>
                   )}
-                  <a href="https://prisma.bibliohispa.es/" className="hs-boton hs-boton--suave !px-3 sm:!px-5" title="Ir al Portal Prisma">
+                  <a href="https://prisma.bibliohispa.es/" className="hs-boton hs-boton--suave !px-2 !min-h-[38px] sm:!px-5 sm:!min-h-[44px]" title="Ir al Portal Prisma">
                     <span className="hs-prisma" style={{ '--t': '18px' } as React.CSSProperties} aria-hidden="true" />
                     <span className="hidden sm:inline">Prisma</span>
                     <span className="sr-only sm:hidden">Ir a Prisma</span>
                   </a>
-                  <Button variant="outline" size="sm" onClick={onLogout} className="border-[var(--glass-border)] hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 press-effect">
-                     <span className="text-xs">Salir</span>
+                  <Button variant="outline" size="sm" onClick={onLogout} aria-label="Salir" className="!px-2 sm:!px-3 border-[var(--glass-border)] hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 press-effect">
+                     <LogOut size={16} className="sm:hidden" />
+                     <span className="text-xs hidden sm:inline">Salir</span>
                   </Button>
                </div>
          </header>
