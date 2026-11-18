@@ -857,7 +857,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                           <span className="bg-fun-orange/10 text-fun-orange px-2 py-1 rounded-lg text-xs font-bold">{user.points} XP</span>
                                       </div>
                                       <div className="flex justify-end gap-2 border-t border-[var(--glass-border)] pt-2 mt-1">
-                                          <button onClick={() => setReportUser(user)} className="p-2 text-blue-500 bg-blue-50 rounded-lg"><FileText size={16}/></button>
+                                          <button onClick={() => setReportUser(user)} className="p-2 text-brand-400 bg-brand-500/10 rounded-lg" aria-label="Informe del alumno"><FileText size={16}/></button>
                                           <button onClick={() => setManagingPointsUser(user)} className="p-2 text-fun-orange bg-orange-500/15 rounded-lg"><Trophy size={16}/></button>
                                           <button onClick={() => setEditingUser(user)} className="p-2 text-brand-500 bg-brand-500/15 rounded-lg"><Edit2 size={16}/></button>
                                           <button onClick={() => onDeleteUser(user.id)} className="p-2 text-red-500 bg-red-500/15 rounded-lg"><Trash2 size={16}/></button>
@@ -889,17 +889,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                     {/* SYNC PANEL — solo Dirección (SUPERADMIN) */}
                     {isSuperAdmin && (
-                      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl border border-indigo-100 shadow-sm">
-                        <h3 className="font-bold text-lg mb-2 text-indigo-300 flex items-center gap-2">
+                      <div className="bg-brand-500/10 p-6 rounded-3xl border border-brand-500/20">
+                        <h3 className="font-bold text-lg mb-2 text-themed flex items-center gap-2">
                           <RefreshCcw size={20} className={isSyncing ? "animate-spin" : ""} />
                           Sincronización Central
                         </h3>
-                        <p className="text-sm text-indigo-300 mb-4">
+                        <p className="text-sm text-themed-secondary mb-4">
                             Actualiza el listado de alumnos y profesores directamente desde la plataforma PrismaEdu del colegio.
                         </p>
                         <Button
                           onClick={handleSyncStudents}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"
+                          className="w-full bg-brand-600 hover:bg-brand-700 text-white shadow-brand"
                           disabled={isSyncing}
                         >
                           {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Usuarios y Clases'}
@@ -2111,7 +2111,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             <div className="grid grid-cols-2 gap-4">
                 {isSuperAdmin && (
                     <button onClick={() => setActiveTab('teachers')} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
-                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                        <div className="w-12 h-12 bg-brand-500/15 rounded-2xl flex items-center justify-center text-brand-400">
                             <Shield size={24} />
                         </div>
                         <span className="font-bold text-themed text-sm">Profesores</span>
@@ -2124,7 +2124,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <span className="font-bold text-themed text-sm">Opiniones</span>
                 </button>
                 <button onClick={() => setActiveTab('cards')} className="glass-card p-5 rounded-3xl flex flex-col items-center gap-3 press-effect">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
+                    <div className="w-12 h-12 bg-accent-sky/15 rounded-2xl flex items-center justify-center text-accent-sky">
                         <CreditCard size={24} />
                     </div>
                     <span className="font-bold text-themed text-sm">Carnets</span>
